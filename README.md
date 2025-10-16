@@ -31,3 +31,27 @@ make unix
 make simulate
 # hack on address_navigator.py
 ```
+
+## Scenarios
+
+Different UI scenarios can be tested using the `SCRIPT` parameter:
+
+```bash
+# Default - runs mock_structure.py (main navigation menu)
+nix develop -c make simulate SCRIPT=mock_structure.py
+
+# Run address_navigator scenario
+nix develop -c make simulate SCRIPT=address_navigator.py
+
+# Run udisplay_demo scenario
+nix develop -c make simulate SCRIPT=udisplay_demo.py
+```
+
+### Mock Structure
+![](./docs/mock_structure.png)
+
+### Address Navigator
+![](./docs/address_simulator.png)
+
+### UDisplay Demo
+![](./docs/udisplay_demo.png)
