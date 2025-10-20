@@ -1,0 +1,178 @@
+Specter UI
+
+=================================================================
+START UP MENU (After PIN) [TOP LEVEL MENU IF NO SEEDPHRASE IS LOADED]
+=================================================================
+
+same as "Add new Wallet" Menu [Expanded] + "Manage Device / Storage" [as one button] + Flag icon [to choose language]
+
+=================================================================
+LEVEL 1 MENU [TOP LEVEL MENU IF A SEEDPHRASE IS LOADED]
+=================================================================
+
+What do you want to do?
+ +--- Scan QR (next menu depends on scanned QR)  (if enabled)
+ +--- Load file from SD (next menu depends on opened file)  (if enabled & detected)
+ +--- Sign Message
+ |
+ +--- Manage Wallet
+ +--- Manage Device / Storage
+ +--- Change/Add Wallet [-> opens a menu that shows list of registered/loadable wallets + option to "Add new Wallet"]
+ |  Quick Links
+ +--- Lock device
+ +--- Reboot/Power Down [if possible: detect if device has battery: then PowerDown, else: Reboot]
+ 
+=================================================================
+LEVEL 2 MENUS
+=================================================================
+
+Manage <Wallet> (SingleSig)  [Replace <Wallet> with Wallet's Name]
+ +--- Sign Transaction (Needed? should be covered by Scan QR/Open SD in LEVEL 1 + UBS trigger )
+ |
+ +--- View Addresses
+ |
+ +--- Manage Seedphrase
+ +--- Manage Derivation Path 
+ +--- Enter/Set Passphrase
+ +--- Connect SW Wallet
+ +--- Export Master Public Keys (xPub etc.)
+ |    
+ +--- Rename Wallet
+ +--- Delete Wallet
+  
+Use/Manage Wallet (MultiSig)
+ +--- Sign Transaction (Needed? should be covered by Scan QR/Open SD in LEVEL 1 + UBS trigger )
+ |
+ +--- View Adresses
+ +--- View Signers
+ |
+ +--- Manage Descriptor (needed ?)
+ +--- Connect SW Wallet 
+ +--- Export Master Public Keys (xPub etc.)
+ |    
+ +--- Rename Wallet
+ +--- Delete Wallet 
+  
+  
+Manage Device / Storage
+  +--- Manage Backup(s)
+  +--- Manage Firmware
+  +--- Manage Security Features
+  +--- Change Network [Testnet/Mainnet etc.]
+  +--- Enable/Disable Interface(s)
+  |  +--- QR Scanner on/off
+  |  +--- USB on/off
+  |  +--- SD Card on/off
+  |  +--- SmartCard on/off  
+  |
+  +--- Manage SmartCard (if detected)
+  +--- Manage SD Card (if enabled and detected)
+  |
+  +--- Manage Sounds
+  |
+  +--- Flag icon [to choose language]
+  +--- Lock device
+  +--- Reboot/Power Down [if possible: detect if device has battery: then PowerDown, else: Reboot]
+  +--- Wipe device
+  
+=================================================================
+SUB MENUS
+=================================================================
+
+Manage Seedphrase
+  +--- Show Seedphrase
+  |
+  +--- Store Seedphrase 
+  |  +--- to SmartCard (if enabled & detected)
+  |  +--- to SD Card (if enabled & detected)
+  |  +--- to internal Flash
+  |
+  +--- Clear Seedphrase
+  |  +--- from SmartCard (if enabled & detected)
+  |  +--- from SD Card (if enabled & detected)
+  |  +--- from internal Flash
+  |  +--- all attached storage
+  |
+  +--- Derive new via BIP-85
+  +--- Fancy Shit? SEEDXOR / Shamir Secret Sharing ...?
+  
+Manage Security Features (Shows Fingerpint?)
+  +--- Change PIN
+  +--- Self-Test
+  +--- Set allowed PIN retries
+  +--- Set exceeded PIN retries action
+  +--- Set duress PIN
+  +--- Set duress PIN action
+  
+Manage SmartCard
+  +--- Load Seedphrase
+  +--- Store Seedphrase (if one is loaded)
+  +--- Remove Seedphrase
+  +--- Wipe SmartCard
+  +--- SmartCard info
+  +--- Encrypt/Decrypt?
+  
+Manage SD Card
+  +--- OpenFile
+  +--- Load Seedphrase
+  +--- Store Seedphrase (if one is loaded)
+  +--- Remove Seedphrase
+  +--- Format SD Card
+  +--- Encrypt/Decrypt?
+
+Manage Sounds
+  +--- Sound X: On/Off 
+  +--- Sound Y: On/Off 
+
+Manage Backup(s)
+  +--- Backup device to SD Card
+  +--- Restore device from SD Card
+  +--- Remove Backup from SD Card
+  (Verify Backup?)
+  
+Manage Firmware (shows Firmware version
+  Update Firmware from
+  +--- SD Card (if enabled & detected)
+  +--- USB (if enabled)
+  +--- QR Code (if enabled)  
+
+Connect SW Wallet
+  +--- LIST OF SUPPORTED SW WALLETS: TBD
+  +--- Sparrow
+  +--- Nunchuck
+  +--- BlueWallet
+  +--- Generic QR Interface
+  +--- ...
+ 
+Add new Wallet
+ +---Generate New Seedphrase
+ |  Import Seedphrase from
+ +--- SmartCard (if enabled & detected)
+ +--- QR Code (if enabled)
+ +--- SD Card (if enabled & detected)
+ +--- internal Flash
+ +--- Keyboard (manual entry)
+(new entry to add derivation based on BIP-85?)
+
+
+
+Sign Transaction
+ +--- from QR Code (if enabled)
+ +--- from SD Card (if enabled & detected)
+ +--- from internal Flash
+ +--- from USB Connector (if enabled) [needed? autotrigger via USB anyway?] 
+ 
+ 
+ IDEA: static status/info bar [icons?]:
+ -Active Wallet Name+Source+Temporary?
+ -Testnet/mainnet
+ -QR Scanner on/off
+ -USB on/off
+ -SD Card on/off
+ -Flag icon to choose language
+ -Reboot button
+ -Lock Button 
+ 
+ IDEA for triggers for warnings/checks:
+ -Reboot with loaded but not backed up seedphrase
+ -
