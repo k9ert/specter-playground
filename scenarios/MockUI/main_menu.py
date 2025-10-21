@@ -24,14 +24,6 @@ def MainMenu(parent, *args, **kwargs):
         menu_items.append(("Manage Wallet", "manage_wallet"))
 
     menu_items.append(("Manage Device/Storage", "manage_device"))
-    menu_items.append(("Change/Add Wallet", "add_wallet"))  
-
-    menu_items.append(("Quick links", None))
-    menu_items.append(("Lock Device", "lock_device"))
-    # power option depends on battery presence
-    if (state and state.has_battery):
-        menu_items.append(("Power Off", "power_down_device"))
-    else:
-        menu_items.append(("Reboot", "reboot_device"))
+    menu_items.append(("Change/Add Wallet", "add_wallet")) 
     
     return GenericMenu("main", "What do you want to do?", menu_items, parent, *args, **kwargs)

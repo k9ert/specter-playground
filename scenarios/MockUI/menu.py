@@ -15,9 +15,9 @@ class GenericMenu(lv.obj):
         lv_parent = getattr(parent, "content", parent)
         super().__init__(lv_parent, *args, **kwargs)
         # discover navigation callback and shared state from parent
-        self.on_navigate = getattr(parent, "on_navigate", None)
+        self.on_navigate = parent.on_navigate
         # optional shared state object (SpecterState) is stored on parent
-        self.state = getattr(parent, "specter_state", None)
+        self.state = parent.specter_state
         # identifier for this menu (used e.g. as a return target)
         self.menu_id = menu_id
 
@@ -25,11 +25,22 @@ class GenericMenu(lv.obj):
         self.set_width(lv.pct(100))
         self.set_height(lv.pct(100))
 
+        # If ui_state has history, show back button to the left of the title
+        if parent.ui_state and parent.ui_state.history and len(parent.ui_state.history) > 0:
+            self.back_btn = lv.button(self)
+            self.back_btn.set_size(40, 28)
+            self.back_lbl = lv.label(self.back_btn)
+            self.back_lbl.set_text("<")
+            self.back_lbl.center()
+            # wire back to navigation callback: wrap handler in a lambda so the
+            # LVGL binding's argument passing doesn't mismatch the method signature.
+            self.back_btn.add_event_cb(lambda e: self.on_back(e), lv.EVENT.CLICKED, None)
+
         # Title
         self.title = lv.label(self)
         self.title.set_text(title)
         self.title.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-        # reduce vertical space used by the title
+        # reduce vertical space used by the title; center remains but offset horizontally
         self.title.align(lv.ALIGN.TOP_MID, 0, 6)
 
         # Container for buttons
@@ -69,3 +80,6 @@ class GenericMenu(lv.obj):
                 else:
                     self.on_navigate(target_menu_id)
         return callback
+
+    def on_back(self, e):
+        self.on_navigate(None)

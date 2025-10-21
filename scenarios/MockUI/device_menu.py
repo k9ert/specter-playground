@@ -10,7 +10,7 @@ def DeviceMenu(parent, *args, **kwargs):
         ("Manage Backup(s)", "manage_backups"),
         ("Manage Firmware", "manage_firmware"),
         ("Manage Security Features", "manage_security"),
-        ("Change Network", "change_network"),
+        ("Change Network (Mainnet/Testnet/...)", "change_network"),
         ("Enable/Disable Interfaces", "interfaces"),
         ("Manage Sounds", "sounds")]
 
@@ -24,9 +24,7 @@ def DeviceMenu(parent, *args, **kwargs):
     
     menu_items += [
         ("Dangerzone", None),
-        ("Wipe Device", "wipe_device"),
-        ("Navigate",None),
-        ("Back", "back"),
+        ("Wipe Device", "wipe_device")
     ]
 
     return GenericMenu("manage_device", "Manage Device/Storage", menu_items, parent, *args, **kwargs)

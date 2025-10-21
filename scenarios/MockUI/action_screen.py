@@ -16,6 +16,18 @@ class ActionScreen(lv.obj):
         self.set_width(lv.pct(100))
         self.set_height(lv.pct(100))
 
+        # If ui_state has history, show back button to the left of the title
+        if parent.ui_state and parent.ui_state.history and len(parent.ui_state.history) > 0:
+            self.back_btn = lv.button(self)
+            self.back_btn.set_size(40, 28)
+            self.back_lbl = lv.label(self.back_btn)
+            self.back_lbl.set_text("<")
+            self.back_lbl.center()
+            # wire back to navigation callback: wrap handler in a lambda so the
+            # LVGL binding's argument passing doesn't mismatch the method signature.
+            self.back_btn.add_event_cb(lambda e: self.on_back(e), lv.EVENT.CLICKED, None)
+
+
         # Title
         self.title = lv.label(self)
         self.title.set_text(title)

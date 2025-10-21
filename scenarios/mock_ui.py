@@ -39,7 +39,7 @@ class NavigationController(lv.obj):
         self.content.align_to(self.status_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 0)
 
         # initially show the main menu
-        self.show_menu(self.ui_state.current_menu_id)
+        self.show_menu(None)
 
         # periodic refresh of the status bar every 30 seconds
         def _tick(timer):

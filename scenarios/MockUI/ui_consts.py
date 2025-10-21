@@ -1,7 +1,7 @@
 from micropython import const
 
 BTN_HEIGHT = const(50)
-BTN_WIDTH = const(300)
+BTN_WIDTH = const(350)
 MENU_PCT = const(93)
 STATUS_BTN_HEIGHT = const(30)
 STATUS_BTN_WIDTH = const(40)

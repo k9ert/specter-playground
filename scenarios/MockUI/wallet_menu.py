@@ -24,9 +24,7 @@ def WalletMenu(parent, *args, **kwargs):
         ("Rename Wallet", "rename_wallet"),
         ("Delete Wallet", "delete_wallet"),
         ("Connect/Export", None),
-        ("Connect SW Wallet", "connect_sw_wallet"),
-        ("Navigate",None),
-        ("Back", "back")
+        ("Connect SW Wallet", "connect_sw_wallet")
     ]
 
     title = "Manage Wallet" + ("" if state is None or state.active_wallet is None else f": {state.active_wallet.name}")
