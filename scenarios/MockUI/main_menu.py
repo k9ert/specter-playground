@@ -1,7 +1,10 @@
 from .menu import GenericMenu
 
 
-def MainMenu(on_navigate, state=None, *args, **kwargs):
+def MainMenu(parent, *args, **kwargs):
+    # read state and navigation callback from the parent controller
+    on_navigate = getattr(parent, "on_navigate", None)
+    state = getattr(parent, "specter_state", None)
 
     menu_items = []
 
@@ -31,4 +34,4 @@ def MainMenu(on_navigate, state=None, *args, **kwargs):
     else:
         menu_items.append(("Reboot", "reboot_device"))
     
-    return GenericMenu("main", "What do you want to do?", menu_items, 100, on_navigate, state, *args, **kwargs)
+    return GenericMenu("main", "What do you want to do?", menu_items, 100, parent, *args, **kwargs)

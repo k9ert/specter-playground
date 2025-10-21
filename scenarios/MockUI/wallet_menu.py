@@ -1,7 +1,9 @@
 from .menu import GenericMenu
 
 
-def WalletMenu(on_navigate, state=None, *args, **kwargs):
+def WalletMenu(parent, *args, **kwargs):
+    on_navigate = getattr(parent, "on_navigate", None)
+    state = getattr(parent, "specter_state", None)
 
     menu_items = []
 
@@ -29,4 +31,4 @@ def WalletMenu(on_navigate, state=None, *args, **kwargs):
 
     title = "Manage Wallet" + ("" if state is None or state.active_wallet is None else f": {state.active_wallet.name}")
 
-    return GenericMenu("manage_wallet", title, menu_items, 80, on_navigate, state, *args, **kwargs)
+    return GenericMenu("manage_wallet", title, menu_items, 80, parent, *args, **kwargs)

@@ -1,7 +1,10 @@
 from .menu import GenericMenu
 
 
-def DeviceMenu(on_navigate, state=None, *args, **kwargs):
+def DeviceMenu(parent, *args, **kwargs):
+    on_navigate = getattr(parent, "on_navigate", None)
+    state = getattr(parent, "specter_state", None)
+
     menu_items = [
         ("Manage Device", None),
         ("Manage Backup(s)", "manage_backups"),
@@ -26,4 +29,4 @@ def DeviceMenu(on_navigate, state=None, *args, **kwargs):
         ("Back", "back"),
     ]
 
-    return GenericMenu("manage_device", "Manage Device/Storage", menu_items, 80, on_navigate, state, *args, **kwargs)
+    return GenericMenu("manage_device", "Manage Device/Storage", menu_items, 80, parent, *args, **kwargs)

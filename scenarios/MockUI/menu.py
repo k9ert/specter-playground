@@ -11,11 +11,13 @@ class GenericMenu(lv.obj):
     container_height_pct: integer percentage for container height (default 100)
     """
 
-    def __init__(self, menu_id, title, menu_items, container_height_pct, on_navigate, state=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.on_navigate = on_navigate
-        # optional shared state object (SpecterState)
-        self.state = state
+    def __init__(self, menu_id, title, menu_items, container_height_pct, parent, *args, **kwargs):
+        # parent is the LVGL parent (NavigationController)
+        super().__init__(parent, *args, **kwargs)
+        # discover navigation callback and shared state from parent
+        self.on_navigate = getattr(parent, "on_navigate", None)
+        # optional shared state object (SpecterState) is stored on parent
+        self.state = getattr(parent, "specter_state", None)
         # identifier for this menu (used e.g. as a return target)
         self.menu_id = menu_id
 
@@ -58,8 +60,10 @@ class GenericMenu(lv.obj):
     def make_callback(self, target_menu_id):
         def callback(e):
             if e.get_code() == lv.EVENT.CLICKED:
+                if not self.on_navigate:
+                    return
                 if target_menu_id == "back":
                     self.on_navigate(None)
-                else:   
+                else:
                     self.on_navigate(target_menu_id)
         return callback

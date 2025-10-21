@@ -11,7 +11,14 @@ display.init()
 class NavigationController(lv.obj):
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.specter_state = specter_state
+
+        self.on_navigate = self.show_menu
+
+        if specter_state:
+            self.specter_state = specter_state
+        else:
+            self.specter_state = SpecterState()
+
         # optional UIState instance used to track menu history
         if ui_state:
             self.ui_state = ui_state
@@ -41,21 +48,22 @@ class NavigationController(lv.obj):
         # Create new screen (micropython doesn't support match/case)
         current = self.ui_state.current_menu_id
         if current == "main":
-            self.current_screen = MainMenu(self.show_menu, self.specter_state, self)
+            self.current_screen = MainMenu(self)
         elif current == "manage_wallet":
-            self.current_screen = WalletMenu(self.show_menu, self.specter_state, self)
+            self.current_screen = WalletMenu(self)
         elif current == "manage_device":
-            self.current_screen = DeviceMenu(self.show_menu, self.specter_state, self)
+            self.current_screen = DeviceMenu(self)
         elif current == "manage_seedphrase":
             # create ActionScreen and pass origin so Back can return there
             origin = self.ui_state.history[-1] if self.ui_state.history else "main"
-            self.current_screen = ActionScreen("Manage Seedphrase", self.show_menu, self)
+            # ActionScreen expects (title, parent) in the parent-based API
+            self.current_screen = ActionScreen("Manage Seedphrase", self)
         else:
             # For all other actions, show a generic action screen
             title = (target_menu_id or "").replace("_", " ")
             title = title[0].upper() + title[1:] if title else ""
             origin = self.ui_state.history[-1] if self.ui_state.history else "main"
-            self.current_screen = ActionScreen(title, self.show_menu, self)
+            self.current_screen = ActionScreen(title, self)
 
 singlesig_wallet = Wallet("SingleSigW", xpub="xpub6CUGRUon", isMultiSig=False)
 

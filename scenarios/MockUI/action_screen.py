@@ -4,9 +4,11 @@ from .ui_consts import BTN_HEIGHT, BTN_WIDTH
 
 class ActionScreen(lv.obj):
     """Generic action screen for menu items"""
-    def __init__(self, title, on_navigate, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.on_navigate = on_navigate
+    def __init__(self, title, parent, *args, **kwargs):
+        # parent is the NavigationController (LVGL parent)
+        super().__init__(parent, *args, **kwargs)
+        # discover navigation callback from parent
+        self.on_navigate = getattr(parent, "on_navigate", None)
 
         # Fill parent
         self.set_width(lv.pct(100))
