@@ -1,5 +1,5 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT
+from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT, PAD_SIZE
 
 
 class GenericMenu(lv.obj):
@@ -39,9 +39,9 @@ class GenericMenu(lv.obj):
         self.container.set_layout(lv.LAYOUT.FLEX)
         self.container.set_flex_flow(lv.FLEX_FLOW.COLUMN)
         self.container.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-        self.container.set_style_pad_all(6, 0)
+        self.container.set_style_pad_all(PAD_SIZE, 0)
         # smaller gap between title and container
-        self.container.align_to(self.title, lv.ALIGN.OUT_BOTTOM_MID, 0, 6)
+        self.container.align_to(self.title, lv.ALIGN.OUT_BOTTOM_MID, 0, PAD_SIZE)
 
         # Build items
         for text, target_menu_id in menu_items:

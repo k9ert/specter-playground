@@ -22,9 +22,14 @@ class SpecterState:
 
         # device features
         self.has_battery = False
+        # battery percentage (optional)
+        self.battery_pct = None
         self.active_passphrase = None
         self.is_locked = False
         self.pin = None
+
+        #bitcoin specific config
+        self.net = "mainnet"
 
         # peripherals
         self.hasQR = False

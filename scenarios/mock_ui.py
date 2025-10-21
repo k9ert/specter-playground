@@ -41,6 +41,12 @@ class NavigationController(lv.obj):
         # initially show the main menu
         self.show_menu(self.ui_state.current_menu_id)
 
+        # periodic refresh of the status bar every 30 seconds
+        def _tick(timer):
+            self.status_bar.refresh(self.specter_state)
+
+        lv.timer_create(_tick, 30_000, None)
+
     def show_menu(self, target_menu_id=None):
         #if target_menu_id is set, the call was generated traversing "down" the menu hierarchy, and target_menu_id needs to be added to the ui_history
         #if target_menu_id is None this signalizes, the call was generated while traversing "up" the menu hierarchy, i.e. going back, and the ui_history needs to be popped
@@ -74,16 +80,23 @@ class NavigationController(lv.obj):
             title = title[0].upper() + title[1:] if title else ""
             self.current_screen = ActionScreen(title, self)
 
-singlesig_wallet = Wallet("SingleSigW", xpub="xpub6CUGRUon", isMultiSig=False)
+        # The NavigationController is the actual LVGL screen (loaded once in main)
+        # Menus are created as children of `self.content`, so we must not call
+        # lv.screen_load on those child objects. Just refresh the status bar.
+        self.status_bar.refresh(self.specter_state)
+
+singlesig_wallet = Wallet("MyWallet", xpub="xpub6CUGRUon", isMultiSig=False)
 
 specter_state = SpecterState()
-specter_state.has_battery = False
+specter_state.has_battery = True
+specter_state.battery_pct = 100
 specter_state.hasQR = True
 specter_state.enabledQR = True
 specter_state.hasSD = False
 specter_state.enabledSD = True
 specter_state.hasSmartCard = False
 specter_state.enabledSmartCard = True
+specter_state.enabledUSB = True
 specter_state.pin = "21"
 specter_state.language = "eng"
 specter_state.registered_wallets.append(singlesig_wallet)
