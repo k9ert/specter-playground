@@ -3,7 +3,7 @@ import lvgl as lv
 import utime as time
 
 
-from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar
+from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu
 
 
 display.init()
@@ -71,9 +71,10 @@ class NavigationController(lv.obj):
             self.current_screen = WalletMenu(self)
         elif current == "manage_device":
             self.current_screen = DeviceMenu(self)
+        elif current == "manage_security":
+            self.current_screen = SecurityMenu(self)
         elif current == "manage_seedphrase":
-            # ActionScreen expects (title, parent) in the parent-based API
-            self.current_screen = ActionScreen("Manage Seedphrase", self)
+            self.current_screen = SeedPhraseMenu(self)
         else:
             # For all other actions, show a generic action screen
             title = (target_menu_id or "").replace("_", " ")
