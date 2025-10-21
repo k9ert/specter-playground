@@ -34,4 +34,4 @@ def MainMenu(parent, *args, **kwargs):
     else:
         menu_items.append(("Reboot", "reboot_device"))
     
-    return GenericMenu("main", "What do you want to do?", menu_items, 100, parent, *args, **kwargs)
+    return GenericMenu("main", "What do you want to do?", menu_items, parent, *args, **kwargs)

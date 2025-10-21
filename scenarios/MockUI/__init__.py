@@ -7,5 +7,6 @@ from .device_state import SpecterState
 from .wallet import Wallet
 from .action_screen import ActionScreen
 from .ui_state import UIState
+from .status_bar import StatusBar
 
-__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState"]
+__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState", "StatusBar"]

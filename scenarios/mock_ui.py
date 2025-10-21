@@ -3,7 +3,7 @@ import lvgl as lv
 import utime as time
 
 
-from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState
+from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar
 
 
 display.init()
@@ -27,6 +27,18 @@ class NavigationController(lv.obj):
 
         self.current_screen = None
 
+        # Create a status bar (~10%) and a content container for the screens (~90%)
+        self.status_bar = StatusBar(self, height_pct=5)
+
+        # content area below status bar where menus will be parented
+        self.content = lv.obj(self)
+        self.content.set_width(lv.pct(100))
+        self.content.set_height(lv.pct(95))
+        self.content.set_layout(lv.LAYOUT.FLEX)
+        self.content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
+        self.content.align_to(self.status_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 0)
+
+        # initially show the main menu
         self.show_menu(self.ui_state.current_menu_id)
 
     def show_menu(self, target_menu_id=None):
@@ -54,15 +66,12 @@ class NavigationController(lv.obj):
         elif current == "manage_device":
             self.current_screen = DeviceMenu(self)
         elif current == "manage_seedphrase":
-            # create ActionScreen and pass origin so Back can return there
-            origin = self.ui_state.history[-1] if self.ui_state.history else "main"
             # ActionScreen expects (title, parent) in the parent-based API
             self.current_screen = ActionScreen("Manage Seedphrase", self)
         else:
             # For all other actions, show a generic action screen
             title = (target_menu_id or "").replace("_", " ")
             title = title[0].upper() + title[1:] if title else ""
-            origin = self.ui_state.history[-1] if self.ui_state.history else "main"
             self.current_screen = ActionScreen(title, self)
 
 singlesig_wallet = Wallet("SingleSigW", xpub="xpub6CUGRUon", isMultiSig=False)

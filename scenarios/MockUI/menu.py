@@ -1,5 +1,5 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH
+from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT
 
 
 class GenericMenu(lv.obj):
@@ -7,13 +7,13 @@ class GenericMenu(lv.obj):
 
     title: string title shown at top
     menu_items: list of (text, action) where action=None creates a label/spacer
-    on_navigate: callback(action, origin_menu_id)
-    container_height_pct: integer percentage for container height (default 100)
     """
 
-    def __init__(self, menu_id, title, menu_items, container_height_pct, parent, *args, **kwargs):
-        # parent is the LVGL parent (NavigationController)
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, menu_id, title, menu_items, parent, *args, **kwargs):
+        # parent is the NavigationController (not necessarily the LVGL parent)
+        # attach to parent's `content` container when available so the status bar stays visible
+        lv_parent = getattr(parent, "content", parent)
+        super().__init__(lv_parent, *args, **kwargs)
         # discover navigation callback and shared state from parent
         self.on_navigate = getattr(parent, "on_navigate", None)
         # optional shared state object (SpecterState) is stored on parent
@@ -29,17 +29,19 @@ class GenericMenu(lv.obj):
         self.title = lv.label(self)
         self.title.set_text(title)
         self.title.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-        self.title.align(lv.ALIGN.TOP_MID, 0, 20)
+        # reduce vertical space used by the title
+        self.title.align(lv.ALIGN.TOP_MID, 0, 6)
 
         # Container for buttons
         self.container = lv.obj(self)
         self.container.set_width(lv.pct(100))
-        self.container.set_height(lv.pct(container_height_pct))
+        self.container.set_height(lv.pct(MENU_PCT))
         self.container.set_layout(lv.LAYOUT.FLEX)
         self.container.set_flex_flow(lv.FLEX_FLOW.COLUMN)
         self.container.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-        self.container.set_style_pad_all(10, 0)
-        self.container.align_to(self.title, lv.ALIGN.OUT_BOTTOM_MID, 0, 10)
+        self.container.set_style_pad_all(6, 0)
+        # smaller gap between title and container
+        self.container.align_to(self.title, lv.ALIGN.OUT_BOTTOM_MID, 0, 6)
 
         # Build items
         for text, target_menu_id in menu_items:

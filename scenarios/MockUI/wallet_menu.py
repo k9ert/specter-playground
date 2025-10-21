@@ -31,4 +31,4 @@ def WalletMenu(parent, *args, **kwargs):
 
     title = "Manage Wallet" + ("" if state is None or state.active_wallet is None else f": {state.active_wallet.name}")
 
-    return GenericMenu("manage_wallet", title, menu_items, 80, parent, *args, **kwargs)
+    return GenericMenu("manage_wallet", title, menu_items, parent, *args, **kwargs)

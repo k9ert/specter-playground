@@ -29,4 +29,4 @@ def DeviceMenu(parent, *args, **kwargs):
         ("Back", "back"),
     ]
 
-    return GenericMenu("manage_device", "Manage Device/Storage", menu_items, 80, parent, *args, **kwargs)
+    return GenericMenu("manage_device", "Manage Device/Storage", menu_items, parent, *args, **kwargs)
