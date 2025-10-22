@@ -18,3 +18,4 @@ class Wallet:
         self.xpub = xpub
         self.isMultiSig = isMultiSig
         self.net = net
+        self.active_passphrase = None

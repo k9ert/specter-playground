@@ -1,5 +1,5 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT, PAD_SIZE, SWITCH_HEIGHT
+from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT, PAD_SIZE, SWITCH_HEIGHT, SWITCH_WIDTH
 
 
 class InterfacesMenu(lv.obj):
@@ -77,7 +77,7 @@ class InterfacesMenu(lv.obj):
 
             # Right toggle button
             sw = lv.switch(row)
-            sw.set_size(SWITCH_HEIGHT, 30)
+            sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
 
             # Set initial state from specter_state (if present)
             enabled = False

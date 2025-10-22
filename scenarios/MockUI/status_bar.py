@@ -161,7 +161,7 @@ class StatusBar(lv.obj):
                 self.wallet_name_lbl.set_text(self._truncate(name, 8))
                 self.wallet_type_lbl.set_text(self._truncate(typ, 5))
                 # show PP indicator if wallet reports a passphrase configured
-                if state.active_passphrase is not None:
+                if w.active_passphrase is not None:
                     self.pp_lbl.set_text("PP")
                 else:
                     self.pp_lbl.set_text("")

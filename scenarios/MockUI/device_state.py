@@ -19,7 +19,6 @@ class SpecterState:
         self.seed_loaded = False
         self.active_wallet = None
         self.registered_wallets = []
-        self.active_passphrase = None
 
         # device features
         self.has_battery = False
