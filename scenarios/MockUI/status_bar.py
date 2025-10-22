@@ -50,7 +50,7 @@ class StatusBar(lv.obj):
         self.wallet_type_lbl = lv.label(self)
         self.wallet_type_lbl.set_text("")
         # small fixed width for the type indicator (e.g. 'MuSig'/'SiSig')
-        self.wallet_type_lbl.set_width(30)
+        self.wallet_type_lbl.set_width(38)
 
         # Passphrase indicator (shows 'PP' when the active wallet has a passphrase configured)
         self.pp_lbl = lv.label(self)
@@ -77,16 +77,6 @@ class StatusBar(lv.obj):
         self.smartcard_lbl = lv.label(self)
         self.smartcard_lbl.set_text("")
         self.smartcard_lbl.set_width(TWO_LETTER_SYMBOLD_WIDTH)
-
-        # spacer to push the following content to the right
-        self._spacer = lv.obj(self)
-        # expand horizontally but avoid increasing the bar height
-        self._spacer.set_flex_grow(1)
-        # ensure no padding/border is added that could grow vertically
-        self._spacer.set_style_pad_all(0, 0)
-        self._spacer.set_style_border_width(0, 0)
-        # if available, keep height minimal so it won't be taller than the bar
-        self._spacer.set_height(0)
 
 
         # Language indicator (TODO: make a selector)

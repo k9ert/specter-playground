@@ -16,7 +16,7 @@ class FirmwareMenu(GenericMenu):
         fw_version = state.fw_version
 
         menu_items = [
-            ("Update from version " + str(fw_version) + " via", None),
+            ("Current version " + str(fw_version) + ". Update via", None),
         ]
 
         # conditional sources (guard against missing attributes)

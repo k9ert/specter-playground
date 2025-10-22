@@ -24,6 +24,6 @@ def MainMenu(parent, *args, **kwargs):
         menu_items.append(("Manage Wallet", "manage_wallet"))
 
     menu_items.append(("Manage Device/Storage", "manage_device"))
-    menu_items.append(("Change/Add Wallet", "add_wallet")) 
+    menu_items.append(("Change/Add Wallet", "change_wallet")) 
     
     return GenericMenu("main", "What do you want to do?", menu_items, parent, *args, **kwargs)
