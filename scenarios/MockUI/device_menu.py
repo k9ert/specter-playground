@@ -10,7 +10,6 @@ def DeviceMenu(parent, *args, **kwargs):
         ("Manage Backup(s)", "manage_backups"),
         ("Manage Firmware", "manage_firmware"),
         ("Manage Security Features", "manage_security"),
-        ("Change Network (Mainnet/Testnet/...)", "change_network"),
         ("Enable/Disable Interfaces", "interfaces"),
         ("Manage Sounds", "sounds")]
 

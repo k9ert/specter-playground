@@ -13,7 +13,8 @@ class Wallet:
         isMultiSig: boolean flag indicating multisig wallet
     """
 
-    def __init__(self, name, xpub=None, isMultiSig=False):
+    def __init__(self, name, xpub=None, isMultiSig=False, net="mainnet"):
         self.name = name
         self.xpub = xpub
         self.isMultiSig = isMultiSig
+        self.net = net

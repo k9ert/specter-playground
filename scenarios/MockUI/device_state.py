@@ -28,9 +28,6 @@ class SpecterState:
         self.is_locked = False
         self.pin = None
 
-        #bitcoin specific config
-        self.net = "mainnet"
-
         # peripherals
         self.hasQR = False
         self.enabledQR = False

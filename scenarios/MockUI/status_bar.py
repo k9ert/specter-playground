@@ -153,13 +153,14 @@ class StatusBar(lv.obj):
                 self.pp_lbl.set_text("PP")
             else:
                 self.pp_lbl.set_text("")
+            # net
+            self.net_lbl.set_text(self._truncate(w.net or "", 4))
         else:
             self.wallet_name_lbl.set_text("")
             self.wallet_type_lbl.set_text("")
             self.pp_lbl.set_text("")
+            self.net_lbl.set_text("")
 
-        # net
-        self.net_lbl.set_text(self._truncate(state.net or "", 4))
 
         # language
         self.lang_lbl.set_text(self._truncate(state.language or "", 3))

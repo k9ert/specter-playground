@@ -19,6 +19,7 @@ def WalletMenu(parent, *args, **kwargs):
         menu_items.append(("Enter/Set Passphrase", "set_passphrase"))
     elif (state and not state.active_wallet is None and state.active_wallet.isMultiSig):
         menu_items.append(("Manage Descriptor", "manage_wallet_descriptor"))
+    menu_items.append(("Change Network (Mainnet/Testnet/...)", "change_network"))
     
     menu_items += [
         ("Rename Wallet", "rename_wallet"),
