@@ -27,4 +27,5 @@ def DeviceMenu(parent, *args, **kwargs):
         ("Wipe Device", "wipe_device")
     ]
 
+
     return GenericMenu("manage_device", "Manage Device/Storage", menu_items, parent, *args, **kwargs)

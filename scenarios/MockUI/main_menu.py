@@ -16,7 +16,7 @@ def MainMenu(parent, *args, **kwargs):
             menu_items.append(("Scan QR", "scan_qr"))
         if (state.hasSD and state.enabledSD):
             menu_items.append(("Load File from SD", "load_sd"))
-        if (state and len(state.registered_wallets) > 0):
+        if (state and state.active_wallet and not state.active_wallet is None and not state.active_wallet.isMultiSig):
             menu_items.append(("Sign Message", "sign_message"))
 
     menu_items.append(("Manage Specter", None))

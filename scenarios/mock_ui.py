@@ -95,7 +95,7 @@ specter_state.hasQR = True
 specter_state.enabledQR = True
 specter_state.hasSD = False
 specter_state.enabledSD = True
-specter_state.hasSmartCard = False
+specter_state.hasSmartCard = True
 specter_state.enabledSmartCard = True
 specter_state.enabledUSB = True
 specter_state.pin = "21"
@@ -103,6 +103,7 @@ specter_state.language = "eng"
 specter_state.registered_wallets.append(singlesig_wallet)
 specter_state.set_active_wallet(singlesig_wallet)
 specter_state.seed_loaded = True
+specter_state.active_passphrase = "my_secret"
 
 scr = NavigationController(specter_state)
 

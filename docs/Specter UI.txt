@@ -48,7 +48,6 @@ Use/Manage Wallet (MultiSig)
  |
  +--- Manage Descriptor (needed ?)
  +--- Connect SW Wallet 
- +--- Export Master Public Keys (xPub etc.)
  |    
  +--- Rename Wallet
  +--- Delete Wallet 

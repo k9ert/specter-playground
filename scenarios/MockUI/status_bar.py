@@ -1,5 +1,5 @@
 import lvgl as lv
-from .ui_consts import PAD_SIZE, STATUS_BTN_HEIGHT, STATUS_BTN_WIDTH
+from .ui_consts import PAD_SIZE, STATUS_BTN_HEIGHT, STATUS_BTN_WIDTH, TWO_LETTER_SYMBOLD_WIDTH, THREE_LETTER_SYMBOLD_WIDTH
 
 
 class StatusBar(lv.obj):
@@ -52,26 +52,31 @@ class StatusBar(lv.obj):
         # small fixed width for the type indicator (e.g. 'MuSig'/'SiSig')
         self.wallet_type_lbl.set_width(30)
 
+        # Passphrase indicator (shows 'PP' when the active wallet has a passphrase configured)
+        self.pp_lbl = lv.label(self)
+        self.pp_lbl.set_text("")
+        self.pp_lbl.set_width(TWO_LETTER_SYMBOLD_WIDTH)
+
         self.net_lbl = lv.label(self)
         self.net_lbl.set_text("")
-        self.net_lbl.set_width(40)
+        self.net_lbl.set_width(35)
 
         # peripheral indicators – give them stable small widths so changing text won't shift layout
         self.qr_lbl = lv.label(self)
         self.qr_lbl.set_text("")
-        self.qr_lbl.set_width(25)
+        self.qr_lbl.set_width(TWO_LETTER_SYMBOLD_WIDTH)
 
         self.usb_lbl = lv.label(self)
         self.usb_lbl.set_text("")
-        self.usb_lbl.set_width(28)
+        self.usb_lbl.set_width(THREE_LETTER_SYMBOLD_WIDTH)
 
         self.sd_lbl = lv.label(self)
         self.sd_lbl.set_text("")
-        self.sd_lbl.set_width(25)
+        self.sd_lbl.set_width(TWO_LETTER_SYMBOLD_WIDTH)
 
         self.smartcard_lbl = lv.label(self)
         self.smartcard_lbl.set_text("")
-        self.smartcard_lbl.set_width(25)
+        self.smartcard_lbl.set_width(TWO_LETTER_SYMBOLD_WIDTH)
 
         # spacer to push the following content to the right
         self._spacer = lv.obj(self)
@@ -87,7 +92,7 @@ class StatusBar(lv.obj):
         # Language indicator (TODO: make a selector)
         self.lang_lbl = lv.label(self)
         self.lang_lbl.set_text("")
-        self.lang_lbl.set_width(30)        
+        self.lang_lbl.set_width(THREE_LETTER_SYMBOLD_WIDTH)        
 
         # Apply a smaller font to all labels in the status bar
         self.font = lv.font_montserrat_12
@@ -95,6 +100,7 @@ class StatusBar(lv.obj):
             self.batt_lbl,
             self.wallet_name_lbl,
             self.wallet_type_lbl,
+            self.pp_lbl,
             self.net_lbl,
             self.lang_lbl,
             self.qr_lbl,
@@ -142,9 +148,15 @@ class StatusBar(lv.obj):
             typ = "MuSig" if w.isMultiSig else "SiSig"
             self.wallet_name_lbl.set_text(self._truncate(name, 8))
             self.wallet_type_lbl.set_text(self._truncate(typ, 5))
+            # show PP indicator if wallet reports a passphrase configured
+            if state.active_passphrase is not None:
+                self.pp_lbl.set_text("PP")
+            else:
+                self.pp_lbl.set_text("")
         else:
             self.wallet_name_lbl.set_text("")
             self.wallet_type_lbl.set_text("")
+            self.pp_lbl.set_text("")
 
         # net
         self.net_lbl.set_text(self._truncate(state.net or "", 4))
@@ -152,11 +164,32 @@ class StatusBar(lv.obj):
         # language
         self.lang_lbl.set_text(self._truncate(state.language or "", 3))
 
-        # peripherals
-        self.qr_lbl.set_text("QR" if state.enabledQR and state.hasQR else "")
+        # peripherals (if feature is enabled, show lower case; if enabled and available: show uppercase)
+        if state.hasQR:
+            if state.enabledQR:
+                self.qr_lbl.set_text("QR")
+            else:
+                self.qr_lbl.set_text("qr")
+        else:
+            self.qr_lbl.set_text("")
+
         self.usb_lbl.set_text("USB" if state.enabledUSB else "")
-        self.sd_lbl.set_text("SD" if state.enabledSD else "")
-        self.smartcard_lbl.set_text("SC" if state.enabledSmartCard else "")
+
+        if state.enabledSD:
+            if state.hasSD:
+                self.sd_lbl.set_text("SD")
+            else:
+                self.sd_lbl.set_text("sd")  
+        else:
+            self.sd_lbl.set_text("")
+
+        if state.enabledSmartCard:
+            if state.hasSmartCard:
+                self.smartcard_lbl.set_text("SC")
+            else:
+                self.smartcard_lbl.set_text("sc")  
+        else:
+            self.smartcard_lbl.set_text("") 
 
     # end refresh
 
