@@ -10,7 +10,7 @@ def WalletMenu(parent, *args, **kwargs):
     menu_items.append(("Explore", None))
     menu_items.append(("View Addresses", "view_addresses"))
     if (state and not state.active_wallet is None and state.active_wallet.isMultiSig):
-        menu_items.append(("View Signer", "view_signers"))
+        menu_items.append(("View Signers", "view_signers"))
 
     menu_items.append(("Manage", None))
     if (state and not state.active_wallet is None and not state.active_wallet.isMultiSig):
