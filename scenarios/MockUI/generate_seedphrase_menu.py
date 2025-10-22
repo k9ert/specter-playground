@@ -36,6 +36,18 @@ class GenerateSeedMenu(GenericMenu):
         self.name_ta.set_text("Wallet" + str(urandom.randint(1, 10)) )
         self.name_ta.set_width(lv.pct(60))
         self.name_ta.set_height(40)
+        # Make the textarea clickable and attach an on-screen keyboard so it
+        # can be edited on touch/GUI environments. Use attribute checks rather
+        # than try/except to avoid swallowing real errors.
+        self.name_ta.add_flag(lv.obj.FLAG.CLICKABLE)
+
+        # Create an on-screen keyboard and keep it
+        # hidden until the textarea is clicked.
+        self._kb = lv.keyboard(self)
+        self._kb.add_flag(lv.obj.FLAG.HIDDEN)
+        # associate keyboard with textarea and show it on click
+        self._kb.set_textarea(self.name_ta)
+        self.name_ta.add_event_cb(self._open_keyboard, lv.EVENT.CLICKED, None)
   
 
         # MultiSig row: [SingleSig] [switch] [MultiSig]
@@ -105,6 +117,17 @@ class GenerateSeedMenu(GenericMenu):
         self.create_lbl.set_text("Create")
         self.create_lbl.center()
         self.create_btn.add_event_cb(lambda e: self._on_create(e), lv.EVENT.CLICKED, None)
+
+    def _open_keyboard(self, e):
+        """Show the on-screen keyboard and attach it to the textarea."""
+        if e.get_code() != lv.EVENT.CLICKED:
+            return
+
+        # ensure keyboard targets the textarea
+        self._kb.set_textarea(self.name_ta)
+
+        # make keyboard visible if the binding uses flags
+        self._kb.remove_flag(lv.obj.FLAG.HIDDEN)
 
     def _generate_dummy_xpub(self):
         try:

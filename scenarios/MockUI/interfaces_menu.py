@@ -80,9 +80,7 @@ class InterfacesMenu(lv.obj):
             sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
 
             # Set initial state from specter_state (if present)
-            enabled = False
-            if self.state and hasattr(self.state, state_attr):
-                enabled = bool(getattr(self.state, state_attr))
+            enabled = bool(getattr(self.state, state_attr))
             if enabled:
                 #sw.on(lv.ANIM.OFF)
                 sw.add_state(lv.STATE.CHECKED)
