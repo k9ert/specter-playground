@@ -45,6 +45,7 @@ class SpecterState:
 
         # misc
         self.language = "eng"
+        self.fw_version = "1.0"
 
     # convenience helpers
     def register_wallet(self, wallet):

@@ -11,5 +11,7 @@ from .device_menu import DeviceMenu
 from .seedphrase_menu import SeedPhraseMenu
 from .security_menu import SecurityMenu
 from .interfaces_menu import InterfacesMenu
+from .backups_menu import BackupsMenu
+from .firmware_menu import FirmwareMenu
 
-__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState", "StatusBar", "SeedPhraseMenu", "SecurityMenu", "InterfacesMenu"]
+__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState", "StatusBar", "SeedPhraseMenu", "SecurityMenu", "InterfacesMenu", "BackupsMenu", "FirmwareMenu"]

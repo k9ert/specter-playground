@@ -3,7 +3,7 @@ import lvgl as lv
 import utime as time
 
 
-from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu
+from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu, BackupsMenu, FirmwareMenu
 
 
 display.init()
@@ -71,6 +71,10 @@ class NavigationController(lv.obj):
             self.current_screen = WalletMenu(self)
         elif current == "manage_device":
             self.current_screen = DeviceMenu(self)
+        elif current == "manage_backups":
+            self.current_screen = BackupsMenu(self)
+        elif current == "manage_firmware":
+            self.current_screen = FirmwareMenu(self)
         elif current == "manage_security":
             self.current_screen = SecurityMenu(self)
         elif current == "interfaces":
