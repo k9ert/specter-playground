@@ -164,7 +164,10 @@ class StatusBar(lv.obj):
         # language
         self.lang_lbl.set_text(self._truncate(state.language or "", 3))
 
-        # peripherals (if feature is enabled, show lower case; if enabled and available: show uppercase)
+        # peripherals
+        # if feature is physically not present (hasXY = False: show nothing)
+        # if feature is present and only can be enabled (USB+QR): show lower case when disabled and upper case when enabled
+        # if feature is present and can be enabled and detected (SD + SmartCard): show lower case when enabled and upper case when also detected
         if state.hasQR:
             if state.enabledQR:
                 self.qr_lbl.set_text("QR")
@@ -173,18 +176,24 @@ class StatusBar(lv.obj):
         else:
             self.qr_lbl.set_text("")
 
-        self.usb_lbl.set_text("USB" if state.enabledUSB else "")
+        if state.hasUSB:
+            if state.enabledUSB:
+                self.usb_lbl.set_text("USB")
+            else:
+                self.usb_lbl.set_text("usb")
+        else:
+            self.usb_lbl.set_text("")
 
-        if state.enabledSD:
-            if state.hasSD:
+        if state.hasSD and state.enabledSD:
+            if state.detectedSD:
                 self.sd_lbl.set_text("SD")
             else:
-                self.sd_lbl.set_text("sd")  
+                self.sd_lbl.set_text("sd")
         else:
             self.sd_lbl.set_text("")
 
-        if state.enabledSmartCard:
-            if state.hasSmartCard:
+        if state.hasSmartCard and state.enabledSmartCard:
+            if state.detectedSmartCard:
                 self.smartcard_lbl.set_text("SC")
             else:
                 self.smartcard_lbl.set_text("sc")  

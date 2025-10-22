@@ -1,5 +1,5 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT, PAD_SIZE
+from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MENU_PCT, PAD_SIZE, SWITCH_HEIGHT
 
 
 class InterfacesMenu(lv.obj):
@@ -49,17 +49,22 @@ class InterfacesMenu(lv.obj):
         self.container.align_to(self.title, lv.ALIGN.OUT_BOTTOM_MID, 0, PAD_SIZE)
 
         # Build interface rows: list of tuples (label_text, state_attr)
-        rows = [
-            ("QR Scanner", "enabledQR"),
-            ("USB", "enabledUSB"),
-            ("SD Card", "enabledSD"),
-            ("SmartCard", "enabledSmartCard"),
-        ]
+        rows = []
+        if self.state.hasQR:
+            rows.append(("QR Scanner", "enabledQR"))
+        if self.state.hasUSB:
+            rows.append(("USB", "enabledUSB"))
+        if self.state.hasSD:
+            rows.append(("SD Card", "enabledSD"))
+        if self.state.hasSmartCard:
+            rows.append(("SmartCard", "enabledSmartCard"))
 
         for text, state_attr in rows:
             row = lv.obj(self.container)
+            row.set_style_border_width(0, 0)
+
             row.set_width(lv.pct(100))
-            row.set_height(BTN_HEIGHT)
+            row.set_height(SWITCH_HEIGHT+2)
             row.set_layout(lv.LAYOUT.FLEX)
             row.set_flex_flow(lv.FLEX_FLOW.ROW)
             row.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
@@ -72,7 +77,7 @@ class InterfacesMenu(lv.obj):
 
             # Right toggle button
             sw = lv.switch(row)
-            sw.set_size(60, 30)
+            sw.set_size(SWITCH_HEIGHT, 30)
 
             # Set initial state from specter_state (if present)
             enabled = False

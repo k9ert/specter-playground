@@ -14,14 +14,14 @@ def DeviceMenu(parent, *args, **kwargs):
         ("Enable/Disable Interfaces", "interfaces"),
         ("Manage Sounds", "sounds")]
 
-    if ((state and state.enabledSmartCard and state.hasSmartCard) or
-        (state and state.enabledSD and state.hasSD)):
+    if ((state and state.hasSmartCard and state.enabledSmartCard and state.detectedSmartCard) or
+        (state and state.hasSD and state.enabledSD and state.detectedSD)):
         menu_items.append(("Manage Storage", None))
-        if (state and state.enabledSmartCard and state.hasSmartCard):
+        if (state and state.hasSmartCard and state.enabledSmartCard and state.detectedSmartCard):
             menu_items.append(("Manage SmartCard", "smartcard"))
-        if (state and state.enabledSD and state.hasSD):
-            menu_items.append(("Manage SD Card", "sdcard")) 
-    
+        if (state and state.hasSD and state.enabledSD and state.detectedSD):
+            menu_items.append(("Manage SD Card", "sdcard"))
+
     menu_items += [
         ("Dangerzone", None),
         ("Wipe Device", "wipe_device")

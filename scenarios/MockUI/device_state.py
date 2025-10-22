@@ -15,16 +15,16 @@ class SpecterState:
     """
 
     def __init__(self):
-        # load/availability
+        # seedphrase related
         self.seed_loaded = False
         self.active_wallet = None
         self.registered_wallets = []
+        self.active_passphrase = None
 
         # device features
         self.has_battery = False
-        # battery percentage (optional)
         self.battery_pct = None
-        self.active_passphrase = None
+        
         self.is_locked = False
         self.pin = None
 
@@ -34,14 +34,20 @@ class SpecterState:
         # peripherals
         self.hasQR = False
         self.enabledQR = False
+
         self.hasSD = False
         self.enabledSD = False
+        self.detectedSD = False
+
+        self.hasUSB = True
         self.enabledUSB = False
+
         self.hasSmartCard = False
         self.enabledSmartCard = False
+        self.detectedSmartCard = False
 
         # misc
-        self.language = None
+        self.language = "eng"
 
     # convenience helpers
     def register_wallet(self, wallet):
@@ -62,18 +68,3 @@ class SpecterState:
             self.is_locked = False
             return True
         return False
-
-    def set_pin(self, pin):
-        self.pin = pin
-
-    def enable_qr(self, enable):
-        self.enabledQR = enable
-
-    def enable_sd(self, enable):
-        self.enabledSD = enable
-
-    def enable_smartcard(self, enable):
-        self.enabledSmartCard = enable
-
-    def set_language(self, lang):
-        self.language = lang

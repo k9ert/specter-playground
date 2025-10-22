@@ -93,15 +93,23 @@ singlesig_wallet = Wallet("MyWallet", xpub="xpub6CUGRUon", isMultiSig=False)
 specter_state = SpecterState()
 specter_state.has_battery = True
 specter_state.battery_pct = 100
+
 specter_state.hasQR = True
 specter_state.enabledQR = True
-specter_state.hasSD = False
-specter_state.enabledSD = True
+
+specter_state.hasSD = True
+specter_state.enabledSD = False
+specter_state.detectedSD = True
+
 specter_state.hasSmartCard = True
 specter_state.enabledSmartCard = False
+specter_state.detectedSmartCard = True
+
 specter_state.enabledUSB = True
+
 specter_state.pin = "21"
 specter_state.language = "eng"
+
 specter_state.registered_wallets.append(singlesig_wallet)
 specter_state.set_active_wallet(singlesig_wallet)
 specter_state.seed_loaded = True
