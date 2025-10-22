@@ -103,6 +103,34 @@ class StatusBar(lv.obj):
         for lbl in labels:
             lbl.set_style_text_font(self.font, 0)
 
+        # Make some labels clickable to navigate quickly
+        # Clicking wallet-related labels opens the wallet management menu
+        wallet_labels = [
+            self.wallet_name_lbl,
+            self.wallet_type_lbl,
+            self.pp_lbl,
+            self.net_lbl,
+        ]
+
+        for lbl in wallet_labels:
+            #make clickable
+            lbl.add_flag(lv.obj.FLAG.CLICKABLE)
+            if lbl == self.wallet_name_lbl:
+                lbl.add_event_cb(self.wallet_name_lbl_clicked, lv.EVENT.CLICKED, None)
+            else:
+                lbl.add_event_cb(self.wallet_config_lbl_clicked, lv.EVENT.CLICKED, None)
+
+        # Clicking peripheral indicators opens the interfaces menu
+        peripheral_labels = [
+            self.qr_lbl,
+            self.usb_lbl,
+            self.sd_lbl,
+            self.smartcard_lbl,
+        ]
+        for lbl in peripheral_labels:
+            lbl.add_flag(lv.obj.FLAG.CLICKABLE)
+            lbl.add_event_cb(self.peripheral_lbl_clicked, lv.EVENT.CLICKED, None)
+
     def power_cb(self, e):
         if e.get_code() == lv.EVENT.CLICKED:
             if self.parent.specter_state.battery_pct is None:
@@ -122,6 +150,29 @@ class StatusBar(lv.obj):
                 self.parent.specter_state.lock()
                 # show_menu will detect is_locked and show the locked screen
                 self.parent.show_menu(None)
+
+    def wallet_name_lbl_clicked(self, e):
+        if e.get_code() == lv.EVENT.CLICKED:
+            if self.parent.specter_state.active_wallet is None:
+                if self.parent.ui_state.current_menu_id != "add_wallet":
+                    self.parent.show_menu("add_wallet")
+            else:
+                if self.parent.ui_state.current_menu_id != "change_wallet":
+                    self.parent.show_menu("change_wallet")
+
+    def wallet_config_lbl_clicked(self, e):
+        if e.get_code() == lv.EVENT.CLICKED:
+            if self.parent.specter_state.active_wallet is None:
+                if self.parent.ui_state.current_menu_id != "add_wallet":
+                    self.parent.show_menu("add_wallet")
+            else:
+                if self.parent.ui_state.current_menu_id != "manage_wallet":
+                    self.parent.show_menu("manage_wallet")
+
+    def peripheral_lbl_clicked(self, e):
+        if e.get_code() == lv.EVENT.CLICKED:
+            if self.parent.ui_state.current_menu_id != "interfaces":
+                self.parent.show_menu("interfaces")
 
     def refresh(self, state):
         """Update visual elements from a SpecterState-like object."""
