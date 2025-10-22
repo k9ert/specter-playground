@@ -15,5 +15,6 @@ from .backups_menu import BackupsMenu
 from .firmware_menu import FirmwareMenu
 from .connect_wallets_menu import ConnectWalletsMenu
 from .change_wallet_menu import ChangeWalletMenu
+from .add_wallet_menu import AddWalletMenu
 
-__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState", "StatusBar", "SeedPhraseMenu", "SecurityMenu", "InterfacesMenu", "BackupsMenu", "FirmwareMenu", "ConnectWalletsMenu", "ChangeWalletMenu"]
+__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState", "StatusBar", "SeedPhraseMenu", "SecurityMenu", "InterfacesMenu", "BackupsMenu", "FirmwareMenu", "ConnectWalletsMenu", "ChangeWalletMenu", "AddWalletMenu"]

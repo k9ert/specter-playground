@@ -3,7 +3,7 @@ import lvgl as lv
 import utime as time
 
 
-from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu, BackupsMenu, FirmwareMenu, ConnectWalletsMenu, ChangeWalletMenu
+from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu, BackupsMenu, FirmwareMenu, ConnectWalletsMenu, ChangeWalletMenu, AddWalletMenu
 
 
 display.init()
@@ -79,6 +79,8 @@ class NavigationController(lv.obj):
             self.current_screen = ConnectWalletsMenu(self)
         elif current == "change_wallet":
             self.current_screen = ChangeWalletMenu(self)
+        elif current == "add_wallet":
+            self.current_screen = AddWalletMenu(self)
         elif current == "manage_security":
             self.current_screen = SecurityMenu(self)
         elif current == "interfaces":
@@ -119,9 +121,9 @@ specter_state.enabledUSB = True
 specter_state.pin = "21"
 specter_state.language = "eng"
 
-specter_state.registered_wallets.append(singlesig_wallet)
-specter_state.registered_wallets.append(multisig_wallet)
-specter_state.set_active_wallet(singlesig_wallet)
+#specter_state.registered_wallets.append(singlesig_wallet)
+#specter_state.registered_wallets.append(multisig_wallet)
+#specter_state.set_active_wallet(singlesig_wallet)
 specter_state.seed_loaded = True
 specter_state.active_passphrase = "my_secret"
 
