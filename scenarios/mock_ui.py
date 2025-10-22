@@ -3,7 +3,7 @@ import lvgl as lv
 import utime as time
 
 
-from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu, BackupsMenu, FirmwareMenu, ConnectWalletsMenu, ChangeWalletMenu, AddWalletMenu
+from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu, BackupsMenu, FirmwareMenu, ConnectWalletsMenu, ChangeWalletMenu, AddWalletMenu, LockedMenu
 
 
 display.init()
@@ -63,6 +63,14 @@ class NavigationController(lv.obj):
             # when moving up/back, pop to previous menu
             self.ui_state.pop_menu()
 
+        # If the device is locked, always show the locked screen
+        if self.specter_state.is_locked:
+            # ensure the ui history is cleared when locking
+            self.ui_state.clear_history()
+            self.current_screen = LockedMenu(self)
+            self.status_bar.refresh(self.specter_state)
+            return
+
         # Create new screen (micropython doesn't support match/case)
         current = self.ui_state.current_menu_id
         if current == "main":
@@ -120,6 +128,8 @@ specter_state.enabledUSB = True
 
 specter_state.pin = "21"
 specter_state.language = "eng"
+
+specter_state.is_locked = True
 
 #specter_state.registered_wallets.append(singlesig_wallet)
 #specter_state.registered_wallets.append(multisig_wallet)

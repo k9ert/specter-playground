@@ -115,81 +115,100 @@ class StatusBar(lv.obj):
     def lock_cb(self, e):
         if e.get_code() == lv.EVENT.CLICKED:
             if self.parent.specter_state.is_locked:
-                self.parent.specter_state.unlock()
+                # unlocking should be handled by the locked screen's PIN flow
+                return
             else:
+                # lock the device and force NavigationController to show the locked screen
                 self.parent.specter_state.lock()
+                # show_menu will detect is_locked and show the locked screen
+                self.parent.show_menu(None)
 
     def refresh(self, state):
         """Update visual elements from a SpecterState-like object."""
-        # battery
+        # determine locked state once
+        locked = state.is_locked
+
+        # battery (shared between locked/unlocked)
         if state.has_battery:
-            # show simple percent if available
             perc = state.battery_pct
             if perc is not None:
-                # show as 'B:34%'
                 self.batt_lbl.set_text("B:%d%%" % int(perc))
             else:
                 self.batt_lbl.set_text("B:")
-
-        # wallet name and type separated into two labels
-        if state.active_wallet is not None:
-            w = state.active_wallet
-            name = getattr(w, "name", "") or ""
-            typ = "MuSig" if w.isMultiSig else "SiSig"
-            self.wallet_name_lbl.set_text(self._truncate(name, 8))
-            self.wallet_type_lbl.set_text(self._truncate(typ, 5))
-            # show PP indicator if wallet reports a passphrase configured
-            if state.active_passphrase is not None:
-                self.pp_lbl.set_text("PP")
-            else:
-                self.pp_lbl.set_text("")
-            # net
-            self.net_lbl.set_text(self._truncate(w.net or "", 4))
         else:
+            self.batt_lbl.set_text("")
+
+        # language is always shown even when locked
+        self.lang_lbl.set_text(self._truncate(state.language or "", 3))
+
+        # Now set elements that differ between locked/unlocked
+        if locked:
+            # hide everything else which should not be visible when locked
             self.wallet_name_lbl.set_text("")
             self.wallet_type_lbl.set_text("")
             self.pp_lbl.set_text("")
             self.net_lbl.set_text("")
-
-
-        # language
-        self.lang_lbl.set_text(self._truncate(state.language or "", 3))
-
-        # peripherals
-        # if feature is physically not present (hasXY = False: show nothing)
-        # if feature is present and only can be enabled (USB+QR): show lower case when disabled and upper case when enabled
-        # if feature is present and can be enabled and detected (SD + SmartCard): show lower case when enabled and upper case when also detected
-        if state.hasQR:
-            if state.enabledQR:
-                self.qr_lbl.set_text("QR")
-            else:
-                self.qr_lbl.set_text("qr")
-        else:
             self.qr_lbl.set_text("")
-
-        if state.hasUSB:
-            if state.enabledUSB:
-                self.usb_lbl.set_text("USB")
-            else:
-                self.usb_lbl.set_text("usb")
-        else:
             self.usb_lbl.set_text("")
-
-        if state.hasSD and state.enabledSD:
-            if state.detectedSD:
-                self.sd_lbl.set_text("SD")
-            else:
-                self.sd_lbl.set_text("sd")
-        else:
             self.sd_lbl.set_text("")
-
-        if state.hasSmartCard and state.enabledSmartCard:
-            if state.detectedSmartCard:
-                self.smartcard_lbl.set_text("SC")
-            else:
-                self.smartcard_lbl.set_text("sc")  
+            self.smartcard_lbl.set_text("")
         else:
-            self.smartcard_lbl.set_text("") 
+            # wallet name and type separated into two labels (unlocked only)
+            if state.active_wallet is not None:
+                w = state.active_wallet
+                name = getattr(w, "name", "") or ""
+                typ = "MuSig" if w.isMultiSig else "SiSig"
+                self.wallet_name_lbl.set_text(self._truncate(name, 8))
+                self.wallet_type_lbl.set_text(self._truncate(typ, 5))
+                # show PP indicator if wallet reports a passphrase configured
+                if state.active_passphrase is not None:
+                    self.pp_lbl.set_text("PP")
+                else:
+                    self.pp_lbl.set_text("")
+                # net
+                self.net_lbl.set_text(self._truncate(w.net or "", 4))
+            else:
+                self.wallet_name_lbl.set_text("")
+                self.wallet_type_lbl.set_text("")
+                self.pp_lbl.set_text("")
+                self.net_lbl.set_text("")
+
+
+            # peripherals
+            # if feature is physically not present (hasXY = False: show nothing)
+            # if feature is present and only can be enabled (USB+QR): show lower case when disabled and upper case when enabled
+            # if feature is present and can be enabled and detected (SD + SmartCard): show lower case when enabled and upper case when also detected
+            if state.hasQR:
+                if state.enabledQR:
+                    self.qr_lbl.set_text("QR")
+                else:
+                    self.qr_lbl.set_text("qr")
+            else:
+                self.qr_lbl.set_text("")
+
+            if state.hasUSB:
+                if state.enabledUSB:
+                    self.usb_lbl.set_text("USB")
+                else:
+                    self.usb_lbl.set_text("usb")
+            else:
+                self.usb_lbl.set_text("")
+
+            if state.hasSD and state.enabledSD:
+                if state.detectedSD:
+                    self.sd_lbl.set_text("SD")
+                else:
+                    self.sd_lbl.set_text("sd")
+            else:
+                self.sd_lbl.set_text("")
+
+            if state.hasSmartCard and state.enabledSmartCard:
+                if state.detectedSmartCard:
+                    self.smartcard_lbl.set_text("SC")
+                else:
+                    self.smartcard_lbl.set_text("sc")  
+            else:
+                self.smartcard_lbl.set_text("") 
 
     # end refresh
 
