@@ -28,7 +28,7 @@ def SeedPhraseMenu(parent, *args, **kwargs):
     menu_items.append(("all attached storage", "clear_all_storage"))
 
     # Derive new via BIP-85
-    menu_items.append(("Avanced Features", None))
+    menu_items.append(("Advanced Features", None))
     menu_items.append(("Derive new via BIP-85", "derive_bip85"))
 
     return GenericMenu("manage_seedphrase", "Manage Seedphrase", menu_items, parent, *args, **kwargs)
