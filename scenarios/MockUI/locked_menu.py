@@ -7,7 +7,8 @@ class LockedMenu(GenericMenu):
 
     def __init__(self, parent, *args, **kwargs):
         # parent is the NavigationController
-        super().__init__("locked", "Device Locked", [], parent, *args, **kwargs)
+        title = "Device Locked, Firmware version " + str(parent.specter_state.fw_version)
+        super().__init__("locked", title, [], parent, *args, **kwargs)
 
         self.parent = parent
         self.pin_buf = ""
