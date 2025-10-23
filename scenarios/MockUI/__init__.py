@@ -18,5 +18,28 @@ from .change_wallet_menu import ChangeWalletMenu
 from .add_wallet_menu import AddWalletMenu
 from .locked_menu import LockedMenu
 from .generate_seedphrase_menu import GenerateSeedMenu
+from .storage_menu import StorageMenu
 
-__all__ = ["BTN_HEIGHT", "BTN_WIDTH", "MainMenu", "WalletMenu", "DeviceMenu", "SpecterState", "Wallet", "ActionScreen", "UIState", "StatusBar", "SeedPhraseMenu", "SecurityMenu", "InterfacesMenu", "BackupsMenu", "FirmwareMenu", "ConnectWalletsMenu", "ChangeWalletMenu", "AddWalletMenu", "LockedMenu", "GenerateSeedMenu"]
+__all__ = [
+            "BTN_HEIGHT",
+            "BTN_WIDTH",
+            "MainMenu",
+            "WalletMenu",
+            "DeviceMenu",
+            "SpecterState",
+            "Wallet",
+            "ActionScreen",
+            "UIState",
+            "StatusBar",
+            "SeedPhraseMenu",
+            "SecurityMenu",
+            "InterfacesMenu",
+            "BackupsMenu",
+            "FirmwareMenu",
+            "ConnectWalletsMenu",
+            "ChangeWalletMenu",
+            "AddWalletMenu",
+            "LockedMenu",
+            "GenerateSeedMenu",
+            "StorageMenu"
+        ]

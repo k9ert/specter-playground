@@ -19,11 +19,14 @@ def MainMenu(parent, *args, **kwargs):
         if (state and state.active_wallet and not state.active_wallet.isMultiSig):
             menu_items.append(("Sign Message", "sign_message"))
 
-    menu_items.append(("Manage Specter", None))
+    menu_items.append(("Manage Settings", None))
     if (state and not state.active_wallet is None):
         menu_items.append(("Manage Wallet", "manage_wallet"))
 
-    menu_items.append(("Manage Device/Storage", "manage_device"))
+    menu_items.append(("Manage Device", "manage_device"))
+    # expose a dedicated Manage Storage entry when any storage device is present
+    if state and ((state.hasSD and state.enabledSD and state.detectedSD) or (state.hasSmartCard and state.enabledSmartCard and state.detectedSmartCard)):
+        menu_items.append(("Manage Storage", "manage_storage"))
     if state.registered_wallets and len(state.registered_wallets) > 0:
         menu_items.append(("Change/Add Wallet", "change_wallet"))
     else:
