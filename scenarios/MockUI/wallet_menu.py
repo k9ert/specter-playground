@@ -25,7 +25,7 @@ def WalletMenu(parent, *args, **kwargs):
         ("Rename Wallet", "rename_wallet"),
         ("Delete Wallet", "delete_wallet"),
         ("Connect/Export", None),
-        ("Connect SW Wallet", "connect_sw_wallet")
+        ("Connect SW Wallet", "connect_sw_wallet"),
         ("Export Data", "export_wallet")
     ]
 
