@@ -6,7 +6,7 @@ def SecurityMenu(parent, *args, **kwargs):
 
     menu_items = [
         ("Change PIN", "change_pin"),
-        ("Self-Test", "self_test"),
+        ("Run Self-Test", "self_test"),
         ("Set allowed PIN retries", "set_allowed_pin_retries"),
         ("Set exceeded PIN retries action", "set_exceeded_pin_action"),
         ("Set duress PIN", "set_duress_pin"),
