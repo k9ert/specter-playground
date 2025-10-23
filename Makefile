@@ -67,7 +67,7 @@ unix: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/unix
 		CFLAGS_EXTRA='-DMP_CONFIGFILE="<mpconfigport_specter.h>"' && \
 	cp $(MPY_DIR)/ports/unix/build-standard/micropython $(TARGET_DIR)/micropython_unix
 
-SCRIPT ?= mock_structure.py
+SCRIPT ?= mock_ui.py
 
 simulate: unix
 	$(TARGET_DIR)/micropython_unix scenarios/$(SCRIPT)
