@@ -19,6 +19,7 @@ from .add_wallet_menu import AddWalletMenu
 from .locked_menu import LockedMenu
 from .generate_seedphrase_menu import GenerateSeedMenu
 from .storage_menu import StorageMenu
+from .passphrase_menu import PassphraseMenu
 
 __all__ = [
             "BTN_HEIGHT",
@@ -42,4 +43,5 @@ __all__ = [
             "LockedMenu",
             "GenerateSeedMenu",
             "StorageMenu"
+            ,"PassphraseMenu"
         ]
