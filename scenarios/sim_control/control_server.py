@@ -87,6 +87,8 @@ class ControlServer:
             return self._cmd_set_state(cmd)
         elif action == "ping":
             return {"ok": True, "pong": True}
+        elif action == "screenshot":
+            return self._cmd_screenshot()
         else:
             return {"ok": False, "error": "Unknown action: " + str(action)}
 
@@ -185,3 +187,40 @@ class ControlServer:
 
         setattr(ss, attr, value)
         return {"ok": True, "set": {attr: value}}
+
+    def _cmd_screenshot(self):
+        """Capture screenshot and return as base64."""
+        import ubinascii
+        import gc
+
+        try:
+            screen = lv.screen_active()
+            if not screen:
+                return {"ok": False, "error": "no active screen"}
+
+            w = screen.get_width()
+            h = screen.get_height()
+            bpp = 4  # XRGB8888 = 4 bytes per pixel
+            stride = w * bpp
+            buf_size = stride * h
+
+            gc.collect()
+
+            # Allocate buffer in Python
+            buf = bytearray(buf_size)
+
+            # Create image descriptor
+            dsc = lv.image_dsc_t()
+
+            # Use snapshot_take_to_buf with our buffer
+            result = lv.snapshot_take_to_buf(screen, lv.COLOR_FORMAT.XRGB8888, dsc, buf, buf_size)
+
+            if result != 0:
+                return {"ok": False, "error": f"snapshot_take_to_buf failed: {result}"}
+
+            # Encode to base64
+            b64 = ubinascii.b2a_base64(buf).decode().strip()
+
+            return {"ok": True, "width": w, "height": h, "format": "XRGB8888", "data": b64}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
