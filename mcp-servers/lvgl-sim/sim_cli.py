@@ -6,10 +6,12 @@
     .venv/bin/python sim_cli.py click "Manage Device"
     .venv/bin/python sim_cli.py labels
     .venv/bin/python sim_cli.py set seed_loaded true
+    .venv/bin/python sim_cli.py screenshot [filename.png]
 """
 import socket
 import json
 import sys
+import base64
 
 
 def send(cmd):
@@ -91,6 +93,41 @@ def main():
 
     elif cmd == 'tree':
         print(json.dumps(send({'action': 'widget_tree'}), indent=2))
+
+    elif cmd == 'screenshot':
+        from PIL import Image
+
+        filename = sys.argv[2] if len(sys.argv) > 2 else '/tmp/sim_screenshot.png'
+        r = send({'action': 'screenshot'})
+
+        if not r.get('ok'):
+            print(f"Error: {r.get('error', 'unknown')}")
+            return
+
+        # Decode base64 pixel data
+        raw = base64.b64decode(r['data'])
+        w, h = r['width'], r['height']
+        fmt = r.get('format', 'XRGB8888')
+
+        # Convert to PIL Image based on format
+        if fmt == 'XRGB8888':
+            # XRGB8888: X R G B (4 bytes) - X is padding
+            img = Image.frombytes('RGBX', (w, h), raw)
+            img = img.convert('RGB')
+        elif fmt == 'RGB888':
+            img = Image.frombytes('RGB', (w, h), raw)
+        else:
+            # ARGB8888: rearrange to RGBA
+            pixels = bytearray(len(raw))
+            for i in range(0, len(raw), 4):
+                pixels[i] = raw[i + 1]      # R
+                pixels[i + 1] = raw[i + 2]  # G
+                pixels[i + 2] = raw[i + 3]  # B
+                pixels[i + 3] = raw[i]      # A
+            img = Image.frombytes('RGBA', (w, h), bytes(pixels))
+
+        img.save(filename, 'PNG')
+        print(f"Screenshot saved to {filename} ({w}x{h})")
 
     else:
         print(f"Unknown command: {cmd}")
