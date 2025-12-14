@@ -89,8 +89,20 @@ class ControlServer:
             return {"ok": True, "pong": True}
         elif action == "screenshot":
             return self._cmd_screenshot()
+        elif action == "navigate":
+            return self._cmd_navigate(cmd)
         else:
             return {"ok": False, "error": "Unknown action: " + str(action)}
+
+    def _cmd_navigate(self, cmd):
+        """Navigate to a menu or back."""
+        target = cmd.get("target")
+        if target == "back" or target is None:
+            self.nav.show_menu(None)
+            return {"ok": True, "navigated": "back"}
+        else:
+            self.nav.show_menu(target)
+            return {"ok": True, "navigated": target}
 
     def _cmd_widget_tree(self):
         """Return full widget tree."""

@@ -94,11 +94,28 @@ def main():
     elif cmd == 'tree':
         print(json.dumps(send({'action': 'widget_tree'}), indent=2))
 
+    elif cmd == 'back':
+        send({'action': 'navigate', 'target': 'back'})
+        r = send({'action': 'get_state'})
+        print(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
+
+    elif cmd == 'goto':
+        if len(sys.argv) < 3:
+            print('Usage: goto <menu_id>')
+            return
+        target = sys.argv[2]
+        send({'action': 'navigate', 'target': target})
+        r = send({'action': 'get_state'})
+        print(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
+
     elif cmd == 'screenshot':
         from PIL import Image
         import struct
+        import os
 
-        out_filename = sys.argv[2] if len(sys.argv) > 2 else '/tmp/sim_screenshot.png'
+        screenshot_dir = '/tmp/specter-playground_agent/screenshots'
+        os.makedirs(screenshot_dir, exist_ok=True)
+        out_filename = sys.argv[2] if len(sys.argv) > 2 else f'{screenshot_dir}/screenshot.png'
         r = send({'action': 'screenshot'})
 
         if not r.get('ok'):
@@ -133,6 +150,27 @@ def main():
         img = Image.frombytes('RGB', (w, h), bytes(pixels))
         img.save(out_filename, 'PNG')
         print(f"Screenshot saved to {out_filename} ({w}x{h})")
+
+    elif cmd == 'restart':
+        import subprocess
+        import os
+        # Kill existing simulator
+        subprocess.run(['pkill', '-f', 'micropython_unix.*mock_ui'], capture_output=True)
+        import time
+        time.sleep(1)
+        # Start new one
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        subprocess.Popen(
+            [f'{project_root}/bin/micropython_unix', f'{project_root}/scenarios/mock_ui.py', '--control'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        time.sleep(2)
+        # Verify
+        try:
+            r = send({'action': 'ping'})
+            print(f"Simulator restarted: {r}")
+        except:
+            print("Failed to restart simulator")
 
     else:
         print(f"Unknown command: {cmd}")
