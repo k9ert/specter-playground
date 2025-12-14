@@ -237,5 +237,92 @@ def restart():
         click.echo("Failed to restart simulator", err=True)
 
 
+def get_project_root():
+    """Get project root directory."""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+@cli.command()
+@click.argument('folder', required=False)
+@click.option('--max-depth', default=5, help='Maximum navigation depth')
+def explore(folder, max_depth):
+    """Recursively explore all screens and capture to folder.
+
+    Navigates through all menus, captures screenshot/labels/tree for each.
+    Creates subfolder structure matching menu hierarchy.
+
+    Default output: docs/MockUI/screens/
+    """
+    if not folder:
+        folder = os.path.join(get_project_root(), 'docs/MockUI/screens')
+
+    os.makedirs(folder, exist_ok=True)
+    visited = set()
+
+    def capture_screen(menu_id):
+        """Capture current screen."""
+        path = os.path.join(folder, menu_id)
+        os.makedirs(path, exist_ok=True)
+
+        result = save_screenshot(f'{path}/screenshot.png')
+        if result:
+            click.echo(f"  {menu_id}/screenshot.png ({result[0]}x{result[1]})")
+
+        lbls = get_labels()
+        with open(f'{path}/labels.txt', 'w') as f:
+            for label in lbls:
+                f.write(f"  {label}\n")
+
+        tree_data = send({'action': 'widget_tree'})
+        with open(f'{path}/tree.json', 'w') as f:
+            json.dump(tree_data, f, indent=2)
+
+        return lbls
+
+    def explore_menu(depth=0):
+        """Recursively explore current menu."""
+        if depth > max_depth:
+            return
+
+        state = get_state()
+        menu_id = state['ui']['current_menu_id']
+
+        if menu_id in visited:
+            return
+        visited.add(menu_id)
+
+        click.echo(f"Exploring: {menu_id} (depth {depth})")
+        labels = capture_screen(menu_id)
+
+        # Filter to likely menu items
+        menu_items = [l for l in labels if len(l) > 2 and not l.isdigit()
+                      and l not in ('eng', 'OK', 'Cancel', 'Back')
+                      and not l.endswith(':')]
+
+        for item in menu_items:
+            try:
+                send({'action': 'click', 'text': item})
+                new_state = get_state()
+                new_menu = new_state['ui']['current_menu_id']
+
+                if new_menu != menu_id and new_menu not in visited:
+                    explore_menu(depth + 1)
+
+                # Return to current menu
+                navigate('back')
+                back_state = get_state()
+                if back_state['ui']['current_menu_id'] != menu_id:
+                    navigate(menu_id)
+
+            except Exception as e:
+                click.echo(f"  Error exploring '{item}': {e}", err=True)
+
+    # Start from main
+    navigate('main')
+    explore_menu()
+
+    click.echo(f"\nExplored {len(visited)} screens to {folder}/")
+
+
 if __name__ == '__main__':
     cli()
