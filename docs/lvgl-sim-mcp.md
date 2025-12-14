@@ -46,6 +46,7 @@ Restart Claude Code to load the MCP server.
 | `click_widget` | Click widget by text label |
 | `get_state` | Get SpecterState + UIState |
 | `set_state` | Modify SpecterState attribute |
+| `screenshot` | Capture screenshot, returns file path |
 
 ## Usage Examples
 
@@ -73,6 +74,52 @@ get_state
 → ui.history = ["main"]
 ```
 
+## Screenshot
+
+The screenshot command writes raw RGB565 data directly to `/tmp/sim_screenshot.raw`, bypassing MicroPython's heap to avoid memory allocation failures.
+
+```
+screenshot
+→ {"ok": true, "width": 480, "height": 800, "format": "RGB565", "file": "/tmp/sim_screenshot.raw"}
+```
+
+The raw file can be converted to PNG using PIL (see sim_cli.py for implementation).
+
+### Technical Details
+
+Screenshots use `SDL_RenderReadPixels` in 32-row chunks to minimize memory:
+- C code reads RGBA from SDL renderer
+- Converts to RGB565 (2 bytes/pixel vs 4)
+- Writes directly to file via stdio
+- Never allocates large buffers in Python heap
+
+This solves the MicroPython memory limitation where `mp_obj_new_bytes` cannot allocate 768KB+ contiguous memory due to heap fragmentation.
+
+## CLI Tool (sim_cli.py)
+
+`mcp-servers/lvgl-sim/sim_cli.py` provides a command-line interface for manual testing:
+
+```bash
+cd mcp-servers/lvgl-sim
+
+# Basic commands
+.venv/bin/python sim_cli.py ping          # Test connection
+.venv/bin/python sim_cli.py state         # Show current state
+.venv/bin/python sim_cli.py labels        # List visible labels
+
+# Navigation
+.venv/bin/python sim_cli.py click "Manage Device"
+
+# State manipulation
+.venv/bin/python sim_cli.py set seed_loaded true
+
+# Screenshot (converts to PNG)
+.venv/bin/python sim_cli.py screenshot /tmp/screenshot.png
+
+# Full widget tree
+.venv/bin/python sim_cli.py tree
+```
+
 ## Manual Testing
 
 Run simulator with control mode:
@@ -87,6 +134,9 @@ echo '{"action":"ping"}' | nc 127.0.0.1 9876
 
 echo '{"action":"get_state"}' | nc 127.0.0.1 9876
 # → {"ok": true, "specter": {...}, "ui": {...}}
+
+echo '{"action":"screenshot"}' | nc 127.0.0.1 9876
+# → {"ok": true, "width": 480, "height": 800, "file": "/tmp/sim_screenshot.raw"}
 ```
 
 ## Protocol
