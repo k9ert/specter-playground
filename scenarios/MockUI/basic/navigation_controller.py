@@ -81,6 +81,7 @@ class NavigationController(lv.obj):
         if self.specter_state.is_locked:
             # ensure the ui history is cleared when locking
             self.ui_state.clear_history()
+            self.ui_state.current_menu_id = "locked"
             self.current_screen = LockedMenu(self)
             self.status_bar.refresh(self.specter_state)
             return
