@@ -80,3 +80,13 @@ See `docs/rag-setup.md` for setup.
 - MockUI in `scenarios/` is the **target design** - modern, clean
 - Old code in `specter-diy-src/` has **working logic** to reference
 - Goal: port functionality from old to new UI
+
+## Beads Workaround
+
+If `git checkout main` fails with "main is already checked out at .git/beads-worktrees/main", run:
+
+```bash
+rm -rf .git/beads-worktrees .git/worktrees
+```
+
+Known beads bug: https://github.com/steveyegge/beads/issues/510

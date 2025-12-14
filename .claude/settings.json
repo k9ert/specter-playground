@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bd:*)",
+      "Bash(python sim_cli.py:*)",
+      "Bash(.venv/bin/python sim_cli.py:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(.venv/bin/pytest:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "mcp__code-rag__search_codebase",
+      "Read(/tmp/specter-playground_agent/**)",
+      "Write(/tmp/specter-playground_agent/**)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "code-rag"
+  ]
+}
