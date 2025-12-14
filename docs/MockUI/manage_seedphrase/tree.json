@@ -1,0 +1,460 @@
+{
+  "tree": {
+    "type": "obj",
+    "x": 0,
+    "width": 480,
+    "height": 800,
+    "children": [
+      {
+        "type": "obj",
+        "x": 0,
+        "width": 480,
+        "height": 40,
+        "children": [
+          {
+            "type": "button",
+            "x": 7,
+            "width": 40,
+            "height": 30,
+            "children": [
+              {
+                "type": "label",
+                "x": 1,
+                "width": 12,
+                "height": 15,
+                "children": [],
+                "text": "\uf011",
+                "y": 0
+              }
+            ],
+            "text": null,
+            "y": 4
+          },
+          {
+            "type": "button",
+            "x": 55,
+            "width": 40,
+            "height": 30,
+            "children": [
+              {
+                "type": "image",
+                "x": -5,
+                "width": 24,
+                "height": 24,
+                "children": [],
+                "text": null,
+                "y": -5
+              }
+            ],
+            "text": null,
+            "y": 4
+          },
+          {
+            "type": "obj",
+            "x": 103,
+            "width": 30,
+            "height": 20,
+            "children": [
+              {
+                "type": "label",
+                "x": 0,
+                "width": 24,
+                "height": 18,
+                "children": [],
+                "text": "#00D100 \uf240 #",
+                "y": 0
+              },
+              {
+                "type": "label",
+                "x": 0,
+                "width": 20,
+                "height": 18,
+                "children": [],
+                "text": "\uf244",
+                "y": 0
+              },
+              {
+                "type": "label",
+                "x": 0,
+                "width": 0,
+                "height": 18,
+                "children": [],
+                "text": "",
+                "y": 0
+              }
+            ],
+            "text": null,
+            "y": 9
+          },
+          {
+            "type": "label",
+            "x": 141,
+            "width": 60,
+            "height": 15,
+            "children": [],
+            "text": "",
+            "y": 11
+          },
+          {
+            "type": "image",
+            "x": 209,
+            "width": 24,
+            "height": 0,
+            "children": [],
+            "text": null,
+            "y": 19
+          },
+          {
+            "type": "image",
+            "x": 241,
+            "width": 24,
+            "height": 0,
+            "children": [],
+            "text": null,
+            "y": 19
+          },
+          {
+            "type": "label",
+            "x": 273,
+            "width": 35,
+            "height": 15,
+            "children": [],
+            "text": "",
+            "y": 11
+          },
+          {
+            "type": "image",
+            "x": 316,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "image",
+            "x": 348,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "image",
+            "x": 380,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "image",
+            "x": 412,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "label",
+            "x": 444,
+            "width": 27,
+            "height": 15,
+            "children": [],
+            "text": "eng",
+            "y": 11
+          }
+        ],
+        "text": null,
+        "y": 0
+      },
+      {
+        "type": "obj",
+        "x": 0,
+        "width": 480,
+        "height": 760,
+        "children": [
+          {
+            "type": "obj",
+            "x": 0,
+            "width": 478,
+            "height": 758,
+            "children": [
+              {
+                "type": "button",
+                "x": 0,
+                "width": 40,
+                "height": 28,
+                "children": [
+                  {
+                    "type": "image",
+                    "x": -5,
+                    "width": 24,
+                    "height": 24,
+                    "children": [],
+                    "text": null,
+                    "y": -6
+                  }
+                ],
+                "text": null,
+                "y": 0
+              },
+              {
+                "type": "label",
+                "x": 155,
+                "width": 168,
+                "height": 18,
+                "children": [],
+                "text": "Manage Seedphrase",
+                "y": 6
+              },
+              {
+                "type": "obj",
+                "x": 0,
+                "width": 478,
+                "height": 704,
+                "children": [
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 148,
+                        "width": 146,
+                        "height": 18,
+                        "children": [],
+                        "text": "Show Seedphrase",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 0
+                  },
+                  {
+                    "type": "label",
+                    "x": 0,
+                    "width": 468,
+                    "height": 18,
+                    "children": [],
+                    "text": "\uf019 Store Seedphrase",
+                    "y": 58
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 167,
+                        "width": 109,
+                        "height": 18,
+                        "children": [],
+                        "text": "to SmartCard",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 84
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 157,
+                        "width": 129,
+                        "height": 18,
+                        "children": [],
+                        "text": "to internal Flash",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 142
+                  },
+                  {
+                    "type": "label",
+                    "x": 0,
+                    "width": 468,
+                    "height": 18,
+                    "children": [],
+                    "text": "#FF9A00 \uf00d Clear Seedphrase#",
+                    "y": 200
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 155,
+                        "width": 133,
+                        "height": 18,
+                        "children": [],
+                        "text": "from SmartCard",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 226
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 145,
+                        "width": 153,
+                        "height": 18,
+                        "children": [],
+                        "text": "from internal Flash",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 284
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 141,
+                        "width": 161,
+                        "height": 18,
+                        "children": [],
+                        "text": "all attached storage",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 342
+                  },
+                  {
+                    "type": "label",
+                    "x": 0,
+                    "width": 468,
+                    "height": 18,
+                    "children": [],
+                    "text": "Advanced Features",
+                    "y": 400
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 133,
+                        "width": 176,
+                        "height": 18,
+                        "children": [],
+                        "text": "Derive new via BIP-85",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 426
+                  }
+                ],
+                "text": null,
+                "y": 29
+              }
+            ],
+            "text": null,
+            "y": 0
+          }
+        ],
+        "text": null,
+        "y": 40
+      }
+    ],
+    "text": null,
+    "y": 0
+  },
+  "ok": true
+}

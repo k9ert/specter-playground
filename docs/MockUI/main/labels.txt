@@ -1,0 +1,10 @@
+  eng
+  What do you want to do?
+  Process input
+  Scan QR
+  Import Seed From SmartCard
+  Choose Wallet
+  Add Wallet
+  Manage Settings
+  Manage Device
+  Manage Storage

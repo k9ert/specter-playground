@@ -1,0 +1,11 @@
+  eng
+   Generate New Seedphrase
+  Wallet name:
+  Wallet9
+  Wallet9
+  SingleSig
+  MultiSig
+  mainnet
+  testnet
+  xPub: xpub19b1c96cddb
+  Create
