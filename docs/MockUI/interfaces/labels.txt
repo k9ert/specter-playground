@@ -1,0 +1,6 @@
+  eng
+  Enable/Disable Interfaces
+  QR Scanner
+  USB
+  SD Card
+  SmartCard

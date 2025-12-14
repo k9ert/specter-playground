@@ -1,0 +1,8 @@
+  eng
+   Manage Security Features
+  Change PIN
+  Run Self-Test
+  Set allowed PIN retries
+  Set exceeded PIN retries action
+  Set duress PIN
+  Set duress PIN action
