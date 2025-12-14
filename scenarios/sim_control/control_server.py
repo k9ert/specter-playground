@@ -189,38 +189,13 @@ class ControlServer:
         return {"ok": True, "set": {attr: value}}
 
     def _cmd_screenshot(self):
-        """Capture screenshot and return as base64."""
-        import ubinascii
-        import gc
-
+        """Capture screenshot - writes to file, returns path for MCP to read."""
         try:
-            screen = lv.screen_active()
-            if not screen:
-                return {"ok": False, "error": "no active screen"}
+            import SDL
+            # Write screenshot directly to file (bypasses Python heap)
+            filename = "/tmp/sim_screenshot.raw"
+            w, h, _ = SDL.screenshot(filename)
 
-            w = screen.get_width()
-            h = screen.get_height()
-            bpp = 4  # XRGB8888 = 4 bytes per pixel
-            stride = w * bpp
-            buf_size = stride * h
-
-            gc.collect()
-
-            # Allocate buffer in Python
-            buf = bytearray(buf_size)
-
-            # Create image descriptor
-            dsc = lv.image_dsc_t()
-
-            # Use snapshot_take_to_buf with our buffer
-            result = lv.snapshot_take_to_buf(screen, lv.COLOR_FORMAT.XRGB8888, dsc, buf, buf_size)
-
-            if result != 0:
-                return {"ok": False, "error": f"snapshot_take_to_buf failed: {result}"}
-
-            # Encode to base64
-            b64 = ubinascii.b2a_base64(buf).decode().strip()
-
-            return {"ok": True, "width": w, "height": h, "format": "XRGB8888", "data": b64}
+            return {"ok": True, "width": w, "height": h, "format": "RGB565", "file": filename}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}

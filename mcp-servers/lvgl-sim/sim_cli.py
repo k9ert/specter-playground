@@ -96,38 +96,43 @@ def main():
 
     elif cmd == 'screenshot':
         from PIL import Image
+        import struct
 
-        filename = sys.argv[2] if len(sys.argv) > 2 else '/tmp/sim_screenshot.png'
+        out_filename = sys.argv[2] if len(sys.argv) > 2 else '/tmp/sim_screenshot.png'
         r = send({'action': 'screenshot'})
 
         if not r.get('ok'):
             print(f"Error: {r.get('error', 'unknown')}")
             return
 
-        # Decode base64 pixel data
-        raw = base64.b64decode(r['data'])
         w, h = r['width'], r['height']
-        fmt = r.get('format', 'XRGB8888')
+        raw_file = r.get('file')
 
-        # Convert to PIL Image based on format
-        if fmt == 'XRGB8888':
-            # XRGB8888: X R G B (4 bytes) - X is padding
-            img = Image.frombytes('RGBX', (w, h), raw)
-            img = img.convert('RGB')
-        elif fmt == 'RGB888':
-            img = Image.frombytes('RGB', (w, h), raw)
+        if raw_file:
+            # Read raw RGB565 data from file
+            with open(raw_file, 'rb') as f:
+                raw = f.read()
         else:
-            # ARGB8888: rearrange to RGBA
-            pixels = bytearray(len(raw))
-            for i in range(0, len(raw), 4):
-                pixels[i] = raw[i + 1]      # R
-                pixels[i + 1] = raw[i + 2]  # G
-                pixels[i + 2] = raw[i + 3]  # B
-                pixels[i + 3] = raw[i]      # A
-            img = Image.frombytes('RGBA', (w, h), bytes(pixels))
+            # Fallback: base64 data in response
+            raw = base64.b64decode(r['data'])
 
-        img.save(filename, 'PNG')
-        print(f"Screenshot saved to {filename} ({w}x{h})")
+        # Convert RGB565 to RGB
+        pixels = bytearray(w * h * 3)
+        for i in range(0, len(raw), 2):
+            if i + 1 >= len(raw):
+                break
+            pixel = struct.unpack('<H', raw[i:i+2])[0]
+            rv = ((pixel >> 11) & 0x1F) << 3
+            gv = ((pixel >> 5) & 0x3F) << 2
+            bv = (pixel & 0x1F) << 3
+            idx = (i // 2) * 3
+            pixels[idx] = rv
+            pixels[idx + 1] = gv
+            pixels[idx + 2] = bv
+
+        img = Image.frombytes('RGB', (w, h), bytes(pixels))
+        img.save(out_filename, 'PNG')
+        print(f"Screenshot saved to {out_filename} ({w}x{h})")
 
     else:
         print(f"Unknown command: {cmd}")
