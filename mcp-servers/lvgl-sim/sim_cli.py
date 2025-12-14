@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
-"""Simple CLI for simulator control. Usage:
-
-    .venv/bin/python sim_cli.py ping
-    .venv/bin/python sim_cli.py state
-    .venv/bin/python sim_cli.py click "Manage Device"
-    .venv/bin/python sim_cli.py labels
-    .venv/bin/python sim_cli.py set seed_loaded true
-    .venv/bin/python sim_cli.py screenshot [filename.png]
-"""
+"""CLI for LVGL simulator control."""
 import socket
 import json
-import sys
 import base64
+import os
+import click
 
+
+# --- Core functions ---
 
 def send(cmd):
+    """Send command to simulator and return JSON response."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(2)
     sock.connect(('127.0.0.1', 9876))
@@ -30,6 +26,7 @@ def send(cmd):
 
 
 def get_labels():
+    """Extract visible text labels from widget tree."""
     result = send({'action': 'widget_tree'})
     if not result.get('ok'):
         return []
@@ -44,138 +41,201 @@ def get_labels():
     return labels
 
 
-def main():
-    if len(sys.argv) < 2:
-        print(__doc__)
-        return
+def save_screenshot(out_filename):
+    """Save screenshot to file. Returns (width, height) or None on error."""
+    from PIL import Image
+    import struct
 
-    cmd = sys.argv[1]
+    r = send({'action': 'screenshot'})
+    if not r.get('ok'):
+        return None
 
-    if cmd == 'ping':
-        print(send({'action': 'ping'}))
+    w, h = r['width'], r['height']
+    raw_file = r.get('file')
 
-    elif cmd == 'state':
-        r = send({'action': 'get_state'})
-        if r.get('ok'):
-            print(f"menu: {r['ui']['current_menu_id']}")
-            print(f"history: {r['ui']['history']}")
-            print(f"seed_loaded: {r['specter']['seed_loaded']}")
-            print(f"is_locked: {r['specter']['is_locked']}")
-        else:
-            print(r)
-
-    elif cmd == 'click':
-        if len(sys.argv) < 3:
-            print('Usage: click "Button Text"')
-            return
-        text = sys.argv[2]
-        send({'action': 'click', 'text': text})
-        r = send({'action': 'get_state'})
-        print(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
-
-    elif cmd == 'labels':
-        for label in get_labels():
-            print(f"  {label}")
-
-    elif cmd == 'set':
-        if len(sys.argv) < 4:
-            print('Usage: set attr value')
-            return
-        attr, val = sys.argv[2], sys.argv[3]
-        # Parse value
-        if val.lower() == 'true':
-            val = True
-        elif val.lower() == 'false':
-            val = False
-        elif val.isdigit():
-            val = int(val)
-        print(send({'action': 'set_state', 'attr': attr, 'value': val}))
-
-    elif cmd == 'tree':
-        print(json.dumps(send({'action': 'widget_tree'}), indent=2))
-
-    elif cmd == 'back':
-        send({'action': 'navigate', 'target': 'back'})
-        r = send({'action': 'get_state'})
-        print(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
-
-    elif cmd == 'goto':
-        if len(sys.argv) < 3:
-            print('Usage: goto <menu_id>')
-            return
-        target = sys.argv[2]
-        send({'action': 'navigate', 'target': target})
-        r = send({'action': 'get_state'})
-        print(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
-
-    elif cmd == 'screenshot':
-        from PIL import Image
-        import struct
-        import os
-
-        screenshot_dir = '/tmp/specter-playground_agent/screenshots'
-        os.makedirs(screenshot_dir, exist_ok=True)
-        out_filename = sys.argv[2] if len(sys.argv) > 2 else f'{screenshot_dir}/screenshot.png'
-        r = send({'action': 'screenshot'})
-
-        if not r.get('ok'):
-            print(f"Error: {r.get('error', 'unknown')}")
-            return
-
-        w, h = r['width'], r['height']
-        raw_file = r.get('file')
-
-        if raw_file:
-            # Read raw RGB565 data from file
-            with open(raw_file, 'rb') as f:
-                raw = f.read()
-        else:
-            # Fallback: base64 data in response
-            raw = base64.b64decode(r['data'])
-
-        # Convert RGB565 to RGB
-        pixels = bytearray(w * h * 3)
-        for i in range(0, len(raw), 2):
-            if i + 1 >= len(raw):
-                break
-            pixel = struct.unpack('<H', raw[i:i+2])[0]
-            rv = ((pixel >> 11) & 0x1F) << 3
-            gv = ((pixel >> 5) & 0x3F) << 2
-            bv = (pixel & 0x1F) << 3
-            idx = (i // 2) * 3
-            pixels[idx] = rv
-            pixels[idx + 1] = gv
-            pixels[idx + 2] = bv
-
-        img = Image.frombytes('RGB', (w, h), bytes(pixels))
-        img.save(out_filename, 'PNG')
-        print(f"Screenshot saved to {out_filename} ({w}x{h})")
-
-    elif cmd == 'restart':
-        import subprocess
-        import os
-        # Kill existing simulator
-        subprocess.run(['pkill', '-f', 'micropython_unix.*mock_ui'], capture_output=True)
-        import time
-        time.sleep(1)
-        # Start new one
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        subprocess.Popen(
-            [f'{project_root}/bin/micropython_unix', f'{project_root}/scenarios/mock_ui.py', '--control'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-        time.sleep(2)
-        # Verify
-        try:
-            r = send({'action': 'ping'})
-            print(f"Simulator restarted: {r}")
-        except:
-            print("Failed to restart simulator")
-
+    if raw_file:
+        with open(raw_file, 'rb') as f:
+            raw = f.read()
     else:
-        print(f"Unknown command: {cmd}")
-        print(__doc__)
+        raw = base64.b64decode(r['data'])
+
+    pixels = bytearray(w * h * 3)
+    for i in range(0, len(raw), 2):
+        if i + 1 >= len(raw):
+            break
+        pixel = struct.unpack('<H', raw[i:i+2])[0]
+        rv = ((pixel >> 11) & 0x1F) << 3
+        gv = ((pixel >> 5) & 0x3F) << 2
+        bv = (pixel & 0x1F) << 3
+        idx = (i // 2) * 3
+        pixels[idx] = rv
+        pixels[idx + 1] = gv
+        pixels[idx + 2] = bv
+
+    img = Image.frombytes('RGB', (w, h), bytes(pixels))
+    img.save(out_filename, 'PNG')
+    return (w, h)
+
+
+def get_state():
+    """Get current UI and Specter state."""
+    return send({'action': 'get_state'})
+
+
+def navigate(target):
+    """Navigate to menu or back."""
+    return send({'action': 'navigate', 'target': target})
+
+
+# --- CLI Commands ---
+
+@click.group()
+def cli():
+    """LVGL Simulator CLI - control the MockUI simulator."""
+    pass
+
+
+@cli.command()
+def ping():
+    """Test connection to simulator."""
+    click.echo(send({'action': 'ping'}))
+
+
+@cli.command()
+def state():
+    """Show current UI state."""
+    r = get_state()
+    if r.get('ok'):
+        click.echo(f"menu: {r['ui']['current_menu_id']}")
+        click.echo(f"history: {r['ui']['history']}")
+        click.echo(f"seed_loaded: {r['specter']['seed_loaded']}")
+        click.echo(f"is_locked: {r['specter']['is_locked']}")
+    else:
+        click.echo(r)
+
+
+@cli.command('click')
+@click.argument('text')
+def click_cmd(text):
+    """Click a button by its text label."""
+    send({'action': 'click', 'text': text})
+    r = get_state()
+    click.echo(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
+
+
+@cli.command()
+def labels():
+    """List visible text labels."""
+    for label in get_labels():
+        click.echo(f"  {label}")
+
+
+@cli.command('set')
+@click.argument('attr')
+@click.argument('value')
+def set_cmd(attr, value):
+    """Set a state attribute (e.g., seed_loaded, is_locked)."""
+    # Parse value
+    if value.lower() == 'true':
+        value = True
+    elif value.lower() == 'false':
+        value = False
+    elif value.isdigit():
+        value = int(value)
+    click.echo(send({'action': 'set_state', 'attr': attr, 'value': value}))
+
+
+@cli.command()
+def tree():
+    """Dump full widget tree as JSON."""
+    click.echo(json.dumps(send({'action': 'widget_tree'}), indent=2))
+
+
+@cli.command()
+def back():
+    """Navigate back to previous menu."""
+    navigate('back')
+    r = get_state()
+    click.echo(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
+
+
+@cli.command('goto')
+@click.argument('menu_id')
+def goto_cmd(menu_id):
+    """Navigate directly to a menu by ID."""
+    navigate(menu_id)
+    r = get_state()
+    click.echo(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
+
+
+@cli.command()
+@click.argument('filename', required=False)
+def screenshot(filename):
+    """Capture screenshot to PNG file."""
+    screenshot_dir = '/tmp/specter-playground_agent/screenshots'
+    os.makedirs(screenshot_dir, exist_ok=True)
+    out_filename = filename or f'{screenshot_dir}/screenshot.png'
+    result = save_screenshot(out_filename)
+    if result:
+        click.echo(f"Screenshot saved to {out_filename} ({result[0]}x{result[1]})")
+    else:
+        click.echo("Error: screenshot failed", err=True)
+
+
+@cli.command()
+@click.argument('folder')
+def capture(folder):
+    """Capture screenshot, labels, and tree to a folder."""
+    os.makedirs(folder, exist_ok=True)
+
+    # Screenshot
+    result = save_screenshot(f'{folder}/screenshot.png')
+    if result:
+        click.echo(f"  screenshot.png ({result[0]}x{result[1]})")
+    else:
+        click.echo("  screenshot.png FAILED", err=True)
+
+    # Labels
+    lbls = get_labels()
+    with open(f'{folder}/labels.txt', 'w') as f:
+        for label in lbls:
+            f.write(f"  {label}\n")
+    click.echo(f"  labels.txt ({len(lbls)} labels)")
+
+    # Tree
+    tree_data = send({'action': 'widget_tree'})
+    with open(f'{folder}/tree.json', 'w') as f:
+        json.dump(tree_data, f, indent=2)
+    click.echo(f"  tree.json")
+
+    click.echo(f"Captured to {folder}/")
+
+
+@cli.command()
+def restart():
+    """Restart the simulator process."""
+    import subprocess
+    import time
+
+    # Kill existing simulator
+    subprocess.run(['pkill', '-f', 'micropython_unix.*mock_ui'], capture_output=True)
+    time.sleep(1)
+
+    # Start new one
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    subprocess.Popen(
+        [f'{project_root}/bin/micropython_unix', f'{project_root}/scenarios/mock_ui.py', '--control'],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    time.sleep(2)
+
+    # Verify
+    try:
+        r = send({'action': 'ping'})
+        click.echo(f"Simulator restarted: {r}")
+    except Exception:
+        click.echo("Failed to restart simulator", err=True)
 
 
 if __name__ == '__main__':
-    main()
+    cli()

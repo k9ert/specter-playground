@@ -22,14 +22,38 @@ cd mcp-servers/lvgl-sim
 .venv/bin/python sim_cli.py screenshot /tmp/screenshot.png
 ```
 
+You can also use the MCP server directly but some common scanrios and
+helpers are in the sim_cli.py.
+
 ### sim_cli.py Commands
-- `ping` - test connection
-- `state` - show SpecterState + UIState
-- `labels` - list visible button labels
-- `click "Button Text"` - click a button
-- `set attr value` - modify state (e.g. `set seed_loaded true`)
-- `screenshot /path/to/file.png` - capture PNG screenshot
-- `tree` - dump full widget tree JSON
+```
+Usage: sim_cli.py [OPTIONS] COMMAND [ARGS]...
+
+Commands:
+  back        Navigate back to previous menu.
+  capture     Capture screenshot, labels, and tree to a folder.
+  click       Click a button by its text label.
+  goto        Navigate directly to a menu by ID.
+  labels      List visible text labels.
+  ping        Test connection to simulator.
+  restart     Restart the simulator process.
+  screenshot  Capture screenshot to PNG file.
+  set         Set a state attribute (e.g., seed_loaded, is_locked).
+  state       Show current UI state.
+  tree        Dump full widget tree as JSON.
+```
+
+Examples:
+```bash
+sim_cli.py ping                     # test connection
+sim_cli.py state                    # show current menu + state
+sim_cli.py click "Manage Device"    # click button
+sim_cli.py goto manage_security     # navigate directly to menu
+sim_cli.py back                     # go back
+sim_cli.py capture /tmp/screen      # save screenshot + labels + tree
+sim_cli.py set seed_loaded true     # modify state
+sim_cli.py restart                  # restart simulator
+```
 
 ### Protocol (TCP:9876)
 ```bash
