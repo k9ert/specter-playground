@@ -1,0 +1,3 @@
+  eng
+  Device Locked, Firmware version 1.0
+  Enter PIN to unlock:

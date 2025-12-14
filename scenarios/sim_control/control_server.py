@@ -87,8 +87,22 @@ class ControlServer:
             return self._cmd_set_state(cmd)
         elif action == "ping":
             return {"ok": True, "pong": True}
+        elif action == "screenshot":
+            return self._cmd_screenshot()
+        elif action == "navigate":
+            return self._cmd_navigate(cmd)
         else:
             return {"ok": False, "error": "Unknown action: " + str(action)}
+
+    def _cmd_navigate(self, cmd):
+        """Navigate to a menu or back."""
+        target = cmd.get("target")
+        if target == "back" or target is None:
+            self.nav.show_menu(None)
+            return {"ok": True, "navigated": "back"}
+        else:
+            self.nav.show_menu(target)
+            return {"ok": True, "navigated": target}
 
     def _cmd_widget_tree(self):
         """Return full widget tree."""
@@ -185,3 +199,15 @@ class ControlServer:
 
         setattr(ss, attr, value)
         return {"ok": True, "set": {attr: value}}
+
+    def _cmd_screenshot(self):
+        """Capture screenshot - writes to file, returns path for MCP to read."""
+        try:
+            import SDL
+            # Write screenshot directly to file (bypasses Python heap)
+            filename = "/tmp/sim_screenshot.raw"
+            w, h, _ = SDL.screenshot(filename)
+
+            return {"ok": True, "width": w, "height": h, "format": "RGB565", "file": filename}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}

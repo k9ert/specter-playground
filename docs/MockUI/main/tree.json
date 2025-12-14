@@ -1,0 +1,404 @@
+{
+  "tree": {
+    "type": "obj",
+    "x": 0,
+    "width": 480,
+    "height": 800,
+    "children": [
+      {
+        "type": "obj",
+        "x": 0,
+        "width": 480,
+        "height": 40,
+        "children": [
+          {
+            "type": "button",
+            "x": 7,
+            "width": 40,
+            "height": 30,
+            "children": [
+              {
+                "type": "label",
+                "x": 1,
+                "width": 12,
+                "height": 15,
+                "children": [],
+                "text": "\uf011",
+                "y": 0
+              }
+            ],
+            "text": null,
+            "y": 4
+          },
+          {
+            "type": "button",
+            "x": 55,
+            "width": 40,
+            "height": 30,
+            "children": [
+              {
+                "type": "image",
+                "x": -5,
+                "width": 24,
+                "height": 24,
+                "children": [],
+                "text": null,
+                "y": -5
+              }
+            ],
+            "text": null,
+            "y": 4
+          },
+          {
+            "type": "obj",
+            "x": 103,
+            "width": 30,
+            "height": 20,
+            "children": [
+              {
+                "type": "label",
+                "x": 0,
+                "width": 24,
+                "height": 18,
+                "children": [],
+                "text": "#00D100 \uf240 #",
+                "y": 0
+              },
+              {
+                "type": "label",
+                "x": 0,
+                "width": 20,
+                "height": 18,
+                "children": [],
+                "text": "\uf244",
+                "y": 0
+              },
+              {
+                "type": "label",
+                "x": 0,
+                "width": 0,
+                "height": 18,
+                "children": [],
+                "text": "",
+                "y": 0
+              }
+            ],
+            "text": null,
+            "y": 9
+          },
+          {
+            "type": "label",
+            "x": 141,
+            "width": 60,
+            "height": 15,
+            "children": [],
+            "text": "",
+            "y": 11
+          },
+          {
+            "type": "image",
+            "x": 209,
+            "width": 24,
+            "height": 0,
+            "children": [],
+            "text": null,
+            "y": 19
+          },
+          {
+            "type": "image",
+            "x": 241,
+            "width": 24,
+            "height": 0,
+            "children": [],
+            "text": null,
+            "y": 19
+          },
+          {
+            "type": "label",
+            "x": 273,
+            "width": 35,
+            "height": 15,
+            "children": [],
+            "text": "",
+            "y": 11
+          },
+          {
+            "type": "image",
+            "x": 316,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "image",
+            "x": 348,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "image",
+            "x": 380,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "image",
+            "x": 412,
+            "width": 24,
+            "height": 24,
+            "children": [],
+            "text": null,
+            "y": 7
+          },
+          {
+            "type": "label",
+            "x": 444,
+            "width": 27,
+            "height": 15,
+            "children": [],
+            "text": "eng",
+            "y": 11
+          }
+        ],
+        "text": null,
+        "y": 0
+      },
+      {
+        "type": "obj",
+        "x": 0,
+        "width": 480,
+        "height": 760,
+        "children": [
+          {
+            "type": "obj",
+            "x": 0,
+            "width": 478,
+            "height": 758,
+            "children": [
+              {
+                "type": "button",
+                "x": 0,
+                "width": 40,
+                "height": 28,
+                "children": [
+                  {
+                    "type": "image",
+                    "x": -5,
+                    "width": 24,
+                    "height": 24,
+                    "children": [],
+                    "text": null,
+                    "y": -6
+                  }
+                ],
+                "text": null,
+                "y": 0
+              },
+              {
+                "type": "label",
+                "x": 137,
+                "width": 204,
+                "height": 18,
+                "children": [],
+                "text": "What do you want to do?",
+                "y": 6
+              },
+              {
+                "type": "obj",
+                "x": 0,
+                "width": 478,
+                "height": 704,
+                "children": [
+                  {
+                    "type": "label",
+                    "x": 0,
+                    "width": 468,
+                    "height": 18,
+                    "children": [],
+                    "text": "Process input",
+                    "y": 0
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 187,
+                        "width": 69,
+                        "height": 18,
+                        "children": [],
+                        "text": "Scan QR",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 26
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 100,
+                        "width": 242,
+                        "height": 18,
+                        "children": [],
+                        "text": "Import Seed From SmartCard",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 84
+                  },
+                  {
+                    "type": "label",
+                    "x": 0,
+                    "width": 468,
+                    "height": 18,
+                    "children": [],
+                    "text": "Choose Wallet",
+                    "y": 142
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 176,
+                        "width": 90,
+                        "height": 18,
+                        "children": [],
+                        "text": "Add Wallet",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 168
+                  },
+                  {
+                    "type": "label",
+                    "x": 0,
+                    "width": 468,
+                    "height": 18,
+                    "children": [],
+                    "text": "Manage Settings",
+                    "y": 226
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "image",
+                        "x": 8,
+                        "width": 24,
+                        "height": 24,
+                        "children": [],
+                        "text": null,
+                        "y": 5
+                      },
+                      {
+                        "type": "label",
+                        "x": 158,
+                        "width": 126,
+                        "height": 18,
+                        "children": [],
+                        "text": "Manage Device",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 252
+                  },
+                  {
+                    "type": "button",
+                    "x": 0,
+                    "width": 468,
+                    "height": 50,
+                    "children": [
+                      {
+                        "type": "label",
+                        "x": 8,
+                        "width": 18,
+                        "height": 18,
+                        "children": [],
+                        "text": "\uf01c",
+                        "y": 8
+                      },
+                      {
+                        "type": "label",
+                        "x": 154,
+                        "width": 134,
+                        "height": 18,
+                        "children": [],
+                        "text": "Manage Storage",
+                        "y": 8
+                      }
+                    ],
+                    "text": null,
+                    "y": 310
+                  }
+                ],
+                "text": null,
+                "y": 29
+              }
+            ],
+            "text": null,
+            "y": 0
+          }
+        ],
+        "text": null,
+        "y": 40
+      }
+    ],
+    "text": null,
+    "y": 0
+  },
+  "ok": true
+}

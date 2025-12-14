@@ -1,0 +1,8 @@
+  eng
+  Add Wallet
+  Generate New Seedphrase
+  Import Seedphrase from
+  SmartCard
+  QR Code
+  internal Flash
+  Keyboard

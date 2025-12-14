@@ -1,28 +1,12 @@
+import display
 import lvgl as lv
+import utime as time
 
-from ..helpers import UIState, SpecterState
-from .status_bar import StatusBar
-from .action_screen import ActionScreen
-from .main_menu import MainMenu
-from .locked_menu import LockedMenu
-from ..wallet import (
-    WalletMenu,
-    ConnectWalletsMenu,
-    ChangeWalletMenu,
-    AddWalletMenu,
-    SeedPhraseMenu,
-    GenerateSeedMenu,
-    PassphraseMenu,
-)
-from ..device import (
-    DeviceMenu,
-    BackupsMenu,
-    FirmwareMenu,
-    InterfacesMenu,
-    StorageMenu,
-    SecurityMenu,
-)
 
+from MockUI import BTN_HEIGHT, BTN_WIDTH, WalletMenu, DeviceMenu, MainMenu, SpecterState, Wallet, ActionScreen, UIState, StatusBar, SeedPhraseMenu, SecurityMenu, InterfacesMenu, BackupsMenu, FirmwareMenu, ConnectWalletsMenu, ChangeWalletMenu, AddWalletMenu, LockedMenu, GenerateSeedMenu, StorageMenu, PassphraseMenu
+
+
+display.init()
 
 class NavigationController(lv.obj):
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
@@ -52,7 +36,6 @@ class NavigationController(lv.obj):
         self.content.set_height(lv.pct(95))
         self.content.set_layout(lv.LAYOUT.FLEX)
         self.content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.content.set_style_pad_all(0, 0)  # Remove padding to allow full-width content
         self.content.align_to(self.status_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 0)
 
         # initially show the main menu
@@ -65,6 +48,9 @@ class NavigationController(lv.obj):
         lv.timer_create(_tick, 30_000, None)
 
     def show_menu(self, target_menu_id=None):
+        #if target_menu_id is set, the call was generated traversing "down" the menu hierarchy, and target_menu_id needs to be added to the ui_history
+        #if target_menu_id is None this signalizes, the call was generated while traversing "up" the menu hierarchy, i.e. going back, and the ui_history needs to be popped
+
         # Delete current screen (free memory)
         if self.current_screen:
             self.current_screen.delete()
@@ -81,7 +67,6 @@ class NavigationController(lv.obj):
         if self.specter_state.is_locked:
             # ensure the ui history is cleared when locking
             self.ui_state.clear_history()
-            self.ui_state.current_menu_id = "locked"
             self.current_screen = LockedMenu(self)
             self.status_bar.refresh(self.specter_state)
             return
@@ -122,5 +107,67 @@ class NavigationController(lv.obj):
             title = title[0].upper() + title[1:] if title else ""
             self.current_screen = ActionScreen(title, self)
 
-        # refresh the status bar
+        # The NavigationController is the actual LVGL screen (loaded once in main)
+        # Menus are created as children of `self.content`, so we must not call
+        # lv.screen_load on those child objects. Just refresh the status bar.
         self.status_bar.refresh(self.specter_state)
+
+singlesig_wallet = Wallet("MyWallet", xpub="xpub6CUGRUon", isMultiSig=False)
+multisig_wallet = Wallet("MyMultiSig", xpub="xpub6DUGRUon", isMultiSig=True)
+
+specter_state = SpecterState()
+specter_state.has_battery = True
+specter_state.battery_pct = 100
+
+specter_state.hasQR = True
+specter_state.enabledQR = True
+
+specter_state.hasSD = True
+specter_state.enabledSD = False
+specter_state.detectedSD = True
+
+specter_state.hasSmartCard = True
+specter_state.enabledSmartCard = False
+specter_state.detectedSmartCard = True
+
+specter_state.enabledUSB = True
+
+specter_state.pin = "21"
+specter_state.language = "eng"
+
+specter_state.is_locked = True
+
+#specter_state.registered_wallets.append(singlesig_wallet)
+#specter_state.registered_wallets.append(multisig_wallet)
+#specter_state.set_active_wallet(singlesig_wallet)
+specter_state.seed_loaded = True
+specter_state.active_passphrase = "my_secret"
+
+scr = NavigationController(specter_state)
+
+
+# Needed for LVGL task handling when loaded as main script
+def main():
+    # Set up the default theme:
+    # - disp: pointer to display (None uses the default display)
+    # - color_primary: primary color of the theme (blue here)
+    # - color_secondary: secondary color of the theme (red here)
+    # - dark: True for dark mode, False for light mode (light mode here)
+    # - font: font to use (Montserrat 16 here)
+    display.init(False)
+    lv.theme_default_init(
+        None,
+        lv.palette_main(lv.PALETTE.BLUE),
+        lv.palette_main(lv.PALETTE.RED),
+        False,
+        lv.font_montserrat_16,
+    )
+
+    lv.screen_load(scr)
+    while True:
+        time.sleep_ms(30)
+        display.update(30)
+
+if __name__ == '__main__':
+    main()
+

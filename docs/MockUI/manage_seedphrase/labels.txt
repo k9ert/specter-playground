@@ -1,0 +1,11 @@
+  eng
+  Manage Seedphrase
+  Show Seedphrase
+   Store Seedphrase
+  to SmartCard
+  to internal Flash
+  from SmartCard
+  from internal Flash
+  all attached storage
+  Advanced Features
+  Derive new via BIP-85

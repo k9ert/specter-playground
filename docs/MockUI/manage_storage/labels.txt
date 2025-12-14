@@ -1,0 +1,5 @@
+  eng
+  Manage Storage
+  Manage Storage
+  Manage internal flash
+  Manage SmartCard

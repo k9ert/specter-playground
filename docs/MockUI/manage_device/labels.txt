@@ -1,0 +1,9 @@
+  eng
+  Manage Device/Storage
+  Manage Device
+  Manage Firmware
+  Manage Security Features
+  Enable/Disable Interfaces
+  Manage Display
+  Manage Sounds
+  Wipe Device

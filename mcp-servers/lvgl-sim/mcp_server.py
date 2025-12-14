@@ -149,6 +149,19 @@ async def list_tools():
                 "required": ["attr", "value"],
             },
         ),
+        Tool(
+            name="screenshot",
+            description="Capture screenshot of current simulator state and save as PNG",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Output filename (default: /tmp/sim_screenshot.png)",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -244,6 +257,52 @@ async def call_tool(name: str, arguments: dict):
         value = arguments.get("value")
         resp = send_command({"action": "set_state", "attr": attr, "value": value})
         return [TextContent(type="text", text=json.dumps(resp, indent=2))]
+
+    elif name == "screenshot":
+        import time
+
+        filename = arguments.get("filename", "/tmp/sim_screenshot.png")
+
+        # Use macOS screencapture to capture the LVGL window
+        # Find window by title "LVGL"
+        try:
+            # Get window list and find LVGL window
+            result = subprocess.run(
+                ["osascript", "-e", 'tell application "System Events" to get name of every window of every process'],
+                capture_output=True, text=True, timeout=5
+            )
+
+            # Use screencapture with window selection
+            # -l flag requires window ID, -w for interactive window select
+            # For automation, we'll capture by window title using -l
+            result = subprocess.run(
+                ["osascript", "-e",
+                 '''tell application "System Events"
+                    set lvglWindow to first window of (first process whose name contains "micropython")
+                    set winID to id of lvglWindow
+                    return winID
+                 end tell'''],
+                capture_output=True, text=True, timeout=5
+            )
+
+            if result.returncode == 0 and result.stdout.strip():
+                window_id = result.stdout.strip()
+                subprocess.run(
+                    ["screencapture", "-l", window_id, "-x", filename],
+                    timeout=5
+                )
+                return [TextContent(type="text", text=f"Screenshot saved to {filename}")]
+
+            # Fallback: capture by clicking on LVGL window area
+            # Just capture entire screen region where simulator usually is
+            subprocess.run(
+                ["screencapture", "-R", "0,0,500,850", "-x", filename],
+                timeout=5
+            )
+            return [TextContent(type="text", text=f"Screenshot saved to {filename} (region capture)")]
+
+        except Exception as e:
+            return [TextContent(type="text", text=f"Screenshot failed: {e}")]
 
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
