@@ -3,7 +3,7 @@
     "allow": [
       "Bash(bd:*)",
       "Bash(python sim_cli.py:*)",
-      "Bash(.venv/bin/python sim_cli.py:*)",
+      "Bash(.venv/bin/python mcp-servers/lvgl-sim/sim_cli.py:*)",
       "Bash(python3 -m pytest:*)",
       "Bash(.venv/bin/pytest:*)",
       "WebSearch",
