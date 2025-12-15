@@ -1,5 +1,7 @@
 # Set Passphrase
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Add optional BIP39 passphrase to seed (25th word).
 

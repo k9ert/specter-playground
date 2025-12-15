@@ -1,5 +1,7 @@
 # Manage Security Features
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Configure device security settings including PIN and duress protection.
 

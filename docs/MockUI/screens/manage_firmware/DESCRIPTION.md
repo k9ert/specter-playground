@@ -1,5 +1,7 @@
 # Manage Firmware
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 View firmware information and perform updates.
 

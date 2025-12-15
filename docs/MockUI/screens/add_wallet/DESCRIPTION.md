@@ -1,5 +1,7 @@
 # Add Wallet
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Create a new wallet or import an existing seed phrase.
 

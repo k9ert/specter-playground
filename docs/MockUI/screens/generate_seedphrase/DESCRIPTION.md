@@ -1,5 +1,7 @@
 # Generate New Seedphrase
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Create a new BIP39 mnemonic seed with wallet configuration.
 

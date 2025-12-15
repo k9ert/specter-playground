@@ -1,5 +1,7 @@
 # Manage Backups
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Backup and restore wallet data using SD card.
 

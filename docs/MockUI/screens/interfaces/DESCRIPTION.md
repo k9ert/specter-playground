@@ -1,5 +1,7 @@
 # Enable/Disable Interfaces
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Control which hardware interfaces are active. Security feature to limit attack surface.
 

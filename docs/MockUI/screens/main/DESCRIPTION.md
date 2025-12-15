@@ -1,5 +1,7 @@
 # Main Menu
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Entry point for all device operations. User lands here after unlock.
 

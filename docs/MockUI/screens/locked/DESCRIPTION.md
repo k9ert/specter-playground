@@ -1,5 +1,7 @@
 # Locked Screen
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Prevents unauthorized access to device. Requires PIN to unlock.
 

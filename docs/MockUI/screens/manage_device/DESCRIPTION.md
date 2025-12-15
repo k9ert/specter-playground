@@ -1,5 +1,7 @@
 # Manage Device
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Central hub for device configuration and maintenance.
 

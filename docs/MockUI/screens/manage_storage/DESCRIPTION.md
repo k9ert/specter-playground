@@ -1,5 +1,7 @@
 # Manage Storage
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Manage persistent storage locations for seeds, wallets, and backups.
 

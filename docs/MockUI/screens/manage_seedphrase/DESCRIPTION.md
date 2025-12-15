@@ -1,5 +1,7 @@
 # Manage Seedphrase
 
+![Screenshot](screenshot.png)
+
 ## Purpose
 Operations on the currently loaded seed phrase.
 
