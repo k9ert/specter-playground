@@ -179,10 +179,10 @@ class I18nManager:
                 print(f"Warning: Invalid translation format for key '{key}' in {lang_file}")
                 translations[key] = str(value)
         
-        # Step 4: Fill missing keys from default language
+        # Step 4: Fill missing keys from default language. Consider the content "<FILL>" (placeholder for translators) as also missing 
         missing_keys = []
         for key in default_translations.keys():
-            if key not in translations:
+            if key not in translations or translations[key] == "<FILL>":
                 missing_keys.append(key)
                 translations[key] = default_translations[key]
         

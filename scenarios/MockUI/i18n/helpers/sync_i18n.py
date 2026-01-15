@@ -11,8 +11,8 @@ Usage:
     python sync_i18n.py [--dry-run] [--source-dir path] [--i18n-dir path]
     
 Options:
-    --dry-run       Show what would be changed without making actual changes
-    --source-dir    Directory to search for source files (default: parent of i18n dir)
+    --dry-run      Show what would be changed without making actual changes
+    --source-dir   Directory to search for source files (default: parent of i18n dir)
     --i18n-dir     Directory containing i18n files (default: auto-detected)
     --log-dir      Directory to write log files (default: same as i18n-dir)
 """
@@ -104,8 +104,17 @@ class I18nSynchronizer:
         if not self.english_file.exists():
             raise FileNotFoundError(f"English translation file not found: {self.english_file}")
             
-        with open(self.english_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(self.english_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON in English translation file {self.english_file}:\n"
+                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
+                f"  Please fix the JSON syntax before running i18n sync."
+            ) from e
+        except Exception as e:
+            raise ValueError(f"Error reading English translation file {self.english_file}: {e}") from e
             
         return data.get('translations', {})
     
@@ -115,8 +124,17 @@ class I18nSynchronizer:
             raise FileNotFoundError(f"English translation file not found: {self.english_file}")
             
         # Load existing data to preserve metadata
-        with open(self.english_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(self.english_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON in English translation file {self.english_file}:\n"
+                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
+                f"  Please fix the JSON syntax before running i18n sync."
+            ) from e
+        except Exception as e:
+            raise ValueError(f"Error reading English translation file {self.english_file}: {e}") from e
         
         data['translations'] = translations
         
@@ -178,16 +196,34 @@ class I18nSynchronizer:
     
     def load_language_file(self, file_path: Path) -> Dict[str, Dict[str, str]]:
         """Load a non-English language file."""
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON in language file {file_path}:\n"
+                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
+                f"  Please fix the JSON syntax before running i18n sync."
+            ) from e
+        except Exception as e:
+            raise ValueError(f"Error reading language file {file_path}: {e}") from e
             
         return data.get('translations', {})
     
     def save_language_file(self, file_path: Path, translations: Dict[str, Dict[str, str]]):
         """Save a non-English language file."""
         # Load existing data to preserve metadata
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON in language file {file_path}:\n"
+                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
+                f"  Please fix the JSON syntax before running i18n sync."
+            ) from e
+        except Exception as e:
+            raise ValueError(f"Error reading language file {file_path}: {e}") from e
         
         data['translations'] = translations
         
@@ -203,7 +239,11 @@ class I18nSynchronizer:
         lang_translations = self.load_language_file(file_path)
         updated_translations = {}
         
-        changes_made = 0
+        # Track different types of changes
+        added_keys = []
+        updated_ref_keys = []
+        converted_format_keys = []
+        removed_keys = []
         
         for en_key, en_text in english_translations.items():
             if en_key in lang_translations:
@@ -216,8 +256,8 @@ class I18nSynchronizer:
                             'text': existing.get('text', self.dummy_text),
                             'ref_en': en_text
                         }
-                        self.log_file(filename, f"Updated English reference for {en_key}")
-                        changes_made += 1
+                        updated_ref_keys.append(en_key)
+                        self.log_file(filename, f"Updated English reference for {en_key}: '{existing.get('ref_en', '')}' -> '{en_text}'")
                     else:
                         # No change needed
                         updated_translations[en_key] = existing
@@ -227,25 +267,45 @@ class I18nSynchronizer:
                         'text': existing if existing else self.dummy_text,
                         'ref_en': en_text
                     }
+                    converted_format_keys.append(en_key)
                     self.log_file(filename, f"Converted format for {en_key}")
-                    changes_made += 1
             else:
                 # Key only in English - add dummy entry
                 updated_translations[en_key] = {
                     'text': self.dummy_text,
                     'ref_en': en_text
                 }
+                added_keys.append(en_key)
                 self.log_file(filename, f"Added new key {en_key}")
-                changes_made += 1
         
         # Check for keys only in language file (should be removed)
         lang_only_keys = set(lang_translations.keys()) - set(english_translations.keys())
+        removed_keys = list(lang_only_keys)
         for key in lang_only_keys:
             self.log_file(filename, f"Removed obsolete key {key}")
-            changes_made += 1
         
-        if changes_made > 0:
-            self.log_master(f"  Made {changes_made} changes to {filename}")
+        # Log summary of changes
+        total_changes = len(added_keys) + len(updated_ref_keys) + len(converted_format_keys) + len(removed_keys)
+        
+        if total_changes > 0:
+            self.log_master(f"Changes made to {filename}:")
+            if added_keys:
+                self.log_master(f"  Added keys: {len(added_keys)}")
+                for key in sorted(added_keys):
+                    self.log_master(f"    + {key}")
+            if updated_ref_keys:
+                self.log_master(f"  Updated English references: {len(updated_ref_keys)}")
+                for key in sorted(updated_ref_keys):
+                    self.log_master(f"    ~ {key}")
+            if converted_format_keys:
+                self.log_master(f"  Converted format: {len(converted_format_keys)}")
+                for key in sorted(converted_format_keys):
+                    self.log_master(f"    * {key}")
+            if removed_keys:
+                self.log_master(f"  Removed obsolete keys: {len(removed_keys)}")
+                for key in sorted(removed_keys):
+                    self.log_master(f"    - {key}")
+            
             self.save_language_file(file_path, updated_translations)
         else:
             self.log_master(f"  No changes needed for {filename}")
