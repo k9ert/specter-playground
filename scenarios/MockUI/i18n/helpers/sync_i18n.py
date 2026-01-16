@@ -104,17 +104,8 @@ class I18nSynchronizer:
         if not self.english_file.exists():
             raise FileNotFoundError(f"English translation file not found: {self.english_file}")
             
-        try:
-            with open(self.english_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON in English translation file {self.english_file}:\n"
-                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
-                f"  Please fix the JSON syntax before running i18n sync."
-            ) from e
-        except Exception as e:
-            raise ValueError(f"Error reading English translation file {self.english_file}: {e}") from e
+        with open(self.english_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
             
         return data.get('translations', {})
     
@@ -124,17 +115,8 @@ class I18nSynchronizer:
             raise FileNotFoundError(f"English translation file not found: {self.english_file}")
             
         # Load existing data to preserve metadata
-        try:
-            with open(self.english_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON in English translation file {self.english_file}:\n"
-                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
-                f"  Please fix the JSON syntax before running i18n sync."
-            ) from e
-        except Exception as e:
-            raise ValueError(f"Error reading English translation file {self.english_file}: {e}") from e
+        with open(self.english_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
         data['translations'] = translations
         
@@ -196,34 +178,16 @@ class I18nSynchronizer:
     
     def load_language_file(self, file_path: Path) -> Dict[str, Dict[str, str]]:
         """Load a non-English language file."""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON in language file {file_path}:\n"
-                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
-                f"  Please fix the JSON syntax before running i18n sync."
-            ) from e
-        except Exception as e:
-            raise ValueError(f"Error reading language file {file_path}: {e}") from e
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
             
         return data.get('translations', {})
     
     def save_language_file(self, file_path: Path, translations: Dict[str, Dict[str, str]]):
         """Save a non-English language file."""
         # Load existing data to preserve metadata
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON in language file {file_path}:\n"
-                f"  Line {e.lineno}, Column {e.colno}: {e.msg}\n"
-                f"  Please fix the JSON syntax before running i18n sync."
-            ) from e
-        except Exception as e:
-            raise ValueError(f"Error reading language file {file_path}: {e}") from e
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
         data['translations'] = translations
         
