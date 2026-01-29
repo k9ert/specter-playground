@@ -7,6 +7,7 @@ FROZEN_MANIFEST_DISCO ?= ../../../../manifests/disco.py
 FROZEN_MANIFEST_DEBUG ?= ../../../../manifests/debug.py
 FROZEN_MANIFEST_UNIX ?= ../../../../manifests/unix.py
 FROZEN_MANIFEST_PLAYGROUND ?= ../../../../manifests/playground.py
+FROZEN_MANIFEST_HELLO ?= ../../../../manifests/hello.py
 DEBUG ?= 0
 USE_DBOOT ?= 0
 
@@ -75,6 +76,23 @@ debug: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
 	cp $(MPY_DIR)/ports/stm32/build-STM32F469DISC/firmware.hex \
 		$(TARGET_DIR)/debug.hex
 
+
+# hello world scenario
+hello: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
+	@echo Building hello world firmware
+	make -C $(MPY_DIR)/ports/stm32 \
+		BOARD=$(BOARD) \
+		FLAVOR=$(FLAVOR) \
+		USE_DBOOT=$(USE_DBOOT) \
+		USER_C_MODULES=$(USER_C_MODULES) \
+		FROZEN_MANIFEST=$(FROZEN_MANIFEST_HELLO) \
+		CFLAGS_EXTRA='-DMP_CONFIGFILE="<mpconfigport_specter.h>"' \
+		DEBUG=$(DEBUG) && \
+	arm-none-eabi-objcopy -O binary \
+		$(MPY_DIR)/ports/stm32/build-STM32F469DISC/firmware.elf \
+		$(TARGET_DIR)/hello.bin && \
+	cp $(MPY_DIR)/ports/stm32/build-STM32F469DISC/firmware.hex \
+		$(TARGET_DIR)/hello.hex
 
 # unixport (simulator)
 unix: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/unix
