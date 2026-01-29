@@ -8,10 +8,16 @@ Supports fallback to default language for missing translations.
 import json
 import os
 
+# Try to import embedded translations (available in frozen firmware)
+try:
+    from .translations_embedded import LANGUAGES as _EMBEDDED
+except ImportError:
+    _EMBEDDED = {}
+
 
 class I18nManager:
     """Manages UI translations and language switching."""
-    
+
     # Default paths
     I18N_DIR = None  # Will be set on first instantiation
     LANGUAGE_FILE_PREFIX = "specter_ui_"
@@ -72,6 +78,11 @@ class I18nManager:
         except Exception as e:
             print(f"Warning: Could not scan i18n directory: {e}")
         
+        # Include languages from embedded translations (frozen firmware)
+        for lang_code in _EMBEDDED:
+            if lang_code not in self.available_languages:
+                self.available_languages.append(lang_code)
+
         # Ensure default language is always available (even if file is missing, we'll use empty dict)
         if self.DEFAULT_LANGUAGE not in self.available_languages:
             self.available_languages.append(self.DEFAULT_LANGUAGE)
@@ -127,7 +138,7 @@ class I18nManager:
         try:
             with open(default_file, 'r') as f:
                 default_data = json.load(f)
-            
+
             # Extract default translations
             default_raw = default_data.get('translations', {})
             for key, value in default_raw.items():
@@ -138,7 +149,11 @@ class I18nManager:
                 else:
                     default_translations[key] = str(value)
         except OSError:
-            print(f"Warning: Default language file not found at {default_file}")
+            # Fall back to embedded translations
+            if self.DEFAULT_LANGUAGE in _EMBEDDED:
+                default_translations = dict(_EMBEDDED[self.DEFAULT_LANGUAGE].get('translations', {}))
+            else:
+                print(f"Warning: Default language file not found at {default_file}")
         except Exception as e:
             print(f"Warning: Could not load default language: {e}")
         
@@ -149,8 +164,12 @@ class I18nManager:
             with open(lang_file, 'r') as f:
                 data = json.load(f)
         except OSError:
-            print(f"Warning: Language file not found: {lang_file}, using default language")
-            return default_translations
+            # Fall back to embedded translations
+            if lang_code in _EMBEDDED:
+                data = _EMBEDDED[lang_code]
+            else:
+                print(f"Warning: Language file not found: {lang_file}, using default language")
+                return default_translations
         except (ValueError, KeyError) as e:
             print(f"Error: Invalid JSON in language file {lang_file}: {e}")
             return default_translations
@@ -245,6 +264,9 @@ class I18nManager:
                 metadata = data.get('_metadata', {})
                 return metadata.get('language_name', lang_code)
         except:
+            # Fall back to embedded translations metadata
+            if lang_code in _EMBEDDED:
+                return _EMBEDDED[lang_code].get('_metadata', {}).get('language_name', lang_code)
             return lang_code
     
     def t(self, key):

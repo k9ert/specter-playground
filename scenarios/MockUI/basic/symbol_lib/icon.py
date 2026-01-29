@@ -29,49 +29,52 @@ def color_to_rgb(color):
     return (r, g, b)
 
 
-def create_icon_from_bitmap(pattern, width, height, color):
+def create_icon_from_bitmap(pattern, width, height):
     """
-    Convert an alpha-channel bitmap pattern to ARGB8888 format for LVGL.
-    
+    Convert an alpha-channel bitmap pattern to A8 format for LVGL.
+
+    Uses A8 (alpha-only) format to minimise memory allocation.
+    For 8-bit patterns already stored as ``bytes``, the data is used
+    directly with zero heap allocation (references frozen bytecode).
+    Color is applied separately via the image recolor style.
+
     Args:
         pattern: bytes or list of alpha values (0-255) for each pixel, or
                  list of 0s and 1s for legacy binary patterns
         width: Width of the icon in pixels
         height: Height of the icon in pixels
-        color: lv.color_t object (e.g., from lv.color_hex(0xFF0000))
-    
+
     Returns:
         lv.image_dsc_t object ready to use with lv.image
     """
-    # Extract RGB components from color
-    r, g, b = color_to_rgb(color)
-    
-    # Detect if pattern is legacy binary (only 0 and 1) or 8-bit alpha (0-255)
-    # Check the maximum value to determine format
+    # Validate pattern size matches expected dimensions
+    expected_size = width * height
+    if len(pattern) != expected_size:
+        raise ValueError(
+            f"Pattern size mismatch: got {len(pattern)} pixels, "
+            f"expected {expected_size} (width={width} × height={height})"
+        )
+
+    # Detect if pattern is legacy binary (only 0 and 1) or 8-bit alpha
     max_value = max(pattern) if pattern else 0
     is_binary = max_value <= 1
-    
-    icon_data_argb = []
-    for alpha in pattern:
-        # Handle both 8-bit alpha (0-255) and legacy binary (0/1) patterns
-        if is_binary:
-            # Legacy binary format: 0=transparent, 1=fully opaque
-            alpha_value = 0xFF if alpha == 1 else 0x00
-        else:
-            # 8-bit alpha value (0-255)
-            alpha_value = int(alpha)
-        
-        # Apply user's color with the alpha from the pattern (BGRA byte order for ARGB8888)
-        icon_data_argb.extend([b, g, r, alpha_value])
-    
-    icon_data_bytes = bytes(icon_data_argb)
-    
-    # Create LVGL image descriptor
+
+    if is_binary:
+        # Convert binary (0/1) to full alpha (0x00/0xFF)
+        icon_data_bytes = bytes(0xFF if a else 0x00 for a in pattern)
+    elif isinstance(pattern, bytes):
+        # 8-bit alpha already in bytes — use directly (zero copy from flash)
+        icon_data_bytes = pattern
+    else:
+        # List of 8-bit alpha values — convert once
+        icon_data_bytes = bytes(pattern)
+
+    # Create LVGL image descriptor with A8 (alpha-only) format
     return lv.image_dsc_t({
         'header': {
             'w': width,
             'h': height,
-            'cf': lv.COLOR_FORMAT.ARGB8888,
+            'cf': lv.COLOR_FORMAT.A8,
         },
         'data_size': len(icon_data_bytes),
         'data': icon_data_bytes,
@@ -130,30 +133,33 @@ class Icon:
         """
         Get an lv.image_dsc_t for this icon.
         Results are cached in the global cache to avoid recreating descriptors.
-        
+        With A8 format the descriptor is colour-independent, so one cached
+        entry per unique pattern is sufficient.
+
         Returns:
             lv.image_dsc_t object
         """
-        # Extract RGB values from color object to create unique cache key
-        r, g, b = color_to_rgb(self.color)
-        
-        # Use pattern identity and RGB values as cache key
-        cache_key = (id(self.pattern), r, g, b)
-        
+        cache_key = id(self.pattern)
+
         if cache_key not in Icon._global_image_dsc_cache:
             Icon._global_image_dsc_cache[cache_key] = create_icon_from_bitmap(
-                self.pattern, self.width, self.height, self.color
+                self.pattern, self.width, self.height
             )
-        
+
         return Icon._global_image_dsc_cache[cache_key]
-    
+
     def add_to_parent(self, parent):
         """
         Add this icon to a parent lv.image object.
-        Uses the icon's stored color.
-        
+        Sets the A8 image source and applies the icon colour via the
+        LVGL ``image_recolor`` style property.
+
         Args:
             parent: The lv.image object to configure
         """
         parent.set_src(self.get_image_dsc())
         parent.set_size(self.width, self.height)
+        # Apply colour via recolor (image data is alpha-only A8)
+        r, g, b = color_to_rgb(self.color)
+        parent.set_style_image_recolor(lv.color_make(r, g, b), 0)
+        parent.set_style_image_recolor_opa(lv.OPA.COVER, 0)

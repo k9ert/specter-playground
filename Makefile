@@ -8,6 +8,7 @@ FROZEN_MANIFEST_DEBUG ?= ../../../../manifests/debug.py
 FROZEN_MANIFEST_UNIX ?= ../../../../manifests/unix.py
 FROZEN_MANIFEST_PLAYGROUND ?= ../../../../manifests/playground.py
 FROZEN_MANIFEST_HELLO ?= ../../../../manifests/hello.py
+FROZEN_MANIFEST_MOCKUI ?= ../../../../manifests/mockui.py
 DEBUG ?= 0
 USE_DBOOT ?= 0
 
@@ -93,6 +94,23 @@ hello: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
 		$(TARGET_DIR)/hello.bin && \
 	cp $(MPY_DIR)/ports/stm32/build-STM32F469DISC/firmware.hex \
 		$(TARGET_DIR)/hello.hex
+
+# MockUI firmware
+mockui: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
+	@echo Building MockUI firmware
+	make -C $(MPY_DIR)/ports/stm32 \
+		BOARD=$(BOARD) \
+		FLAVOR=$(FLAVOR) \
+		USE_DBOOT=$(USE_DBOOT) \
+		USER_C_MODULES=$(USER_C_MODULES) \
+		FROZEN_MANIFEST=$(FROZEN_MANIFEST_MOCKUI) \
+		CFLAGS_EXTRA='-DMP_CONFIGFILE="<mpconfigport_specter.h>"' \
+		DEBUG=$(DEBUG) && \
+	arm-none-eabi-objcopy -O binary \
+		$(MPY_DIR)/ports/stm32/build-STM32F469DISC/firmware.elf \
+		$(TARGET_DIR)/mockui.bin && \
+	cp $(MPY_DIR)/ports/stm32/build-STM32F469DISC/firmware.hex \
+		$(TARGET_DIR)/mockui.hex
 
 # unixport (simulator)
 unix: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/unix
