@@ -29,7 +29,7 @@ def color_to_rgb(color):
     return (r, g, b)
 
 
-def create_icon_from_bitmap(pattern, width, height, color=None):
+def create_icon_from_bitmap(pattern, width, height):
     """
     Convert an alpha-channel bitmap pattern to A8 format for LVGL.
 
@@ -43,12 +43,18 @@ def create_icon_from_bitmap(pattern, width, height, color=None):
                  list of 0s and 1s for legacy binary patterns
         width: Width of the icon in pixels
         height: Height of the icon in pixels
-        color: Unused (kept for API compatibility). Color is applied
-               via ``Icon.add_to_parent`` recolor style.
 
     Returns:
         lv.image_dsc_t object ready to use with lv.image
     """
+    # Validate pattern size matches expected dimensions
+    expected_size = width * height
+    if len(pattern) != expected_size:
+        raise ValueError(
+            f"Pattern size mismatch: got {len(pattern)} pixels, "
+            f"expected {expected_size} (width={width} × height={height})"
+        )
+
     # Detect if pattern is legacy binary (only 0 and 1) or 8-bit alpha
     max_value = max(pattern) if pattern else 0
     is_binary = max_value <= 1
