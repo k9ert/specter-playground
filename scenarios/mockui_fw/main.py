@@ -1,13 +1,13 @@
 # main.py - MockUI on STM32F469 Discovery
 import gc
-import udisplay
+import display
 import lvgl as lv
 import utime as time
 
 from MockUI import NavigationController, SpecterState
 
 # Init display without autoupdate timer to avoid heap fragmentation
-udisplay.init()
+display.init()
 
 gc.collect()
 
@@ -48,5 +48,5 @@ import pyb
 pyb.usb_mode("VCP")
 
 while True:
-    udisplay.update(30)
+    display.update(30)
     time.sleep_ms(30)

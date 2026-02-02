@@ -11,6 +11,7 @@ FROZEN_MANIFEST_HELLO ?= ../../../../manifests/hello.py
 FROZEN_MANIFEST_MOCKUI ?= ../../../../manifests/mockui.py
 DEBUG ?= 0
 USE_DBOOT ?= 0
+ADD_LANG ?=
 
 $(TARGET_DIR):
 	mkdir -p $(TARGET_DIR)
@@ -18,6 +19,23 @@ $(TARGET_DIR):
 # check submodules
 $(MPY_DIR)/mpy-cross/Makefile:
 	git submodule update --init --recursive
+
+# i18n compilation
+build-i18n:
+	@echo Building i18n files...
+	@mkdir -p src/data/lang
+	@cd scenarios/MockUI/i18n && python3 lang_compiler.py generate_keys specter_ui_en.json
+	@cd scenarios/MockUI/i18n && python3 lang_compiler.py compile specter_ui_en.json && mv lang_en.bin ../../../src/data/lang/
+	@if [ -n "$(ADD_LANG)" ]; then \
+		for lang in $(shell echo $(ADD_LANG) | tr ',' ' '); do \
+			if [ -f scenarios/MockUI/i18n/specter_ui_$$lang.json ]; then \
+				echo "  Compiling $$lang..."; \
+				cd scenarios/MockUI/i18n && python3 lang_compiler.py compile specter_ui_$$lang.json && mv lang_$$lang.bin ../../../src/data/lang/ || true; \
+			else \
+				echo "  Warning: Language file specter_ui_$$lang.json not found"; \
+			fi; \
+		done; \
+	fi
 
 # cross-compiler
 mpy-cross: $(TARGET_DIR) $(MPY_DIR)/mpy-cross/Makefile
@@ -96,7 +114,7 @@ hello: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
 		$(TARGET_DIR)/hello.hex
 
 # MockUI firmware
-mockui: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
+mockui: $(TARGET_DIR) mpy-cross build-i18n $(MPY_DIR)/ports/stm32
 	@echo Building MockUI firmware
 	make -C $(MPY_DIR)/ports/stm32 \
 		BOARD=$(BOARD) \
@@ -130,6 +148,8 @@ all: mpy-cross disco unix
 
 clean:
 	rm -rf $(TARGET_DIR)
+	rm -f scenarios/MockUI/i18n/translation_keys.py scenarios/MockUI/i18n/language_config.json
+	rm -rf src/data
 	make -C $(MPY_DIR)/mpy-cross clean
 	rm -rf $(MPY_DIR)/mpy-cross/build
 	make -C $(MPY_DIR)/ports/unix \
@@ -150,4 +170,4 @@ rag-index:
 rag-search:
 	cd .rag && .venv/bin/python search.py "$(QUERY)"
 
-.PHONY: all clean rag-setup rag-index rag-search
+.PHONY: all clean build-i18n rag-setup rag-index rag-search
