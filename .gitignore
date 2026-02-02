@@ -14,3 +14,8 @@ release
 .rag/.venv/
 .rag/chroma_db/
 specter-diy-src
+
+# i18n generated files
+scenarios/MockUI/i18n/translation_keys.py
+scenarios/MockUI/i18n/language_config.json
+src/data/

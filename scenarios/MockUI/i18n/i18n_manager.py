@@ -1,55 +1,54 @@
 """
 Internationalization (i18n) Manager for Specter UI.
 
-Handles loading, validating, and providing translations for the user interface.
+Handles loading, validating, and providing translations from efficient binary format.
 Supports fallback to default language for missing translations.
+Enables runtime loading of new languages via JSON to binary conversion.
 """
 
-import json
 import os
-
-# Try to import embedded translations (available in frozen firmware)
-try:
-    from .translations_embedded import LANGUAGES as _EMBEDDED
-except ImportError:
-    _EMBEDDED = {}
+import struct
+import json
+from .translation_keys import KEY_TO_INDEX, Keys
+from .lang_compiler import (
+    read_translation_from_binary,
+    get_binary_filename,
+    get_json_filename,
+    BINARY_FILE_PREFIX,
+    BINARY_FILE_SUFFIX,
+    JSON_FILE_PREFIX,
+    JSON_FILE_SUFFIX,
+    extract_language_code_from_filename,
+    json_to_binary
+)
 
 
 class I18nManager:
     """Manages UI translations and language switching."""
 
-    # Default paths
-    I18N_DIR = None  # Will be set on first instantiation
-    LANGUAGE_FILE_PREFIX = "specter_ui_"
-    LANGUAGE_FILE_SUFFIX = ".json"
-    CONFIG_FILE = "language_config.json"
-    DEFAULT_LANGUAGE = "en"  # Default language is English
+    # Fallback strings
+    STR_MISSING = "[MISSING]"
+    STR_UNKNOWN_KEY = "[UNKNOWN_KEY]"
     
-    def __init__(self, i18n_dir=None):
+    # Default paths
+    DEFAULT_LANGUAGE = "en"  # Default language is English
+    FLASH_I18N_DIR = "/flash/i18n"  # Flash filesystem directory for all language files
+    FLASH_CONFIG_PATH = FLASH_I18N_DIR + "/language_config.json"  # Persistent language preference storage
+    
+    def __init__(self):
         """
         Initialize the i18n manager.
         
-        Args:
-            i18n_dir: Path to the directory containing language files.
-                     If None, uses the directory where this file is located.
+        All language files are stored in /flash/i18n/ including the
+        default language (embedded via build system).
         """
-        if i18n_dir is None:
-            # Use the directory where this file is located
-            # MicroPython doesn't have os.path, use string operations
-            file_path = __file__
-            # Remove the filename to get directory
-            last_slash = file_path.rfind('/')
-            if last_slash != -1:
-                i18n_dir = file_path[:last_slash]
-            else:
-                i18n_dir = '.'
-        
-        self.i18n_dir = i18n_dir
-        I18nManager.I18N_DIR = i18n_dir
-        
         self.current_language = None
-        self.translations = {}
+        self.current_lang_file = None
+        self.default_lang_file = None
         self.available_languages = []
+        
+        # Ensure flash directory exists
+        self._ensure_flash_i18n_dir()
         
         # Load available languages
         self._scan_available_languages()
@@ -58,41 +57,50 @@ class I18nManager:
         selected_lang = self._load_language_preference()
         self.set_language(selected_lang)
     
+    def _ensure_flash_i18n_dir(self):
+        """Verify the flash i18n directory exists (should be created by build system)."""
+        try:
+            # Check if directory exists by trying to list it
+            os.listdir(self.FLASH_I18N_DIR)
+        except OSError:
+            # Directory doesn't exist - this indicates a build system problem
+            print(f"Warning: {self.FLASH_I18N_DIR} does not exist!")
+            print("This directory should be created by the build system.")
+            print("Language system may not work correctly.")
+        except Exception as e:
+            print(f"Warning: Could not access flash i18n directory: {e}")
+
     def _scan_available_languages(self):
-        """Scan the i18n directory for available language files."""
+        """Scan for available language files (binary format) in flash directory."""
         self.available_languages = []
+        lang_codes = set()
         
         try:
-            files = os.listdir(self.i18n_dir)
+            files = os.listdir(self.FLASH_I18N_DIR)
             for filename in files:
-                if filename.startswith(self.LANGUAGE_FILE_PREFIX) and filename.endswith(self.LANGUAGE_FILE_SUFFIX):
-                    # Extract language code from filename
-                    lang_code = filename[len(self.LANGUAGE_FILE_PREFIX):-len(self.LANGUAGE_FILE_SUFFIX)]
-                    
-                    # Validate: language code must be exactly 2 letters (a-z, A-Z)
-                    if len(lang_code) == 2 and lang_code.isalpha():
-                        self.available_languages.append(lang_code.lower())
-                    else:
-                        print(f"Warning: Invalid language code '{lang_code}' in filename '{filename}'. "
-                              f"Language codes must be exactly 2 letters (ISO 639-1).")
+                if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
+                    # Use lang_compiler function to extract language code
+                    lang_code = extract_language_code_from_filename(filename)
+                    if lang_code:  # None if invalid
+                        lang_codes.add(lang_code)
+        except OSError:
+            pass  # Directory doesn't exist yet
         except Exception as e:
-            print(f"Warning: Could not scan i18n directory: {e}")
-        
-        # Include languages from embedded translations (frozen firmware)
-        for lang_code in _EMBEDDED:
-            if lang_code not in self.available_languages:
-                self.available_languages.append(lang_code)
+            print(f"Warning: Error scanning {self.FLASH_I18N_DIR}: {e}")
 
-        # Ensure default language is always available (even if file is missing, we'll use empty dict)
+        self.available_languages = sorted(list(lang_codes))
+
+        # Verify default language is available (critical requirement)
         if self.DEFAULT_LANGUAGE not in self.available_languages:
-            self.available_languages.append(self.DEFAULT_LANGUAGE)
+            print(f"CRITICAL ERROR: Default language '{self.DEFAULT_LANGUAGE}' not found in {self.FLASH_I18N_DIR}!")
+            print(f"Expected file: {get_binary_filename(self.DEFAULT_LANGUAGE)}")
+            print("This indicates a build system problem - the default language should be embedded in firmware.")
+            print("All translations will show as '[MISSING]' until this is fixed.")
     
     def _load_language_preference(self):
-        """Load the last selected language from config file."""
-        config_path = self.i18n_dir + '/' + self.CONFIG_FILE
-        
+        """Load the last selected language from flash config file."""
         try:
-            with open(config_path, 'r') as f:
+            with open(self.FLASH_CONFIG_PATH, 'r') as f:
                 config = json.load(f)
                 lang = config.get('selected_language', self.DEFAULT_LANGUAGE)
                 
@@ -102,118 +110,22 @@ class I18nManager:
                 else:
                     print(f"Warning: Saved language '{lang}' not available, using default language '{self.DEFAULT_LANGUAGE}'")
                     return self.DEFAULT_LANGUAGE
-        except OSError:
-            # Config file doesn't exist yet, use default language
-            return self.DEFAULT_LANGUAGE
         except Exception as e:
-            print(f"Warning: Could not load language preference: {e}")
+            # Config file doesn't exist or can't be read - use default and try to create it
+            print(f"Config file not found or unreadable, using default language: {self.DEFAULT_LANGUAGE}")
+            self._save_language_preference(self.DEFAULT_LANGUAGE)
             return self.DEFAULT_LANGUAGE
     
     def _save_language_preference(self, lang_code):
-        """Save the selected language to config file."""
-        config_path = self.i18n_dir + '/' + self.CONFIG_FILE
-        
+        """Save the selected language to flash filesystem."""
         try:
             config = {'selected_language': lang_code}
-            with open(config_path, 'w') as f:
+            with open(self.FLASH_CONFIG_PATH, 'w') as f:
                 json.dump(config, f)
+            print(f"Language preference saved: {lang_code}")
         except Exception as e:
-            print(f"Warning: Could not save language preference: {e}")
-    
-    def _load_language_file(self, lang_code):
-        """
-        Load a language file and validate it.
-        Temporarily loads default language to fill missing keys, then frees it.
-        
-        Args:
-            lang_code: ISO 639-1 language code (e.g., 'en', 'de')
-            
-        Returns:
-            dict: Translations dictionary with missing keys filled from default language
-        """
-        # Step 1: Load default language (English) for reference
-        default_file = self.i18n_dir + '/' + f"{self.LANGUAGE_FILE_PREFIX}{self.DEFAULT_LANGUAGE}{self.LANGUAGE_FILE_SUFFIX}"
-        default_translations = {}
-        
-        try:
-            with open(default_file, 'r') as f:
-                default_data = json.load(f)
-
-            # Extract default translations
-            default_raw = default_data.get('translations', {})
-            for key, value in default_raw.items():
-                if isinstance(value, str):
-                    default_translations[key] = value
-                elif isinstance(value, dict):
-                    default_translations[key] = value.get('text', value.get('ref_en', key))
-                else:
-                    default_translations[key] = str(value)
-        except OSError:
-            # Fall back to embedded translations
-            if self.DEFAULT_LANGUAGE in _EMBEDDED:
-                default_translations = dict(_EMBEDDED[self.DEFAULT_LANGUAGE].get('translations', {}))
-            else:
-                print(f"Warning: Default language file not found at {default_file}")
-        except Exception as e:
-            print(f"Warning: Could not load default language: {e}")
-        
-        # Step 2: Load selected language file
-        lang_file = self.i18n_dir + '/' + f"{self.LANGUAGE_FILE_PREFIX}{lang_code}{self.LANGUAGE_FILE_SUFFIX}"
-        
-        try:
-            with open(lang_file, 'r') as f:
-                data = json.load(f)
-        except OSError:
-            # Fall back to embedded translations
-            if lang_code in _EMBEDDED:
-                data = _EMBEDDED[lang_code]
-            else:
-                print(f"Warning: Language file not found: {lang_file}, using default language")
-                return default_translations
-        except (ValueError, KeyError) as e:
-            print(f"Error: Invalid JSON in language file {lang_file}: {e}")
-            return default_translations
-        except Exception as e:
-            print(f"Error: Could not load language file {lang_file}: {e}")
-            return default_translations
-        
-        # Validate metadata
-        metadata = data.get('_metadata', {})
-        if metadata.get('language_code') != lang_code:
-            print(f"Warning: Language code mismatch in {lang_file}")
-        
-        # Step 3: Extract translations from selected language
-        raw_translations = data.get('translations', {})
-        translations = {}
-        
-        # Process translations based on format
-        for key, value in raw_translations.items():
-            if isinstance(value, str):
-                # Simple string format (used for default language)
-                translations[key] = value
-            elif isinstance(value, dict):
-                # Object format with 'text' and 'ref_en' fields
-                translations[key] = value.get('text', value.get('ref_en', key))
-            else:
-                print(f"Warning: Invalid translation format for key '{key}' in {lang_file}")
-                translations[key] = str(value)
-        
-        # Step 4: Fill missing keys from default language
-        missing_keys = []
-        for key in default_translations.keys():
-            if key not in translations:
-                missing_keys.append(key)
-                translations[key] = default_translations[key]
-        
-        # Warn about missing translations
-        if missing_keys and lang_code != self.DEFAULT_LANGUAGE:
-            print(f"Warning: Language '{lang_code}' is missing {len(missing_keys)} translation(s). "
-                  f"Default language fallback will be used for missing keys.")
-        
-        # Step 5: Free default language memory (Python will garbage collect)
-        default_translations = None
-        
-        return translations
+            # Preference won't persist across reboots, but language still works in current session
+            print(f"Warning: Could not save language preference (will use default on next boot): {e}")
     
     def set_language(self, lang_code):
         """
@@ -229,13 +141,28 @@ class I18nManager:
             print(f"Warning: Language '{lang_code}' not available. Available: {self.available_languages}")
             return False
         
-        # Load the language file
-        self.translations = self._load_language_file(lang_code)
+        # Construct file paths directly (all files in FLASH_I18N_DIR)
+        current_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
+        default_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(self.DEFAULT_LANGUAGE)}"
+        
+        # Verify files exist
+        try:
+            # Just check if we can stat the files
+            os.stat(current_path)
+            os.stat(default_path)
+        except OSError as e:
+            print(f"Error: Language file not found: {e}")
+            return False
+        
+        # Set file paths
+        self.current_lang_file = current_path
+        self.default_lang_file = default_path
         self.current_language = lang_code
         
         # Save preference
         self._save_language_preference(lang_code)
         
+        print(f"Language set to '{lang_code}' (file: {current_path})")
         return True
     
     def get_language(self):
@@ -246,44 +173,103 @@ class I18nManager:
         """Get list of available language codes."""
         return self.available_languages.copy()
     
-    def get_language_name(self, lang_code):
-        """
-        Get the human-readable name of a language.
-        
-        Args:
-            lang_code: ISO 639-1 language code
-            
-        Returns:
-            str: Language name or the code if name not found
-        """
-        lang_file = self.i18n_dir + '/' + f"{self.LANGUAGE_FILE_PREFIX}{lang_code}{self.LANGUAGE_FILE_SUFFIX}"
-        
-        try:
-            with open(lang_file, 'r') as f:
-                data = json.load(f)
-                metadata = data.get('_metadata', {})
-                return metadata.get('language_name', lang_code)
-        except:
-            # Fall back to embedded translations metadata
-            if lang_code in _EMBEDDED:
-                return _EMBEDDED[lang_code].get('_metadata', {}).get('language_name', lang_code)
-            return lang_code
-    
     def t(self, key):
         """
-        Get translation for a key.
+        Get translation for a key using binary file lookup.
+        
+        Supports both string keys (e.g., "MAIN_MENU_TITLE") and
+        integer keys (e.g., Keys.MAIN_MENU_TITLE) for RAM efficiency.
         
         Args:
-            key: Translation key (e.g., 'MAIN_MENU_TITLE')
+            key: Translation key (string or integer from Keys class)
             
         Returns:
-            str: Translated text or the key itself if not found
+            str: Translated text or fallback string
         """
-        return self.translations.get(key, key)
+        # Validate setup
+        if not self.current_lang_file or not self.default_lang_file:
+            print(f"Warning: Language files not set up properly")
+            return self.STR_MISSING
+        
+        # Convert string key to index if needed
+        if isinstance(key, str):
+            key_index = KEY_TO_INDEX.get(key)
+            if key_index is None:
+                print(f"Warning: Unknown translation key '{key}'")
+                return self.STR_UNKNOWN_KEY
+        else:
+            # Direct integer index (RAM efficient)
+            key_index = key
+        
+        # Try to read from current language file
+        text, error = read_translation_from_binary(self.current_lang_file, key_index)
+        
+        # If not found in current language, try default language
+        if text is None and error == "missing":
+            text, error = read_translation_from_binary(self.default_lang_file, key_index)
+        
+        # If still not found, return fallback
+        if text is None:
+            if error == "missing":
+                return self.STR_MISSING
+            else:
+                # Other errors (invalid_key_index, read_error, etc.)
+                print(f"Warning: Error reading translation: {error}")
+                return self.STR_MISSING
+        
+        return text
+    
+    def __getitem__(self, key):
+        """Allow using the manager as a dictionary: i18n['KEY']"""
+        return self.t(key)
     
     def __call__(self, key):
         """Allow using the manager as a function: i18n('KEY')"""
         return self.t(key)
+    
+    def load_language_from_json(self, json_path, lang_code=None):
+        """
+        Load a new language from JSON file and convert to binary format.
+        Saves the binary file to flash filesystem for persistent access.
+        
+        Args:
+            json_path: Path to JSON language file
+            lang_code: Language code override (extracted from JSON filename if None)
+            
+        Returns:
+            bool: True if language was loaded successfully
+        """
+        try:
+            # Extract language code from filename if not provided
+            if lang_code is None:
+                lang_code = extract_language_code_from_filename(json_path)
+                if lang_code is None:
+                    print(f"Error: Could not extract language code from filename: {json_path}")
+                    print(f"Expected format: {get_json_filename('XX')} where XX is 2-letter language code")
+                    return False
+            
+            # Construct target path in flash directory
+            output_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
+            
+            # Convert JSON to binary - write directly to target location
+            result_path = json_to_binary(json_path, KEY_TO_INDEX, output_path)
+            
+            if result_path is None:
+                print("Error: Language compilation failed due to validation errors")
+                return False
+            
+            # Rescan available languages
+            self._scan_available_languages()
+            
+            print(f"Successfully loaded language '{lang_code}' from {json_path}")
+            print(f"Binary file saved to: {result_path}")
+            print("Language is now available for selection.")
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error loading language from JSON: {e}")
+            return False
 
 
 # Global instance (will be initialized by NavigationController or main app)
