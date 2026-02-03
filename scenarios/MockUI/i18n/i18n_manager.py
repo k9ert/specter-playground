@@ -9,7 +9,6 @@ Enables runtime loading of new languages via JSON to binary conversion.
 import os
 import struct
 import json
-import platform
 from .translation_keys import KEY_TO_INDEX
 from .lang_compiler import read_string_at_offset, BINARY_FILE_PREFIX, BINARY_FILE_SUFFIX, extract_language_code_from_filename, json_to_binary
 
@@ -56,10 +55,10 @@ class I18nManager:
         """Ensure the flash i18n directory exists."""
         try:
             # Try to create flash i18n directory
-            platform.maybe_mkdir(self.FLASH_I18N_DIR)
+            os.mkdir(self.FLASH_I18N_DIR)
         except OSError:
             # Flash filesystem might not be mounted yet or not available
-            # This is normal on development systems
+            # Directory might already exist - this is normal
             pass
         except Exception as e:
             print(f"Warning: Could not create flash i18n directory: {e}")
@@ -70,10 +69,9 @@ class I18nManager:
         
         for search_path in self.LANG_SEARCH_PATHS:
             try:
-                # Check if directory exists
+                # Check if directory exists and list files
                 try:
-                    # MicroPython uses os.ilistdir() which returns iterator of (name, type, inode, size) tuples
-                    files = [f[0] for f in os.ilistdir(search_path)]
+                    files = os.listdir(search_path)
                 except OSError:
                     continue  # Directory doesn't exist, try next path
                 
@@ -92,8 +90,7 @@ class I18nManager:
         # Scan all search paths for binary files
         for search_path in self.LANG_SEARCH_PATHS:
             try:
-                # MicroPython uses os.ilistdir() which returns iterator of (name, type, inode, size) tuples
-                files = [f[0] for f in os.ilistdir(search_path)]
+                files = os.listdir(search_path)
                 for filename in files:
                     if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
                         # Use lang_compiler function to extract language code
@@ -107,15 +104,18 @@ class I18nManager:
         
         self.available_languages = sorted(list(lang_codes))
         try:
-            if platform.file_exists(self.FLASH_I18N_DIR):
-                # MicroPython uses os.ilistdir() which returns iterator of (name, type, inode, size) tuples
-                files = [f[0] for f in os.ilistdir(self.FLASH_I18N_DIR)]
+            # Check if flash directory exists using os.stat
+            try:
+                os.stat(self.FLASH_I18N_DIR)
+                files = os.listdir(self.FLASH_I18N_DIR)
                 for filename in files:
                     if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
                         # Use lang_compiler function to extract language code
                         lang_code = extract_language_code_from_filename(filename)
                         if lang_code and lang_code not in lang_codes:
                             lang_codes.add(lang_code)
+            except OSError:
+                pass  # Directory doesn't exist yet
         except Exception as e:
             print(f"Warning: Could not scan flash i18n directory: {e}")
 
@@ -155,7 +155,7 @@ class I18nManager:
             # Ensure flash directory exists
             flash_dir = "/flash"
             try:
-                platform.maybe_mkdir(flash_dir)
+                os.mkdir(flash_dir)
             except OSError:
                 pass  # Directory might already exist
             
