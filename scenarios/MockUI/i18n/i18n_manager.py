@@ -9,32 +9,38 @@ Enables runtime loading of new languages via JSON to binary conversion.
 import os
 import struct
 import json
-from .translation_keys import KEY_TO_INDEX
-from .lang_compiler import read_string_at_offset, BINARY_FILE_PREFIX, BINARY_FILE_SUFFIX, extract_language_code_from_filename, json_to_binary
+from .translation_keys import KEY_TO_INDEX, Keys
+from .lang_compiler import (
+    read_translation_from_binary,
+    get_binary_filename,
+    get_json_filename,
+    BINARY_FILE_PREFIX,
+    BINARY_FILE_SUFFIX,
+    JSON_FILE_PREFIX,
+    JSON_FILE_SUFFIX,
+    extract_language_code_from_filename,
+    json_to_binary
+)
 
 
 class I18nManager:
     """Manages UI translations and language switching."""
 
+    # Fallback strings
+    STR_MISSING = "[MISSING]"
+    STR_UNKNOWN_KEY = "[UNKNOWN_KEY]"
+    
     # Default paths
     DEFAULT_LANGUAGE = "en"  # Default language is English
-    EMBEDDED_I18N_DIR = "data/lang"  # Language files embedded in firmware
-    FLASH_I18N_DIR = "/flash/i18n"  # Flash filesystem directory for user-added languages
-    FLASH_CONFIG_PATH = "/flash/language_config.json"  # Persistent language preference storage
-    
-    # Search paths for language files (in priority order)
-    LANG_SEARCH_PATHS = [
-        EMBEDDED_I18N_DIR,  # Embedded in firmware (relative to root)
-        FLASH_I18N_DIR,  # User-added languages on flash filesystem
-    ]
+    FLASH_I18N_DIR = "/flash/i18n"  # Flash filesystem directory for all language files
+    FLASH_CONFIG_PATH = FLASH_I18N_DIR + "/language_config.json"  # Persistent language preference storage
     
     def __init__(self):
         """
         Initialize the i18n manager.
         
-        Language files are searched in:
-        1. data/lang (embedded in firmware)
-        2. /flash/i18n (user-added languages)
+        All language files are stored in /flash/i18n/ including the
+        default language (embedded via build system).
         """
         self.current_language = None
         self.current_lang_file = None
@@ -52,78 +58,44 @@ class I18nManager:
         self.set_language(selected_lang)
     
     def _ensure_flash_i18n_dir(self):
-        """Ensure the flash i18n directory exists."""
+        """Verify the flash i18n directory exists (should be created by build system)."""
         try:
-            # Try to create flash i18n directory
-            os.mkdir(self.FLASH_I18N_DIR)
+            # Check if directory exists by trying to list it
+            os.listdir(self.FLASH_I18N_DIR)
         except OSError:
-            # Flash filesystem might not be mounted yet or not available
-            # Directory might already exist - this is normal
-            pass
+            # Directory doesn't exist - this indicates a build system problem
+            print(f"Warning: {self.FLASH_I18N_DIR} does not exist!")
+            print("This directory should be created by the build system.")
+            print("Language system may not work correctly.")
         except Exception as e:
-            print(f"Warning: Could not create flash i18n directory: {e}")
-
-    def _find_language_file(self, lang_code):
-        """Find a language file across all search paths."""
-        filename = f"{BINARY_FILE_PREFIX}{lang_code}{BINARY_FILE_SUFFIX}"
-        
-        for search_path in self.LANG_SEARCH_PATHS:
-            try:
-                # Check if directory exists and list files
-                try:
-                    files = os.listdir(search_path)
-                except OSError:
-                    continue  # Directory doesn't exist, try next path
-                
-                if filename in files:
-                    return f"{search_path}/{filename}"
-            except Exception as e:
-                continue  # Error accessing this path, try next
-        
-        return None
+            print(f"Warning: Could not access flash i18n directory: {e}")
 
     def _scan_available_languages(self):
-        """Scan for available language files (binary format) across all search paths."""
+        """Scan for available language files (binary format) in flash directory."""
         self.available_languages = []
         lang_codes = set()
         
-        # Scan all search paths for binary files
-        for search_path in self.LANG_SEARCH_PATHS:
-            try:
-                files = os.listdir(search_path)
-                for filename in files:
-                    if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
-                        # Use lang_compiler function to extract language code
-                        lang_code = extract_language_code_from_filename(filename)
-                        if lang_code:  # None if invalid
-                            lang_codes.add(lang_code)
-            except OSError:
-                continue  # Directory doesn't exist, skip
-            except Exception as e:
-                print(f"Warning: Error scanning {search_path}: {e}")
-        
-        self.available_languages = sorted(list(lang_codes))
         try:
-            # Check if flash directory exists using os.stat
-            try:
-                os.stat(self.FLASH_I18N_DIR)
-                files = os.listdir(self.FLASH_I18N_DIR)
-                for filename in files:
-                    if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
-                        # Use lang_compiler function to extract language code
-                        lang_code = extract_language_code_from_filename(filename)
-                        if lang_code and lang_code not in lang_codes:
-                            lang_codes.add(lang_code)
-            except OSError:
-                pass  # Directory doesn't exist yet
+            files = os.listdir(self.FLASH_I18N_DIR)
+            for filename in files:
+                if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
+                    # Use lang_compiler function to extract language code
+                    lang_code = extract_language_code_from_filename(filename)
+                    if lang_code:  # None if invalid
+                        lang_codes.add(lang_code)
+        except OSError:
+            pass  # Directory doesn't exist yet
         except Exception as e:
-            print(f"Warning: Could not scan flash i18n directory: {e}")
+            print(f"Warning: Error scanning {self.FLASH_I18N_DIR}: {e}")
 
         self.available_languages = sorted(list(lang_codes))
 
-        # Ensure default language is always available
+        # Verify default language is available (critical requirement)
         if self.DEFAULT_LANGUAGE not in self.available_languages:
-            self.available_languages.append(self.DEFAULT_LANGUAGE)
+            print(f"CRITICAL ERROR: Default language '{self.DEFAULT_LANGUAGE}' not found in {self.FLASH_I18N_DIR}!")
+            print(f"Expected file: {get_binary_filename(self.DEFAULT_LANGUAGE)}")
+            print("This indicates a build system problem - the default language should be embedded in firmware.")
+            print("All translations will show as '[MISSING]' until this is fixed.")
     
     def _load_language_preference(self):
         """Load the last selected language from flash config file."""
@@ -138,90 +110,22 @@ class I18nManager:
                 else:
                     print(f"Warning: Saved language '{lang}' not available, using default language '{self.DEFAULT_LANGUAGE}'")
                     return self.DEFAULT_LANGUAGE
-        except OSError:
-            # Config file doesn't exist, create it with default language
-            print(f"Config file not found, creating with default language: {self.DEFAULT_LANGUAGE}")
-            self._save_language_preference(self.DEFAULT_LANGUAGE)
-            return self.DEFAULT_LANGUAGE
         except Exception as e:
-            print(f"Error loading language preference: {e}")
-            # Try to recreate config file
+            # Config file doesn't exist or can't be read - use default and try to create it
+            print(f"Config file not found or unreadable, using default language: {self.DEFAULT_LANGUAGE}")
             self._save_language_preference(self.DEFAULT_LANGUAGE)
             return self.DEFAULT_LANGUAGE
     
     def _save_language_preference(self, lang_code):
         """Save the selected language to flash filesystem."""
         try:
-            # Ensure flash directory exists
-            flash_dir = "/flash"
-            try:
-                os.mkdir(flash_dir)
-            except OSError:
-                pass  # Directory might already exist
-            
             config = {'selected_language': lang_code}
             with open(self.FLASH_CONFIG_PATH, 'w') as f:
                 json.dump(config, f)
             print(f"Language preference saved: {lang_code}")
-        except OSError as e:
-            # Filesystem is not writable - this is a fatal error for persistent settings
-            raise RuntimeError(f"Flash filesystem not writable, cannot save language preference: {e}")
         except Exception as e:
-            # Other errors are also fatal since we need persistent storage
-            raise RuntimeError(f"Failed to save language preference: {e}")
-    
-    def _get_language_file_path(self, lang_code):
-        """
-        Get the full path to a language binary file.
-        Uses search paths to find language files in priority order.
-        
-        Args:
-            lang_code: ISO 639-1 language code (e.g., 'en', 'de')
-            
-        Returns:
-            str: Path to language binary file or None if not found
-        """
-        return self._find_language_file(lang_code)
-    
-    def _read_binary_offset(self, file_path, position):
-        """
-        Read a 4-byte offset from binary file at given position.
-        
-        Args:
-            file_path: Path to binary language file
-            position: Byte position to read from
-            
-        Returns:
-            int: Offset value or 0xFFFFFFFF if file error
-        """
-        try:
-            with open(file_path, 'rb') as f:
-                f.seek(position)
-                data = f.read(4)
-                if len(data) == 4:
-                    return struct.unpack('<I', data)[0]
-        except Exception as e:
-            print(f"Warning: Could not read offset from {file_path} at position {position}: {e}")
-        
-        return 0xFFFFFFFF  # Signal missing/error
-    
-    def _read_binary_string(self, file_path, offset):
-        """
-        Read a null-terminated string from binary file at given offset.
-        
-        Args:
-            file_path: Path to binary language file
-            offset: Byte offset to start reading from
-            
-        Returns:
-            str: Decoded string or empty string if error
-        """
-        try:
-            with open(file_path, 'rb') as f:
-                return read_string_at_offset(f, offset)
-        except Exception as e:
-            print(f"Warning: Could not read string from {file_path} at offset {offset}: {e}")
-            return ""
+            # Preference won't persist across reboots, but language still works in current session
+            print(f"Warning: Could not save language preference (will use default on next boot): {e}")
     
     def set_language(self, lang_code):
         """
@@ -237,16 +141,17 @@ class I18nManager:
             print(f"Warning: Language '{lang_code}' not available. Available: {self.available_languages}")
             return False
         
-        # Find language file paths
-        current_path = self._get_language_file_path(lang_code)
-        default_path = self._get_language_file_path(self.DEFAULT_LANGUAGE)
+        # Construct file paths directly (all files in FLASH_I18N_DIR)
+        current_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
+        default_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(self.DEFAULT_LANGUAGE)}"
         
-        if current_path is None:
-            print(f"Error: Could not find binary file for language '{lang_code}'")
-            return False
-        
-        if default_path is None:
-            print(f"Error: Could not find binary file for default language '{self.DEFAULT_LANGUAGE}'")
+        # Verify files exist
+        try:
+            # Just check if we can stat the files
+            os.stat(current_path)
+            os.stat(default_path)
+        except OSError as e:
+            print(f"Error: Language file not found: {e}")
             return False
         
         # Set file paths
@@ -272,43 +177,47 @@ class I18nManager:
         """
         Get translation for a key using binary file lookup.
         
+        Supports both string keys (e.g., "MAIN_MENU_TITLE") and
+        integer keys (e.g., Keys.MAIN_MENU_TITLE) for RAM efficiency.
+        
         Args:
-            key: Translation key (e.g., 'MAIN_MENU_TITLE')
+            key: Translation key (string or integer from Keys class)
             
         Returns:
-            str: Translated text or the key itself if not found
+            str: Translated text or fallback string
         """
         # Validate setup
         if not self.current_lang_file or not self.default_lang_file:
             print(f"Warning: Language files not set up properly")
-            return key
+            return self.STR_MISSING
         
-        # Get index position for key
-        if key not in KEY_TO_INDEX:
-            print(f"Warning: Translation key '{key}' not found in KEY_TO_INDEX")
-            return key
-        
-        index_position = KEY_TO_INDEX[key]
-        
-        # Calculate byte position in index (after 12-byte header)
-        byte_position = 12 + index_position * 4
+        # Convert string key to index if needed
+        if isinstance(key, str):
+            key_index = KEY_TO_INDEX.get(key)
+            if key_index is None:
+                print(f"Warning: Unknown translation key '{key}'")
+                return self.STR_UNKNOWN_KEY
+        else:
+            # Direct integer index (RAM efficient)
+            key_index = key
         
         # Try to read from current language file
-        offset = self._read_binary_offset(self.current_lang_file, byte_position)
+        text, error = read_translation_from_binary(self.current_lang_file, key_index)
         
-        # Fallback to default language if missing
-        if offset == 0xFFFFFFFF:
-            offset = self._read_binary_offset(self.default_lang_file, byte_position)
-            if offset == 0xFFFFFFFF:
-                print(f"Warning: Translation for '{key}' not found in any language file")
-                return key
-            # Read from default language file
-            text = self._read_binary_string(self.default_lang_file, offset)
-        else:
-            # Read from current language file  
-            text = self._read_binary_string(self.current_lang_file, offset)
+        # If not found in current language, try default language
+        if text is None and error == "missing":
+            text, error = read_translation_from_binary(self.default_lang_file, key_index)
         
-        return text if text else key
+        # If still not found, return fallback
+        if text is None:
+            if error == "missing":
+                return self.STR_MISSING
+            else:
+                # Other errors (invalid_key_index, read_error, etc.)
+                print(f"Warning: Error reading translation: {error}")
+                return self.STR_MISSING
+        
+        return text
     
     def __getitem__(self, key):
         """Allow using the manager as a dictionary: i18n['KEY']"""
@@ -325,37 +234,29 @@ class I18nManager:
         
         Args:
             json_path: Path to JSON language file
-            lang_code: Language code override (extracted from JSON if None)
+            lang_code: Language code override (extracted from JSON filename if None)
             
         Returns:
             bool: True if language was loaded successfully
         """
-        try:            
-            # Convert JSON to binary - this includes all validation
-            result_path = json_to_binary(json_path, KEY_TO_INDEX, None)
+        try:
+            # Extract language code from filename if not provided
+            if lang_code is None:
+                lang_code = extract_language_code_from_filename(json_path)
+                if lang_code is None:
+                    print(f"Error: Could not extract language code from filename: {json_path}")
+                    print(f"Expected format: {get_json_filename('XX')} where XX is 2-letter language code")
+                    return False
+            
+            # Construct target path in flash directory
+            output_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
+            
+            # Convert JSON to binary - write directly to target location
+            result_path = json_to_binary(json_path, KEY_TO_INDEX, output_path)
             
             if result_path is None:
                 print("Error: Language compilation failed due to validation errors")
                 return False
-            
-            # Extract language code from result path
-            lang_code = extract_language_code_from_filename(result_path)
-            
-            if lang_code is None:
-                print("Error: Could not determine language code from compiled file")
-                return False
-            
-            # Move to flash directory if not already there
-            import shutil
-            flash_path = f"{self.FLASH_I18N_DIR}/{BINARY_FILE_PREFIX}{lang_code}{BINARY_FILE_SUFFIX}"
-            
-            if result_path != flash_path:
-                try:
-                    shutil.move(result_path, flash_path)
-                    result_path = flash_path
-                except Exception as e:
-                    print(f"Warning: Could not move to flash directory: {e}")
-                    # Continue with current location
             
             # Rescan available languages
             self._scan_available_languages()

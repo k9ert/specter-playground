@@ -26,6 +26,32 @@ HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE  # = 12 bytes
 OFFSET_SIZE = 4       # uint32 offset in index
 
 
+def get_json_filename(lang_code):
+    """
+    Construct JSON language filename from language code.
+    
+    Args:
+        lang_code: ISO 639-1 language code (e.g., 'en', 'de')
+    
+    Returns:
+        str: Filename like 'specter_ui_en.json'
+    """
+    return f"{JSON_FILE_PREFIX}{lang_code}{JSON_FILE_SUFFIX}"
+
+
+def get_binary_filename(lang_code):
+    """
+    Construct binary language filename from language code.
+    
+    Args:
+        lang_code: ISO 639-1 language code (e.g., 'en', 'de')
+    
+    Returns:
+        str: Filename like 'lang_en.bin'
+    """
+    return f"{BINARY_FILE_PREFIX}{lang_code}{BINARY_FILE_SUFFIX}"
+
+
 
 def read_translation_from_binary(file_path, key_index):
     """
@@ -117,20 +143,20 @@ def extract_language_code_from_filename(filename):
     if filename_only.startswith(JSON_FILE_PREFIX) and filename_only.endswith(JSON_FILE_SUFFIX):
         # Extract XX from specter_ui_XX.json
         lang_code = filename_only[len(JSON_FILE_PREFIX):-len(JSON_FILE_SUFFIX)]
-        expected_format = f"{JSON_FILE_PREFIX}XX{JSON_FILE_SUFFIX} (where XX is 2-letter language code)"
+        expected_format = get_json_filename("XX") + " (where XX is 2-letter language code)"
     
     # Check binary format: lang_XX.bin
     elif filename_only.startswith(BINARY_FILE_PREFIX) and filename_only.endswith(BINARY_FILE_SUFFIX):
         # Extract XX from lang_XX.bin
         lang_code = filename_only[len(BINARY_FILE_PREFIX):-len(BINARY_FILE_SUFFIX)]
-        expected_format = f"{BINARY_FILE_PREFIX}XX{BINARY_FILE_SUFFIX} (where XX is 2-letter language code)"
+        expected_format = get_binary_filename("XX") + " (where XX is 2-letter language code)"
     
     else:
         # Unknown format - print error message here
         print(f"Error: Input file '{filename}' does not follow naming conventions.")
         print("Expected formats:")
-        print(f"  - {JSON_FILE_PREFIX}XX{JSON_FILE_SUFFIX} (where XX is 2-letter language code)")
-        print(f"  - {BINARY_FILE_PREFIX}XX{BINARY_FILE_SUFFIX} (where XX is 2-letter language code)")
+        print(f"  - {get_json_filename('XX')} (where XX is 2-letter language code)")
+        print(f"  - {get_binary_filename('XX')} (where XX is 2-letter language code)")
         return None
     
     # Validate language code: must be exactly 2 alphabetic characters
@@ -278,7 +304,7 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     # Determine output path
     if output_path is None:
         json_file = Path(json_path)
-        output_path = json_file.parent / f"{BINARY_FILE_PREFIX}{lang_code}{BINARY_FILE_SUFFIX}"
+        output_path = json_file.parent / get_binary_filename(lang_code)
     
     # Extract translations - handle both formats
     translations = data.get('translations', {})
