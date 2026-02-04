@@ -18,31 +18,82 @@ BINARY_FILE_SUFFIX = ".bin"
 JSON_FILE_PREFIX = "specter_ui_"
 JSON_FILE_SUFFIX = ".json"
 
+# Binary Format Size Constants (in bytes)
+MAGIC_SIZE = 4        # "LANG" signature
+VERSION_SIZE = 4      # uint32 version number
+KEY_COUNT_SIZE = 4    # uint32 key count
+HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE  # = 12 bytes
+OFFSET_SIZE = 4       # uint32 offset in index
 
 
-def read_string_at_offset(file_handle, offset):
+
+def read_translation_from_binary(file_path, key_index):
     """
-    Read a null-terminated UTF-8 string from binary file at given offset.
+    Read translation string from binary file.
+    
+    This function assumes the binary file has already been validated
+    (via validate_binary_file) during import/load. It performs minimal
+    checks for performance - use validate_binary_file() before first use.
     
     Args:
-        file_handle: Open file handle in binary read mode
-        offset: Byte offset to start reading from
-        
+        file_path: Path to binary language file (must be pre-validated)
+        key_index: Integer index of the translation key (0-based)
+    
     Returns:
-        str: Decoded string or empty string if error
+        Tuple of (text: str|None, error: str|None):
+        - ("translated text", None) - Success, use the text
+        - (None, "missing") - Translation not present (0xFFFFFFFF marker)
+        - (None, "invalid_key_index") - key_index out of bounds (>= key_count)
+        - (None, "read_error") - I/O error during read
+        - (None, "utf8_decode_error") - Invalid UTF-8 sequence
+        
+    Usage:
+        text, error = read_translation_from_binary(path, index)
+        if text is not None:
+            # Use the text
+        else:
+            # Handle error (check error code)
+    
+    Note: File must be validated with validate_binary_file() before use.
     """
     try:
-        file_handle.seek(offset)
-        string_data = bytearray()
-        while True:
-            byte = file_handle.read(1)
-            if not byte or byte == b'\x00':
-                break
-            string_data.extend(byte)
-        return string_data.decode('utf-8')
-    except Exception as e:
-        print(f"Warning: Could not read string at offset {offset}: {e}")
-        return ""
+        with open(file_path, 'rb') as f:
+            # Read header to get key_count
+            f.seek(MAGIC_SIZE + VERSION_SIZE)
+            key_count = struct.unpack('<I', f.read(KEY_COUNT_SIZE))[0]
+            
+            # Validate key_index is in bounds (reject negative indices too)
+            if key_index < 0 or key_index >= key_count:
+                return (None, "invalid_key_index")
+            
+            # Seek to index entry for this key
+            index_offset = HEADER_SIZE + (key_index * OFFSET_SIZE)
+            f.seek(index_offset)
+            string_offset = struct.unpack('<I', f.read(OFFSET_SIZE))[0]
+            
+            # Check for missing translation sentinel
+            if string_offset == 0xFFFFFFFF:
+                return (None, "missing")
+            
+            # Seek to string and read until null terminator
+            f.seek(string_offset)
+            result = bytearray()
+            
+            while True:
+                byte = f.read(1)
+                if not byte or byte == b'\x00':
+                    break
+                result.extend(byte)
+            
+            # Decode UTF-8
+            try:
+                text = result.decode('utf-8')
+                return (text, None)
+            except UnicodeDecodeError:
+                return (None, "utf8_decode_error")
+                
+    except Exception:
+        return (None, "read_error")
 
 
 def extract_language_code_from_filename(filename):
@@ -97,6 +148,9 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
     """
     Generate translation_keys.py from default language JSON file.
     
+    Creates both Keys class (with integer constants for RAM efficiency)
+    and KEY_TO_INDEX dictionary (for backward compatibility).
+    
     Args:
         default_lang_json_path: Path to specter_ui_en.json
         output_path: Where to write translation_keys.py (default: same dir)
@@ -117,17 +171,46 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
     if output_path is None:
         output_path = Path(default_lang_json_path).parent / "translation_keys.py"
     
-    # Write translation_keys.py
+    # Write translation_keys.py with both Keys class and dictionary
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write('"""Auto-generated translation key mappings."""\n\n')
-        f.write(f'# Generated from {Path(default_lang_json_path).name}\n')
-        f.write(f'# Total keys: {len(keys)}\n\n')
+        # Header
+        f.write('"""Auto-generated translation key mappings - DO NOT EDIT MANUALLY"""\n')
+        f.write(f'# Generated from: {Path(default_lang_json_path).name}\n')
+        f.write(f'# Key count: {len(keys)}\n')
+        f.write(f'# Date: {__import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n')
+        
+        # Keys class with integer constants (RAM efficient)
+        f.write('class Keys:\n')
+        f.write('    """Integer constants for translation keys (RAM efficient).\n')
+        f.write('    \n')
+        f.write('    Usage:\n')
+        f.write('        from translation_keys import Keys\n')
+        f.write('        text = i18n.t(Keys.MAIN_MENU_TITLE)  # No string allocation\n')
+        f.write('    """\n')
+        
+        for key, index in sorted(key_to_index.items(), key=lambda x: x[1]):
+            f.write(f'    {key} = {index}\n')
+        
+        f.write('\n\n')
+        
+        # KEY_TO_INDEX dictionary (backward compatibility)
+        f.write('# String to index mapping (for convenience/backward compatibility)\n')
+        f.write('# When using strings, prefer Keys.CONSTANT for RAM efficiency\n')
         f.write('KEY_TO_INDEX = {\n')
-        for key, index in key_to_index.items():
-            f.write(f'    "{key}": {index},\n')
-        f.write('}\n')
+        for key, index in sorted(key_to_index.items(), key=lambda x: x[1]):
+            f.write(f'    "{key}": Keys.{key},\n')
+        f.write('}\n\n')
+        
+        # Metadata for validation
+        f.write(f'# Metadata\n')
+        f.write(f'KEY_COUNT = {len(keys)}\n')
+        f.write(f'VERSION = 1\n')
     
-    print(f"Generated {output_path} with {len(keys)} keys")
+    print(f"Generated {output_path}")
+    print(f"  Keys class: {len(keys)} constants")
+    print(f"  KEY_TO_INDEX: {len(keys)} entries")
+    print(f"  Usage: i18n.t(Keys.MAIN_MENU_TITLE) or i18n.t('MAIN_MENU_TITLE')")
+    
     return key_to_index
 
 
@@ -209,12 +292,8 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     key_count = len(key_to_index)
     
     # Calculate binary format layout
-    magic_size = 4      # "LANG" signature
-    version_size = 4    # uint32 version
-    key_count_size = 4  # uint32 key count
-    header_size = magic_size + version_size + key_count_size  # = 12 bytes
-    index_size = key_count * 4  # Each offset is uint32
-    strings_start_offset = header_size + index_size  # Where string data begins
+    index_size = key_count * OFFSET_SIZE  # Each offset is uint32
+    strings_start_offset = HEADER_SIZE + index_size  # Where string data begins
     
     index_data = [0xFFFFFFFF] * key_count  # Initialize with "missing" markers
     string_data = bytearray()
@@ -286,57 +365,130 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     return str(output_path)
 
 
-def validate_binary_file(binary_path, key_to_index=None):
+def validate_binary_file(binary_path, translation_keys_module=None):
     """
-    Validate and inspect a binary language file.
+    Validate and inspect a binary language file with comprehensive checks.
+    
+    This function performs complete structural validation including:
+    - File format (magic bytes, header structure)
+    - All index offsets are valid (within file bounds or 0xFFFFFFFF)
+    - File size consistency
+    - Key count matches (if translation_keys provided)
+    - All strings are readable and null-terminated
+    
+    IMPORTANT: Call this function once when loading/importing a binary language file.
+    After validation passes, read_translation_from_binary() can safely be used
+    without re-validating on every call.
     
     Args:
         binary_path: Path to .bin file
-        key_to_index: Optional KEY_TO_INDEX for detailed inspection
-    """
-    with open(binary_path, 'rb') as f:
-        # Read header
-        magic = f.read(4)
-        version, key_count = struct.unpack('<II', f.read(8))
-        
-        print(f"Binary file: {binary_path}")
-        print(f"  Magic: {magic}")
-        print(f"  Version: {version}")
-        print(f"  Key count: {key_count}")
-        
-        if magic != b"LANG":
-            print("  ERROR: Invalid magic signature")
-            return False
-        
-        # Read index
-        index = []
-        for i in range(key_count):
-            offset = struct.unpack('<I', f.read(4))[0]
-            index.append(offset)
-        
-        # Count translations
-        translated = sum(1 for offset in index if offset != 0xFFFFFFFF)
-        missing = key_count - translated
-        
-        print(f"  Translated strings: {translated}")
-        print(f"  Missing strings: {missing}")
-        
-        # If we have key mapping, show some examples
-        if key_to_index:
-            reverse_index = {v: k for k, v in key_to_index.items()}
-            
-            print("  Sample translations:")
-            sample_count = min(5, len(index))
-            for i in range(sample_count):
-                key = reverse_index[i]
-                offset = index[i]
-                if offset != 0xFFFFFFFF:
-                    text = read_string_at_offset(f, offset)
-                    print(f"    {key}: '{text}'")
-                else:
-                    print(f"    {key}: <missing>")
+        translation_keys_module: Optional translation_keys module for validation
+                                If provided, verifies key_count matches
     
-    return True
+    Returns:
+        Tuple of (success: bool, error_msg: str|None):
+        - (True, None) - File is valid and safe to use
+        - (False, "error description") - Validation failed, do not use file
+    """
+    try:
+        if not os.path.exists(binary_path):
+            return (False, "File not found")
+        
+        with open(binary_path, 'rb') as f:
+            # Get file size for validation
+            f.seek(0, 2)
+            file_size = f.tell()
+            f.seek(0)
+            
+            # Check minimum file size (header)
+            if file_size < HEADER_SIZE:
+                return (False, f"File too small for header (need {HEADER_SIZE} bytes minimum)")
+            
+            # Read and validate header
+            magic = f.read(4)
+            if magic != b'LANG':
+                return (False, f"Invalid magic bytes: expected b'LANG', got {magic!r}")
+            
+            version = struct.unpack('<I', f.read(4))[0]
+            key_count = struct.unpack('<I', f.read(4))[0]
+            
+            print(f"Binary file: {binary_path}")
+            print(f"  Magic: {magic!r}")
+            print(f"  Version: {version}")
+            print(f"  Key count: {key_count}")
+            
+            # Verify key count matches expected (if translation_keys provided)
+            if translation_keys_module is not None:
+                if hasattr(translation_keys_module, 'KEY_COUNT'):
+                    expected_count = translation_keys_module.KEY_COUNT
+                elif hasattr(translation_keys_module, 'KEY_TO_INDEX'):
+                    expected_count = len(translation_keys_module.KEY_TO_INDEX)
+                else:
+                    return (False, "translation_keys module missing KEY_COUNT or KEY_TO_INDEX")
+                
+                if key_count != expected_count:
+                    return (False, f"Key count mismatch: expected {expected_count}, got {key_count}")
+            
+            # Calculate expected minimum file size
+            index_size = key_count * OFFSET_SIZE
+            min_size = HEADER_SIZE + index_size
+            
+            if file_size < min_size:
+                return (False, f"File too small: {file_size} bytes < minimum {min_size} bytes")
+            
+            # Validate all index offsets point to valid locations
+            invalid_offsets = []
+            all_offsets = []
+            for i in range(key_count):
+                offset = struct.unpack('<I', f.read(4))[0]
+                all_offsets.append(offset)
+                if offset != 0xFFFFFFFF and offset >= file_size:
+                    invalid_offsets.append((i, offset))
+            
+            if invalid_offsets:
+                errors = "; ".join([f"index {i}: offset {o} >= file_size {file_size}" 
+                                   for i, o in invalid_offsets[:5]])
+                return (False, f"Invalid offsets found: {errors}")
+            
+            # Verify all strings are properly null-terminated
+            for i, offset in enumerate(all_offsets):
+                if offset == 0xFFFFFFFF:
+                    continue  # Missing translation, OK
+                
+                # Try to read the string to ensure it's valid
+                try:
+                    f.seek(offset)
+                    found_terminator = False
+                    bytes_read = 0
+                    max_read = file_size - offset
+                    
+                    while bytes_read < max_read:
+                        byte = f.read(1)
+                        if not byte:
+                            return (False, f"String at index {i} (offset {offset}) has unexpected EOF")
+                        if byte == b'\x00':
+                            found_terminator = True
+                            break
+                        bytes_read += 1
+                    
+                    if not found_terminator:
+                        return (False, f"String at index {i} (offset {offset}) missing null terminator")
+                        
+                except Exception as e:
+                    return (False, f"Cannot read string at index {i} (offset {offset}): {e}")
+            
+            # Count translations
+            translated = sum(1 for o in all_offsets if o != 0xFFFFFFFF)
+            missing = key_count - translated
+            
+            print(f"  Translated strings: {translated}")
+            print(f"  Missing strings: {missing}")
+            print(f"  File size: {file_size} bytes")
+            
+            return (True, None)
+            
+    except Exception as e:
+        return (False, f"Validation error: {e}")
 
 
 def main():
@@ -401,17 +553,29 @@ def main():
         
         binary_path = sys.argv[2]
         
-        # Load key mapping if provided
-        key_to_index = None
+        # Load translation_keys module if provided
+        translation_keys_module = None
         if len(sys.argv) >= 4:
             keys_file = sys.argv[3]
             import importlib.util
-            spec = importlib.util.spec_from_file_location("keys", keys_file)
-            keys_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(keys_module)
-            key_to_index = keys_module.KEY_TO_INDEX
+            spec = importlib.util.spec_from_file_location("translation_keys", keys_file)
+            translation_keys_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(translation_keys_module)
+        else:
+            # Try to find translation_keys.py in same directory
+            keys_path = Path(binary_path).parent / "translation_keys.py"
+            if keys_path.exists():
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("translation_keys", str(keys_path))
+                translation_keys_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(translation_keys_module)
         
-        validate_binary_file(binary_path, key_to_index)
+        success, error = validate_binary_file(binary_path, translation_keys_module)
+        if not success:
+            print(f"\nValidation FAILED: {error}")
+            sys.exit(1)
+        else:
+            print("\n✓ Validation passed")
     
     else:
         print(f"Error: Unknown command '{command}'")
