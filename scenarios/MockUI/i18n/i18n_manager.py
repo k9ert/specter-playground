@@ -78,9 +78,11 @@ class I18nManager:
         try:
             files = os.listdir(self.FLASH_I18N_DIR)
             for filename in files:
-                if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
-                    # Use lang_compiler function to extract language code
-                    lang_code = extract_language_code_from_filename(filename)
+                # FAT filesystem returns uppercase names (e.g. LANG_EN.BIN), so normalise
+                filename_lower = filename.lower()
+                if filename_lower.startswith(BINARY_FILE_PREFIX) and filename_lower.endswith(BINARY_FILE_SUFFIX):
+                    # Use lang_compiler function to extract language code (pass lowercase)
+                    lang_code = extract_language_code_from_filename(filename_lower)
                     if lang_code:  # None if invalid
                         lang_codes.add(lang_code)
         except OSError:
@@ -172,7 +174,26 @@ class I18nManager:
     def get_available_languages(self):
         """Get list of available language codes."""
         return self.available_languages.copy()
-    
+
+    def get_language_name(self, lang_code):
+        """
+        Return a human-readable name for a language code.
+        Falls back to the code itself if unknown.
+        """
+        names = {
+            "en": "English",
+            "de": "Deutsch",
+            "es": "Español",
+            "fr": "Français",
+            "it": "Italiano",
+            "pt": "Português",
+            "ru": "Русский",
+            "zh": "中文",
+            "ja": "日本語",
+            "ko": "한국어",
+        }
+        return names.get(lang_code, lang_code)
+
     def t(self, key):
         """
         Get translation for a key using binary file lookup.

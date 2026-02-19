@@ -25,6 +25,18 @@ HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE  # = 12 bytes
 OFFSET_SIZE = 4       # uint32 offset in index
 
 
+# --- Path helpers (os.path not available in MicroPython) ---
+
+def _path_basename(path):
+    """Return the final component of a path (replacement for os.path.basename)."""
+    return path.rsplit('/', 1)[-1]
+
+
+def _path_dirname(path):
+    """Return the directory component of a path (replacement for os.path.dirname)."""
+    return path.rsplit('/', 1)[0] if '/' in path else '.'
+
+
 def get_json_filename(lang_code):
     """
     Construct JSON language filename from language code.
@@ -136,7 +148,7 @@ def extract_language_code_from_filename(filename):
         str: 2-letter language code (lowercase) or None if invalid format
     """
     # Extract just the filename from path
-    filename_only = os.path.basename(filename)
+    filename_only = _path_basename(filename)
     
     # Check JSON format: specter_ui_XX.json
     if filename_only.startswith(JSON_FILE_PREFIX) and filename_only.endswith(JSON_FILE_SUFFIX):
@@ -303,8 +315,7 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     
     # Determine output path
     if output_path is None:
-        json_dir = os.path.dirname(json_path) or '.'
-        output_path = os.path.join(json_dir, get_binary_filename(lang_code))
+        output_path = _path_dirname(json_path) + '/' + get_binary_filename(lang_code)
     
     # Extract translations - handle both formats
     translations = data.get('translations', {})
@@ -417,7 +428,9 @@ def validate_binary_file(binary_path, translation_keys_module=None):
         - (False, "error description") - Validation failed, do not use file
     """
     try:
-        if not os.path.exists(binary_path):
+        try:
+            os.stat(binary_path)
+        except OSError:
             return (False, "File not found")
         
         with open(binary_path, 'rb') as f:
