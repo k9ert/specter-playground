@@ -22,10 +22,11 @@ i18n/
 ├── i18n_manager.py          # Core i18n management class
 ├── lang_compiler.py         # JSON to binary converter
 ├── translation_keys.py      # Auto-generated KEY_TO_INDEX mapping  
-├── specter_ui_en.json       # English translations (source)
-├── specter_ui_de.json       # German translations (source)
 ├── lang_en.bin              # Auto compiled english (embedded in firmware)
-└── language_config.json     # User's selected language (auto-generated)
+├── language_config.json     # User's selected language (auto-generated)
+└── languages/               # Source JSON translation files
+    ├── specter_ui_en.json   # English translations (source / default)
+    └── specter_ui_de.json   # German translations (source)
 
 # Flash filesystem at runtime:
 /flash/i18n/
@@ -144,17 +145,17 @@ The `lang_compiler.py` provides comprehensive tools for managing the binary tran
 ### Translation Key Generation
 ```bash
 # Generate translation_keys.py from default language
-python3 lang_compiler.py generate_keys specter_ui_en.json
+python3 lang_compiler.py generate_keys languages/specter_ui_en.json
 ```
 
 ### Binary Compilation  
 ```bash
 # Compile JSON to binary format (auto-detects translation_keys.py)
-python3 lang_compiler.py compile specter_ui_en.json
-python3 lang_compiler.py compile specter_ui_de.json
+python3 lang_compiler.py compile languages/specter_ui_en.json
+python3 lang_compiler.py compile languages/specter_ui_de.json
 
 # Or specify key mapping explicitly
-python3 lang_compiler.py compile specter_ui_XX.json translation_keys.py
+python3 lang_compiler.py compile languages/specter_ui_XX.json translation_keys.py
 ```
 
 ### Binary Validation
@@ -175,11 +176,11 @@ python3 lang_compiler.py validate lang_de.bin  # Without key names
 ## Adding a New Language
 
 ### Method 1: Development (Build-time)
-1. Create a new language file: `specter_ui_XX.json` (where XX is the ISO 639-1 language code)
-2. Copy the structure from `specter_ui_de.json` as a template
+1. Create a new language file: `languages/specter_ui_XX.json` (where XX is the ISO 639-1 language code)
+2. Copy the structure from `languages/specter_ui_de.json` as a template
 3. Translate all `text` fields, keeping `ref_en` as English reference
 4. Set correct `language_code` and `language_name` in metadata
-5. Compile to binary: `python3 lang_compiler.py compile specter_ui_XX.json`
+5. Compile to binary: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
 6. The binary file `lang_XX.bin` will be automatically created
 7. Restart device to detect the new language
 
@@ -225,19 +226,19 @@ Examples:
 
 ## Adding New Translatable Text
 
-1. Add the English text to `specter_ui_en.json`:
+1. Add the English text to `languages/specter_ui_en.json`:
    ```json
    "NEW_KEY_NAME": "English text"
    ```
-2. Regenerate translation keys: `python3 lang_compiler.py generate_keys specter_ui_en.json`
-3. Add translations to other language files:
+2. Regenerate translation keys: `python3 lang_compiler.py generate_keys languages/specter_ui_en.json`
+3. Add translations to other language files in `languages/`:
    ```json
    "NEW_KEY_NAME": {
      "text": "Translated text",
      "ref_en": "English text"
    }
    ```
-4. Recompile all languages: `python3 lang_compiler.py compile specter_ui_XX.json`
+4. Recompile all languages: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
 5. Use `i18n.t("NEW_KEY_NAME")` or `i18n["NEW_KEY_NAME"]` in your code
 
 ## API Reference
@@ -293,10 +294,10 @@ The `lang_compiler.py` provides several utilities:
 
 ```bash
 # Generate key mapping from default language
-python3 lang_compiler.py generate_keys specter_ui_en.json
+python3 lang_compiler.py generate_keys languages/specter_ui_en.json
 
 # Compile JSON to binary  
-python3 lang_compiler.py compile specter_ui_de.json
+python3 lang_compiler.py compile languages/specter_ui_de.json
 
 # Validate binary file
 python3 lang_compiler.py validate lang_de.bin translation_keys.py
@@ -308,7 +309,7 @@ To contribute a new language translation:
 1. Fork the repository
 2. Create a new language file following the format above
 3. Translate all strings, keeping `ref_en` fields for context
-4. Test the translations using: `python3 lang_compiler.py compile specter_ui_XX.json`
+4. Test the translations using: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
 5. Validate the binary: `python3 lang_compiler.py validate lang_XX.bin`
 6. Submit a pull request
 

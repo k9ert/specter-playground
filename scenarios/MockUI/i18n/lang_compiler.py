@@ -21,8 +21,21 @@ JSON_FILE_SUFFIX = ".json"
 MAGIC_SIZE = 4        # "LANG" signature
 VERSION_SIZE = 4      # uint32 version number
 KEY_COUNT_SIZE = 4    # uint32 key count
-HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE  # = 12 bytes
+LANG_NAME_FIELD_SIZE = 32  # fixed-width language name field (null-padded UTF-8, max 31 usable bytes)
+HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE + LANG_NAME_FIELD_SIZE  # = 44 bytes
 OFFSET_SIZE = 4       # uint32 offset in index
+
+
+# --- Path helpers (os.path not available in MicroPython) ---
+
+def _path_basename(path):
+    """Return the final component of a path (replacement for os.path.basename)."""
+    return path.rsplit('/', 1)[-1]
+
+
+def _path_dirname(path):
+    """Return the directory component of a path (replacement for os.path.dirname)."""
+    return path.rsplit('/', 1)[0] if '/' in path else '.'
 
 
 def get_json_filename(lang_code):
@@ -136,7 +149,7 @@ def extract_language_code_from_filename(filename):
         str: 2-letter language code (lowercase) or None if invalid format
     """
     # Extract just the filename from path
-    filename_only = os.path.basename(filename)
+    filename_only = _path_basename(filename)
     
     # Check JSON format: specter_ui_XX.json
     if filename_only.startswith(JSON_FILE_PREFIX) and filename_only.endswith(JSON_FILE_SUFFIX):
@@ -169,6 +182,56 @@ def extract_language_code_from_filename(filename):
         return None
 
 
+def extract_language_name_from_file(filename):
+    """
+    Extract the language name from a binary language file.
+    
+    Opens the file and reads the language name from the fixed-width header field.
+    
+    Args:
+        filename: Path to binary language file (e.g. 'lang_en.bin' or full path)
+    
+    Returns:
+        str: Language name (e.g. 'English', 'Deutsch') or None on error
+    """
+    # Validate filename follows binary naming convention: lang_XX.bin
+    filename_only = _path_basename(filename)
+    if not (filename_only.startswith(BINARY_FILE_PREFIX) and filename_only.endswith(BINARY_FILE_SUFFIX)):
+        print(f"Error: Input file '{filename}' does not follow binary naming convention.")
+        print(f"Expected format: {get_binary_filename('XX')} (where XX is 2-letter language code)")
+        return None
+
+    try:
+        with open(filename, 'rb') as f:
+            # Seek past magic + version + key_count to the language name field
+            name_offset = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE
+            f.seek(name_offset)
+            name_raw = f.read(LANG_NAME_FIELD_SIZE)
+            
+            if len(name_raw) < LANG_NAME_FIELD_SIZE:
+                print(f"Error: File '{filename}' too small to contain language name field")
+                return None
+            
+            # Strip null padding — no null terminator means the field is corrupt
+            null_pos = name_raw.find(b'\x00')
+            if null_pos < 0:
+                print(f"Error: Language name field in '{filename}' has no null terminator (corrupt file)")
+                return None
+            name_bytes = name_raw[:null_pos]
+            
+            try:
+                return name_bytes.decode('utf-8')
+            except UnicodeDecodeError:
+                print(f"Error: Invalid UTF-8 in language name field of '{filename}'")
+                return None
+    except OSError as e:
+        print(f"Error: Could not open file '{filename}': {e}")
+        return None
+    except Exception as e:
+        print(f"Error: Could not read language name from '{filename}': {e}")
+        return None
+
+
 def generate_translation_keys(default_lang_json_path, output_path=None):
     """
     Generate translation_keys.py from default language JSON file.
@@ -192,10 +255,9 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
     # Generate mapping
     key_to_index = {key: i for i, key in enumerate(keys)}
     
-    # Determine output path
+    # Determine output path — always write to CWD (not the JSON subdirectory)
     if output_path is None:
-        json_dir = os.path.dirname(default_lang_json_path) or '.'
-        output_path = os.path.join(json_dir, "translation_keys.py")
+        output_path = os.path.join('.', "translation_keys.py")
     
     # Write translation_keys.py with both Keys class and dictionary
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -245,10 +307,11 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     Convert JSON language file to binary format.
     
     Binary Format:
-    [Header: 12 bytes]
+    [Header: 44 bytes]
     - magic: 4 bytes "LANG"
     - version: 4 bytes (uint32)  
     - key_count: 4 bytes (uint32)
+    - lang_name: 32 bytes (null-padded UTF-8, max 31 usable bytes)
     
     [Index: key_count * 4 bytes]
     - offset[0]: 4 bytes → string offset or 0xFFFFFFFF if missing
@@ -301,10 +364,9 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     
     lang_code = filename_lang_code  # Use validated language code
     
-    # Determine output path
+    # Determine output path — always write to CWD (not the JSON subdirectory)
     if output_path is None:
-        json_dir = os.path.dirname(json_path) or '.'
-        output_path = os.path.join(json_dir, get_binary_filename(lang_code))
+        output_path = './' + get_binary_filename(lang_code)
     
     # Extract translations - handle both formats
     translations = data.get('translations', {})
@@ -378,6 +440,12 @@ def json_to_binary(json_path, key_to_index, output_path=None):
             f.write(struct.pack('<I', 1))  # Version
             f.write(struct.pack('<I', key_count))  # Key count
             
+            # Language name (fixed LANG_NAME_FIELD_SIZE bytes, null-padded)
+            lang_name = metadata.get('language_name', '')
+            name_bytes = lang_name.encode('utf-8')[:LANG_NAME_FIELD_SIZE - 1]  # Reserve 1 byte for null
+            name_field = name_bytes + b'\x00' * (LANG_NAME_FIELD_SIZE - len(name_bytes))
+            f.write(name_field)
+            
             # Index
             for offset in index_data:
                 f.write(struct.pack('<I', offset))
@@ -417,7 +485,9 @@ def validate_binary_file(binary_path, translation_keys_module=None):
         - (False, "error description") - Validation failed, do not use file
     """
     try:
-        if not os.path.exists(binary_path):
+        try:
+            os.stat(binary_path)
+        except OSError:
             return (False, "File not found")
         
         with open(binary_path, 'rb') as f:
@@ -438,10 +508,22 @@ def validate_binary_file(binary_path, translation_keys_module=None):
             version = struct.unpack('<I', f.read(4))[0]
             key_count = struct.unpack('<I', f.read(4))[0]
             
+            # Language name field — no null terminator means the field is corrupt
+            name_raw = f.read(LANG_NAME_FIELD_SIZE)
+            null_pos = name_raw.find(b'\x00')
+            if null_pos < 0:
+                return (False, "Language name field has no null terminator (corrupt file)")
+            name_bytes = name_raw[:null_pos]
+            try:
+                lang_name = name_bytes.decode('utf-8')
+            except UnicodeDecodeError:
+                lang_name = '<invalid UTF-8>'
+            
             print(f"Binary file: {binary_path}")
             print(f"  Magic: {magic!r}")
             print(f"  Version: {version}")
             print(f"  Key count: {key_count}")
+            print(f"  Language name: {lang_name!r}")
             
             # Verify key count matches expected (if translation_keys provided)
             if translation_keys_module is not None:
@@ -555,9 +637,11 @@ def main():
             spec.loader.exec_module(keys_module)
             key_to_index = keys_module.KEY_TO_INDEX
         else:
-            # Try to find translation_keys.py in same directory
-            json_dir = os.path.dirname(json_path) or '.'
-            keys_path = os.path.join(json_dir, "translation_keys.py")
+            # Try to find translation_keys.py in CWD first, then fall back to JSON dir
+            keys_path = os.path.join('.', "translation_keys.py")
+            if not os.path.exists(keys_path):
+                json_dir = os.path.dirname(json_path) or '.'
+                keys_path = os.path.join(json_dir, "translation_keys.py")
             if os.path.exists(keys_path):
                 import importlib.util
                 spec = importlib.util.spec_from_file_location("keys", keys_path)

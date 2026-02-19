@@ -7,7 +7,6 @@ Enables runtime loading of new languages via JSON to binary conversion.
 """
 
 import os
-import struct
 import json
 from .translation_keys import KEY_TO_INDEX, Keys
 from .lang_compiler import (
@@ -19,6 +18,7 @@ from .lang_compiler import (
     JSON_FILE_PREFIX,
     JSON_FILE_SUFFIX,
     extract_language_code_from_filename,
+    extract_language_name_from_file,
     json_to_binary
 )
 
@@ -78,9 +78,11 @@ class I18nManager:
         try:
             files = os.listdir(self.FLASH_I18N_DIR)
             for filename in files:
-                if filename.startswith(BINARY_FILE_PREFIX) and filename.endswith(BINARY_FILE_SUFFIX):
-                    # Use lang_compiler function to extract language code
-                    lang_code = extract_language_code_from_filename(filename)
+                # FAT filesystem returns uppercase names (e.g. LANG_EN.BIN), so normalise
+                filename_lower = filename.lower()
+                if filename_lower.startswith(BINARY_FILE_PREFIX) and filename_lower.endswith(BINARY_FILE_SUFFIX):
+                    # Use lang_compiler function to extract language code (pass lowercase)
+                    lang_code = extract_language_code_from_filename(filename_lower)
                     if lang_code:  # None if invalid
                         lang_codes.add(lang_code)
         except OSError:
@@ -172,7 +174,26 @@ class I18nManager:
     def get_available_languages(self):
         """Get list of available language codes."""
         return self.available_languages.copy()
-    
+
+    def get_language_name(self, lang_code):
+        """
+        Return the human-readable language name read from the binary language file.
+        
+        Returns None and prints an error if lang_code is not in the set of available
+        languages. Otherwise reads the name from the language name field in the binary
+        header. Falls back to lang_code itself if the file read fails.
+        """
+        if lang_code not in self.available_languages:
+            print(f"Error: Language '{lang_code}' is not available. Available: {self.available_languages}")
+            return None
+        
+        binary_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
+        name = extract_language_name_from_file(binary_path)
+        if name is None:
+            # File read failed — degrade gracefully to the raw code
+            return lang_code
+        return name
+
     def t(self, key):
         """
         Get translation for a key using binary file lookup.

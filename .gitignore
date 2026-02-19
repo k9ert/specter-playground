@@ -16,6 +16,7 @@ release
 specter-diy-src
 
 # i18n generated files
+build
 scenarios/MockUI/i18n/translation_keys.py
 scenarios/MockUI/i18n/language_config.json
-src/data/
+
