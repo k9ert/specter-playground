@@ -21,7 +21,8 @@ JSON_FILE_SUFFIX = ".json"
 MAGIC_SIZE = 4        # "LANG" signature
 VERSION_SIZE = 4      # uint32 version number
 KEY_COUNT_SIZE = 4    # uint32 key count
-HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE  # = 12 bytes
+LANG_NAME_FIELD_SIZE = 32  # fixed-width language name field (null-padded UTF-8, max 31 usable bytes)
+HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE + LANG_NAME_FIELD_SIZE  # = 44 bytes
 OFFSET_SIZE = 4       # uint32 offset in index
 
 
@@ -181,6 +182,56 @@ def extract_language_code_from_filename(filename):
         return None
 
 
+def extract_language_name_from_file(filename):
+    """
+    Extract the language name from a binary language file.
+    
+    Opens the file and reads the language name from the fixed-width header field.
+    
+    Args:
+        filename: Path to binary language file (e.g. 'lang_en.bin' or full path)
+    
+    Returns:
+        str: Language name (e.g. 'English', 'Deutsch') or None on error
+    """
+    # Validate filename follows binary naming convention: lang_XX.bin
+    filename_only = _path_basename(filename)
+    if not (filename_only.startswith(BINARY_FILE_PREFIX) and filename_only.endswith(BINARY_FILE_SUFFIX)):
+        print(f"Error: Input file '{filename}' does not follow binary naming convention.")
+        print(f"Expected format: {get_binary_filename('XX')} (where XX is 2-letter language code)")
+        return None
+
+    try:
+        with open(filename, 'rb') as f:
+            # Seek past magic + version + key_count to the language name field
+            name_offset = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE
+            f.seek(name_offset)
+            name_raw = f.read(LANG_NAME_FIELD_SIZE)
+            
+            if len(name_raw) < LANG_NAME_FIELD_SIZE:
+                print(f"Error: File '{filename}' too small to contain language name field")
+                return None
+            
+            # Strip null padding — no null terminator means the field is corrupt
+            null_pos = name_raw.find(b'\x00')
+            if null_pos < 0:
+                print(f"Error: Language name field in '{filename}' has no null terminator (corrupt file)")
+                return None
+            name_bytes = name_raw[:null_pos]
+            
+            try:
+                return name_bytes.decode('utf-8')
+            except UnicodeDecodeError:
+                print(f"Error: Invalid UTF-8 in language name field of '{filename}'")
+                return None
+    except OSError as e:
+        print(f"Error: Could not open file '{filename}': {e}")
+        return None
+    except Exception as e:
+        print(f"Error: Could not read language name from '{filename}': {e}")
+        return None
+
+
 def generate_translation_keys(default_lang_json_path, output_path=None):
     """
     Generate translation_keys.py from default language JSON file.
@@ -257,10 +308,11 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     Convert JSON language file to binary format.
     
     Binary Format:
-    [Header: 12 bytes]
+    [Header: 44 bytes]
     - magic: 4 bytes "LANG"
     - version: 4 bytes (uint32)  
     - key_count: 4 bytes (uint32)
+    - lang_name: 32 bytes (null-padded UTF-8, max 31 usable bytes)
     
     [Index: key_count * 4 bytes]
     - offset[0]: 4 bytes → string offset or 0xFFFFFFFF if missing
@@ -389,6 +441,12 @@ def json_to_binary(json_path, key_to_index, output_path=None):
             f.write(struct.pack('<I', 1))  # Version
             f.write(struct.pack('<I', key_count))  # Key count
             
+            # Language name (fixed LANG_NAME_FIELD_SIZE bytes, null-padded)
+            lang_name = metadata.get('language_name', '')
+            name_bytes = lang_name.encode('utf-8')[:LANG_NAME_FIELD_SIZE - 1]  # Reserve 1 byte for null
+            name_field = name_bytes + b'\x00' * (LANG_NAME_FIELD_SIZE - len(name_bytes))
+            f.write(name_field)
+            
             # Index
             for offset in index_data:
                 f.write(struct.pack('<I', offset))
@@ -451,10 +509,22 @@ def validate_binary_file(binary_path, translation_keys_module=None):
             version = struct.unpack('<I', f.read(4))[0]
             key_count = struct.unpack('<I', f.read(4))[0]
             
+            # Language name field — no null terminator means the field is corrupt
+            name_raw = f.read(LANG_NAME_FIELD_SIZE)
+            null_pos = name_raw.find(b'\x00')
+            if null_pos < 0:
+                return (False, "Language name field has no null terminator (corrupt file)")
+            name_bytes = name_raw[:null_pos]
+            try:
+                lang_name = name_bytes.decode('utf-8')
+            except UnicodeDecodeError:
+                lang_name = '<invalid UTF-8>'
+            
             print(f"Binary file: {binary_path}")
             print(f"  Magic: {magic!r}")
             print(f"  Version: {version}")
             print(f"  Key count: {key_count}")
+            print(f"  Language name: {lang_name!r}")
             
             # Verify key count matches expected (if translation_keys provided)
             if translation_keys_module is not None:

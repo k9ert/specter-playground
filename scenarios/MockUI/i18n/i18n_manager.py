@@ -7,7 +7,6 @@ Enables runtime loading of new languages via JSON to binary conversion.
 """
 
 import os
-import struct
 import json
 from .translation_keys import KEY_TO_INDEX, Keys
 from .lang_compiler import (
@@ -19,6 +18,7 @@ from .lang_compiler import (
     JSON_FILE_PREFIX,
     JSON_FILE_SUFFIX,
     extract_language_code_from_filename,
+    extract_language_name_from_file,
     json_to_binary
 )
 
@@ -177,22 +177,22 @@ class I18nManager:
 
     def get_language_name(self, lang_code):
         """
-        Return a human-readable name for a language code.
-        Falls back to the code itself if unknown.
+        Return the human-readable language name read from the binary language file.
+        
+        Returns None and prints an error if lang_code is not in the set of available
+        languages. Otherwise reads the name from the language name field in the binary
+        header. Falls back to lang_code itself if the file read fails.
         """
-        names = {
-            "en": "English",
-            "de": "Deutsch",
-            "es": "Español",
-            "fr": "Français",
-            "it": "Italiano",
-            "pt": "Português",
-            "ru": "Русский",
-            "zh": "中文",
-            "ja": "日本語",
-            "ko": "한국어",
-        }
-        return names.get(lang_code, lang_code)
+        if lang_code not in self.available_languages:
+            print(f"Error: Language '{lang_code}' is not available. Available: {self.available_languages}")
+            return None
+        
+        binary_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
+        name = extract_language_name_from_file(binary_path)
+        if name is None:
+            # File read failed — degrade gracefully to the raw code
+            return lang_code
+        return name
 
     def t(self, key):
         """
