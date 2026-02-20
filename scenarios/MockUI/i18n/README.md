@@ -5,6 +5,7 @@ This directory contains the internationalization framework for the Specter UI, e
 ## Overview
 
 The i18n system provides:
+
 - Multi-language support with JSON source files (e.g. provided via SD-Card) converted to efficient binary format (during import on device)
 - Flash storage for runtime language loading without firmware reflashing
 - Automatic fallback to default language (English) for missing translations
@@ -14,59 +15,184 @@ The i18n system provides:
 - Zero RAM usage for string storage - all text read directly from flash
 - Shared string reading utilities for consistent binary format handling
 
-## File Structure
+### Storage Formats
 
+- Master format, development/build time: **JSON** (`specter_ui_XX.json` - human-editable)
+- Runtime format: **Binary** (`lang_XX.bin` - efficient, indexed)
+
+### End User Experience
+
+#### Use default language included in firmware
+
+1. User runs `nix develop -c make mockui` (which compiles default English JSON (`languages/specter_ui_en.json`) to binary (`lang_en.bin`) in `build/flash_image/i18n/ and pack it into the resulting firmware binary) OR downloads pre-built firmware with English included from released versions
+2. Flash single `.bin` firmware → English works immediately
+
+#### Add new language Option 1: Include language in firmware build
+
+1. User runs `nix develop -c make mockui LANG=XX, YY, ...` (which also compiles XX, YY, ... JSON (`languages/specter_ui_XX.json`, ...) to binaries (`lang_XX.bin`, ...) in `build/flash_image/i18n/ and packs them into the resulting firmware binary)
+2. Flash single `.bin` firmware → English and additional languages XX, YY, ... work immediately (English is always included as default at first startup)
+
+#### Add new language Option 2: Load language at runtime from SD card
+
+1. Copy `languages/specter_ui_XX.json` to SD card and insert into device
+2. Power up device (with already flashed firmware)
+3. Load new language from SD card (JSON) via UI → Auto-converts to binary
+4. Binary (automatically) saved on device to `/flash/i18n/` → Persists across reboots
+5. SD card not needed after initial load
+
+#### Initialize in NavigationController
+
+The i18n manager is automatically initialized in the NavigationController:
+
+```python
+from ..i18n import I18nManager
+
+class NavigationController(lv.obj):
+    def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.i18n = I18nManager()
 ```
-i18n/
+
+#### Use existing End-User facing strings
+
+Option 1:
+
+1. Make i18n_manager instance available (it's a singleton) (e.g. via i18n = parent.i18n)
+2. Wrap all user-facing strings with `i18n.t("KEY_NAME")` or `i18n["KEY_NAME"]` for dictionary-style access
+
+Option 2:
+
+1. Make i18n.t() method available in your class (e.g. t = parent.i18n.t)
+2. Wrap all user-facing strings with `t("KEY_NAME")`
+
+Example:
+
+```python
+def MyMenu(parent, *args, **kwargs):
+    # Get i18n manager from NavigationController
+    i18n = parent.i18n
+    t = i18n.t  # Optional: make t() method available for convenience
+    
+    # Two ways to access translations:
+    # Method 1: t() method (traditional)
+    menu_items = [
+        (icon, i18n.t("MENU_ITEM_KEY"), "action", None),
+        (None, t("SECTION_HEADER"), None, None),
+    ]
+    
+    # Method 2: Dictionary-style access (alternative)
+    # menu_items = [
+    #     (icon, i18n["MENU_ITEM_KEY"], "action", None),
+    #     (None, i18n["SECTION_HEADER"], None, None),
+    # ]
+    
+    return GenericMenu("menu_id", i18n["MENU_TITLE"], menu_items, parent, *args, **kwargs)
+```
+
+**Note**: Both `i18n.t("KEY")` and `i18n["KEY"]` work identically. Use whichever style you prefer. Both provide O(1) lookup with automatic fallback to default language for missing keys.
+
+#### Define new End-User facing strings
+
+1. Add new key to "translations" in `languages/specter_ui_en.json` with English text to be displayed (follow obvious naming convention for keys or check "Translation Key Naming Convention" below)
+
+   ```json
+   "NEW_KEY_NAME": "<English text>"
+   ```
+
+2. Use the key in your code with `i18n.t("KEY_NAME")` or `i18n["KEY_NAME"]` or `t("KEY_NAME")` [see above]
+3. Trigger build process to auto-generate translation keys and compile binary files
+Optional/Later:
+4. Add translations to other language JSON files in `languages/`
+
+   ```json
+   "NEW_KEY_NAME": {
+     "text": "<Translated text>",
+     "ref_en": "<English text>"
+   }
+   ```
+
+  and recompile.
+
+### Translation Workflow
+
+#### Create a new language
+
+To contribute a new language translation:
+
+1. Fork the repository
+2. Create `languages/specter_ui_XX.json` with correct metadata and translations #TO DO: Add helper script to auto-generate new language JSON file from English template with empty translations
+3. Insert translated strings for all keys (keep `ref_en` for context)
+4. Test the translations using: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
+5. Validate the binary: `python3 lang_compiler.py validate lang_XX.bin` (and fix findings)
+6. Submit a pull request
+
+Please ensure:
+
+- All keys from English file are present
+- Translations are accurate and natural
+- Special characters are properly escaped in JSON
+- Metadata is correctly filled
+- Binary compilation succeeds without errors
+
+### Degradation
+
+- Translation lookup fails: Selected language → Default (English) → `"STR_MISSING"`
+- No embedded strings in Python (except `"STR_MISSING"`)
+- All translations read from binary files on `/flash/i18n`
+
+## Architecture & Design
+
+Hint regarding security: This design does not use frozen .py files to generate flash content on the device (but instead uses a self maintained binary format with clear string termination etc.) so that no injected code execution is possible on the device - pure binary data files only.
+
+### File Structure
+
+**Naming Convention:**
+
+- JSON files: `specter_ui_XX.json` (XX = ISO 639-1 code)
+- Binary files: `lang_XX.bin` (XX = ISO 639-1 code)
+- Language Codes: ISO 639-1 (2-letter alphabetic codes: en, de, fr, es, etc.)
+
+Filesystem in git repository:
+
+```bash
+# Runtime infrastructure/code
+/scenarios/MockUI/i18n/
 ├── __init__.py              # Module exports
 ├── i18n_manager.py          # Core i18n management class
-├── lang_compiler.py         # JSON to binary converter
-├── translation_keys.py      # Auto-generated KEY_TO_INDEX mapping  
-├── lang_en.bin              # Auto compiled english (embedded in firmware)
-├── language_config.json     # User's selected language (auto-generated)
-└── languages/               # Source JSON translation files
+├── lang_compiler.py         # JSON to binary converter, binary format master
+└── languages/               # Source JSON translation files and auto-generated key mapping
     ├── specter_ui_en.json   # English translations (source / default)
-    └── specter_ui_de.json   # German translations (source)
+    ├── specter_ui_XX.json   # XX translations (source)
+    └── translation_keys.py  # Auto-generated KEY_TO_INDEX mapping
 
-# Flash filesystem at runtime:
+# Build-time tools
+/tools/
+├── make_fat_image.py        # Creates FAT12 image from staged files in build/flash_image/
+└── merge_firmware_flash.py  # Combines firmware binary with filesystem image for flashing
+
+# Temporary build artefacts:
+/build/
+└── flash_image/             # Staging area for files to be included in flash filesystem image
+    ├── flash_fs.img         # Generated FAT12 image containing staged files (created by build-flash-image target)
+    ├── i18n/
+        ├── lang_en.bin      # Compiled default language binary (created by build-i18n target)
+        ├── lang_xx.bin      # Compiled xx language binary (optional, if added at build time)
+        └── ...              # Additional language binaries
+```
+
+Flash filesystem on device at runtime:
+
+```bash
 /flash/i18n/
-├── lang_de.bin             # User-added German
-├── lang_fr.bin             # User-added French
-├── lang_es.bin             # User-added Spanish
+├── LANG_EN.BIN             # Default: English
+├── LANG_XX.BIN             # User-added language with language code XX
 └── ...
 ```
 
-## Binary Format
+### Language File Format (JSON Source)
 
-Each language is stored as an efficient binary file using a custom format optimized for embedded systems:
+#### English (Default Language)
 
-```
-Binary File Format (.bin):
-[Header: 12 bytes]
-- Magic: "LANG" (4 bytes)
-- Version: uint32 (4 bytes)  
-- Key count: uint32 (4 bytes)
-
-[Index: key_count * 4 bytes]
-- offset[0]: uint32 → absolute string offset or 0xFFFFFFFF if missing
-- offset[1]: uint32 → absolute string offset or 0xFFFFFFFF if missing
-- ...
-
-[Strings: variable size]
-- null-terminated UTF-8 strings stored consecutively
-- Order matches index array for easier debugging
-```
-
-**Key Features:**
-- **Zero RAM usage**: Strings read directly from flash on demand
-- **Fast lookup**: O(1) key access via pre-built index
-- **Compact storage**: ~1.5-2KB per language file
-- **Fallback support**: 0xFFFFFFFF markers for missing translations
-- **Aligned data**: Index and strings stored in same order for debugging
-
-## Language File Format (JSON Source)
-
-### English (Default Language)
 ```json
 {
   "_metadata": {
@@ -80,7 +206,8 @@ Binary File Format (.bin):
 }
 ```
 
-### Other Languages
+#### Other Languages
+
 ```json
 {
   "_metadata": {
@@ -97,58 +224,170 @@ Binary File Format (.bin):
 }
 ```
 
-The `ref_en` field provides English reference text for translators. During compilation, only the `text` field is stored in the binary - `ref_en` has **zero memory footprint**.
+The `ref_en` field provides English reference text for translators. During compilation, only the `text` field is stored in the binary - `ref_en` has **zero memory footprint on device**.
 
-## Usage in UI Code
+### Binary Format
 
-### Initialize in NavigationController
-The i18n manager is automatically initialized in the NavigationController:
+Each language is stored as an efficient binary file using a custom format optimized for embedded systems:
 
-```python
-from ..i18n import I18nManager
+- Compact storage (no JSON parsing overhead)
+- Encoding: UTF-8 to support all languages  
+- Language Codes: ISO 639-1 (2-letter alphabetic codes: en, de, fr, es, etc.)
+- little RAM usage during runtime as only the strings of the current screen need to be copied into RAM
+- Fast lookups via index
+- Fallback support: 0xFFFFFFFF markers for missing translations
+- Aligned data: Index and strings stored in same order for debugging
+- Low memory footprint (~1.5-2KB per language file)
+- Power-loss safe (read-only operations)
 
-class NavigationController(lv.obj):
-    def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.i18n = I18nManager()
+Binary File Format (.bin):
+
+```bash
+[Header: 44 bytes]
+  magic:     4 bytes  → "LANG" (signature)
+  version:   4 bytes  → uint32 (match firmware version [fw defines which strings are needed; TODO: not checked yet])
+  key_count: 4 bytes  → uint32 (number of translation keys)
+  lang_name: 32 bytes → null-padded UTF-8 language name (e.g. "English", "Deutsch")
+                        max 31 usable bytes + 1 null terminator
+
+[Index: key_count × 4 bytes]
+  offset[0]: 4 bytes  → absolute file offset to string, or 0xFFFFFFFF if missing
+  offset[1]: 4 bytes  → absolute file offset to string, or 0xFFFFFFFF if missing
+  ...
+
+[Strings: variable size]
+  null-terminated UTF-8 strings
+- Order matches index array for easier debugging
 ```
 
-### Use in Menu Classes
+### Component Responsibilities
+
+#### 1. `lang_compiler.py`
+
+**Purpose:** JSON ↔ binary conversion and file I/O (location-agnostic)
+
+**Key Functions:**
+
+- `generate_translation_keys(json_path)` → Creates `translation_keys.py` from default language [used during build process to generate key mapping]
+- `json_to_binary(json_path, key_to_index)` → Converts JSON to binary format, given key mapping from `translation_keys.py`
+- `read_translation_from_binary(file_path, key_index)` → Reads translation string by index; returns `(text, None)` or `(None, error_code)` with 0xFFFFFFFF detection
+- `extract_language_code_from_filename(filename)` → Extracts ISO code from filename (supports both JSON and binary naming conventions)
+- `extract_language_name_from_file(filename)` → Reads language name from fixed-width header field of a binary file; validates naming convention, null-termination, and UTF-8 encoding
+- `validate_binary_file(binary_path)` → Inspects and validates binary files (magic, version, key count, all offsets, all strings, language name field) [not to be called during runtime, only for build-time validation and testing]
+
+**Design Principles:**
+
+- **Location-agnostic**: Does not know or care where files are stored
+- **Binary format knowledge lives here**: Including 0xFFFFFFFF = missing translation
+- **Returns structured results**: Caller decides policy (fallback, error, etc.)
+- **Reusable**: Same code used at build-time and runtime (for shared functionality)
+- **Robust validation**: Checks filename format, language code consistency, metadata
+- **No duplication**: Single implementation for all conversion needs
+
+**Responsibility Boundary:**
+
+- Knows: Binary format, file I/O, validation
+- Doesn't know: Fallback logic, which files to use, language preferences
+
+#### 2. `i18n_manager.py`
+
+**Purpose:** Runtime language file management and translation lookups on device
+
+**Key Responsibilities:**
+
+- **File Location Management:**
+  - Searches for language files in `/flash/i18n/`
+  - Identifies available/installed languages
+  - Manages persistent language selection (`/flash/language_config.json`)
+
+- **Runtime Loading:**
+  - Loads new languages from SD card (JSON format) [TODO: add SD Card support]
+  - Converts JSON to binary using `lang_compiler.json_to_binary()`
+  - Saves binary to `/flash/i18n/` for persistent access
+
+- **Translation Lookups:**
+  - Uses `translation_keys.KEY_TO_INDEX` for key → index mapping
+  - Calls `lang_compiler` functions to read from specific binary files
+  - Implements fallback chain (no binary format knowledge needed)
+
+- **Graceful Degradation:**
+  1. Call `lang_compiler.read_translation_from_binary(current_lang_file, key_index)`
+  2. If returns "missing", call same function with `default_lang_file`
+  3. If still missing, return `"STR_MISSING"`
+  4. **No embedded strings** (except fallback `"STR_MISSING"`)
+
+**Responsibility Boundary:**
+
+- Knows: Where files live, fallback policy, user preferences, storage management
+- Doesn't know: Binary format details, 0xFFFFFFFF marker meaning
+
+**Key Methods:**
+
+- `set_language(lang_code)` → Activates a language
+- `get_available_languages()` → Lists installed languages (scans `/flash/i18n/` for binary language files)
+- `get_language_name(lang_code)` → Returns human-readable name read from the binary header; returns `None` (with error print to console) if `lang_code` not in available languages; falls back to lang_code string if file read fails
+- `t(key)` → Translates a key with fallback logic
+- `load_language_from_json(json_path)` → Imports new language from SD card, converts to binary, rescans available languages
+
+**Design Principles:**
+
+- **Unified storage**: All languages in `/flash/i18n/`
+- **Memory efficient**: No string caching, direct file reads
+- **User-friendly**: Automatic format conversion, clear error messages
+
+#### 3. `translation_keys.py` (Auto-generated)
+
+**Purpose:** Contract between build-time and runtime
+
+**Contents:**
 
 ```python
-def MyMenu(parent, *args, **kwargs):
-    # Get i18n manager from NavigationController
-    i18n = parent.i18n
-    
-    # Two ways to access translations:
-    # Method 1: t() method (traditional)
-    menu_items = [
-        (icon, i18n.t("MENU_ITEM_KEY"), "action", None),
-        (None, i18n.t("SECTION_HEADER"), None, None),
-    ]
-    
-    # Method 2: Dictionary-style access (alternative)
-    # menu_items = [
-    #     (icon, i18n["MENU_ITEM_KEY"], "action", None),
-    #     (None, i18n["SECTION_HEADER"], None, None),
-    # ]
-    
-    return GenericMenu("menu_id", i18n.t("MENU_TITLE"), menu_items, parent, *args, **kwargs)
+KEY_TO_INDEX = {
+    "MAIN_MENU_TITLE": 0,
+    "SETTINGS_BUTTON": 1,
+    # ... all keys in sorted order
+}
 ```
 
-**Note**: Both `i18n.t("KEY")` and `i18n["KEY"]` work identically. Use whichever style you prefer. Both provide O(1) lookup with automatic fallback to default language for missing keys.
+**Why separate module:**
 
-## Build System Integration
+- Generated from default language JSON
+- Imported by both `lang_compiler.py` (at build-time) and `i18n_manager.py` (at runtime)
+- Avoids circular imports
+- Clear separation: data vs. logic
 
-The `lang_compiler.py` provides comprehensive tools for managing the binary translation system:
+### Build System Integration
 
-### Translation Key Generation
+#### Dedicated Makefile targets
+
+- `build-i18n`: Generates translation keys and compiles default language JSON to binary to `build/flash_image/i18n/` via `lang_compiler.py`
+- `build-flash-image`: Creates FAT12 image from staged file in `build/flash_image/` via `tools/make_fat_image.py`
+- `mockui`: Builds firmware and merges it with embedded filesystem for language file via `tools/merge_firmware_flash.py`
+
+On device, language file appears at `/flash/i18n/lang_en.bin` (although with uppercase due to FAT12)
+
+**Optional: Include additional languages at build time:**
+
+```bash
+make mockui ADD_LANG=de,fr, ..
+# → Also compiles lang_de.bin and lang_fr.bin and ... into firmware (if json files are present)
+```
+
+#### Used helper scripts
+
+- `lang_compiler.py`: For JSON ↔ binary conversion and validation
+- `make_fat_image.py`: For creating FAT12 image from staged files in `build/flash_image/`
+- `merge_firmware_flash.py`: For combining firmware binary with filesystem image for flashing (if needed; otherwise can flash separately via ST-Link)
+
+#### Translation Key Generation
+
 ```bash
 # Generate translation_keys.py from default language
 python3 lang_compiler.py generate_keys languages/specter_ui_en.json
 ```
 
-### Binary Compilation  
+#### Binary Compilation  
+
 ```bash
 # Compile JSON to binary format (auto-detects translation_keys.py)
 python3 lang_compiler.py compile languages/specter_ui_en.json
@@ -158,7 +397,8 @@ python3 lang_compiler.py compile languages/specter_ui_de.json
 python3 lang_compiler.py compile languages/specter_ui_XX.json translation_keys.py
 ```
 
-### Binary Validation
+#### Binary Validation
+
 ```bash
 # Validate binary files with detailed inspection
 python3 lang_compiler.py validate lang_en.bin translation_keys.py
@@ -166,6 +406,7 @@ python3 lang_compiler.py validate lang_de.bin  # Without key names
 ```
 
 **Compiler Features:**
+
 - **Automatic validation**: Filename and metadata consistency checks
 - **Extra key detection**: Warns about translations not in key mapping
 - **Missing key tracking**: Shows count of untranslated strings
@@ -173,29 +414,23 @@ python3 lang_compiler.py validate lang_de.bin  # Without key names
 - **Memory optimization**: Uses minimal RAM during compilation
 - **Shared utilities**: `read_string_at_offset()` used by both compiler and runtime
 
-## Adding a New Language
+#### STM32F469 Discovery Board Internal Flash Layout
 
-### Method 1: Development (Build-time)
-1. Create a new language file: `languages/specter_ui_XX.json` (where XX is the ISO 639-1 language code)
-2. Copy the structure from `languages/specter_ui_de.json` as a template
-3. Translate all `text` fields, keeping `ref_en` as English reference
-4. Set correct `language_code` and `language_name` in metadata
-5. Compile to binary: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
-6. The binary file `lang_XX.bin` will be automatically created
-7. Restart device to detect the new language
+- Combine firmware code + filesystem image into single `.bin`
+  - Firmware code at 0x08020000+ (FLASH_TEXT)
+  - Filesystem image at 0x08008000 (FLASH_FS)
+  - Single file to flash via ST-Link [target option for current development]
 
-### Method 2: Runtime (User Upload)
-1. User creates `specter_ui_XX.json` file following the format
-2. Copy file to SD card and insert into device
-3. Call `i18n.load_language_from_json("path/to/specter_ui_XX.json")`
-4. Language is automatically converted to binary and stored in `/flash/i18n/`
-5. Restart device to use the new language
+```bash
+0x08000000 - 0x08004000  (16KB)   FLASH_START: Sector 0 (ISR vectors)
+0x08004000 - 0x08008000  (16KB)   FLASH_RSV: Sector 1 (reserved)
+0x08008000 - 0x08020000  (96KB)   FLASH_FS: Sectors 2-4 (/flash filesystem)
+0x08020000 - 0x08200000  (1.9MB)  FLASH_TEXT: Sectors 5-23 (firmware code)
+```
 
-**Important**: All languages must be compiled to binary format before use. The system only loads `.bin` files at runtime, never `.json` files.
+## Run-time language Selection (on device)
 
-## Language Selection
-
-The last selected language is automatically saved to `language_config.json` and restored on next startup. Language switching requires only changing a file pointer - no RAM loading.
+The last selected language is automatically saved to `language_config.json` and restored on next startup by `i18n_manager`. Language switching requires only changing a file pointer - no RAM loading.
 
 ## Missing Translations
 
@@ -208,6 +443,7 @@ The binary format handles missing translations efficiently:
 5. **Build warnings**: Compiler shows count of missing translations per file
 
 Example workflow:
+
 - User selects German language
 - Key "NEW_FEATURE" missing in German binary
 - System detects `0xFFFFFFFF` marker
@@ -219,107 +455,8 @@ Example workflow:
 Keys follow the pattern: `CATEGORY_SUBCATEGORY_ITEM`
 
 Examples:
+
 - `MAIN_MENU_TITLE` - Main menu title
 - `WALLET_MENU_VIEW_ADDRESSES` - Wallet menu item
 - `ACTION_SCREEN_BACK` - Generic back button
 - `COMMON_WALLET` - Common term used in multiple places
-
-## Adding New Translatable Text
-
-1. Add the English text to `languages/specter_ui_en.json`:
-   ```json
-   "NEW_KEY_NAME": "English text"
-   ```
-2. Regenerate translation keys: `python3 lang_compiler.py generate_keys languages/specter_ui_en.json`
-3. Add translations to other language files in `languages/`:
-   ```json
-   "NEW_KEY_NAME": {
-     "text": "Translated text",
-     "ref_en": "English text"
-   }
-   ```
-4. Recompile all languages: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
-5. Use `i18n.t("NEW_KEY_NAME")` or `i18n["NEW_KEY_NAME"]` in your code
-
-## API Reference
-
-### I18nManager Class
-
-#### Methods
-
-- `__init__(i18n_dir=None)` - Initialize manager, scan for language files
-- `set_language(lang_code)` - Switch to a different language (returns bool success)
-- `get_language()` - Get current language code
-- `get_available_languages()` - List available language codes
-- `get_language_name(lang_code)` - Get human-readable language name
-- `t(key)` - Get translation for a key (primary method)
-- `__getitem__(key)` - Dictionary-style access: `i18n["KEY"]` (alternative)
-- `load_language_from_json(json_path)` - Convert and load new language from JSON
-
-#### Usage Examples
-
-```python
-# Initialize (done by NavigationController)
-i18n = I18nManager()
-
-# Get translations
-title = i18n.t("MENU_TITLE")           # Method 1: t() method
-button_text = i18n["BUTTON_OK"]        # Method 2: Dictionary style
-
-# Change language
-success = i18n.set_language("de")
-if not success:
-    print("German language not available")
-
-# Check available languages
-languages = i18n.get_available_languages()  # ["en", "de"]
-```
-
-## Technical Details
-
-- **Runtime Format**: Binary only - JSON used only for development/compilation
-- **String Reading**: Shared `read_string_at_offset()` utility for consistent handling
-- **Encoding**: UTF-8 to support all languages  
-- **Language Codes**: ISO 639-1 (2-letter alphabetic codes: en, de, fr, es, etc.)
-- **Fallback**: Default language (English) used for missing translations
-- **Performance**: All strings read directly from flash, no RAM caching
-- **Flash Storage**: Uses dedicated `/flash/i18n/` directory for user-added languages
-- **Security**: No code execution - pure binary data files only
-- **Memory Usage**: ~336 bytes for index (84 keys × 4 bytes), zero for strings
-- **Build Tools**: Comprehensive validation and error checking during compilation
-
-## Command Line Tools
-
-The `lang_compiler.py` provides several utilities:
-
-```bash
-# Generate key mapping from default language
-python3 lang_compiler.py generate_keys languages/specter_ui_en.json
-
-# Compile JSON to binary  
-python3 lang_compiler.py compile languages/specter_ui_de.json
-
-# Validate binary file
-python3 lang_compiler.py validate lang_de.bin translation_keys.py
-```
-
-## Contributing Translations
-
-To contribute a new language translation:
-1. Fork the repository
-2. Create a new language file following the format above
-3. Translate all strings, keeping `ref_en` fields for context
-4. Test the translations using: `python3 lang_compiler.py compile languages/specter_ui_XX.json`
-5. Validate the binary: `python3 lang_compiler.py validate lang_XX.bin`
-6. Submit a pull request
-
-Please ensure:
-- All keys from English file are present
-- Translations are accurate and natural
-- Special characters are properly escaped in JSON
-- Metadata is correctly filled
-- Binary compilation succeeds without errors
-
----
-
-For questions or issues, please open an issue on the repository.
