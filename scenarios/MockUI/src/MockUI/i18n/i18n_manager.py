@@ -19,7 +19,8 @@ from .lang_compiler import (
     JSON_FILE_SUFFIX,
     extract_language_code_from_filename,
     extract_language_name_from_file,
-    json_to_binary
+    json_to_binary,
+    FILL_PLACEHOLDER,
 )
 
 
@@ -238,6 +239,17 @@ class I18nManager:
                 print(f"Warning: Error reading translation: {error}")
                 return self.STR_MISSING
         
+        # If the translation is the untranslated placeholder, fall back to the
+        # default language (English) so the placeholder never reaches the UI.
+        if text == FILL_PLACEHOLDER:
+            if self.current_language != self.DEFAULT_LANGUAGE:
+                default_text, default_error = read_translation_from_binary(
+                    self.default_lang_file, key_index
+                )
+                if default_text is not None and default_text != FILL_PLACEHOLDER:
+                    return default_text
+            return self.STR_MISSING
+
         return text
     
     def __getitem__(self, key):
