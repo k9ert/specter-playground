@@ -190,6 +190,8 @@ class StatusBar(lv.obj):
         # language is always shown even when locked
         # Get current language from i18n manager (always available via NavigationController)
         lang_code = self.parent.i18n.get_language()
+        if not lang_code:
+            lang_code = "??"
         self.lang_lbl.set_text(self._truncate(lang_code.upper(), 3))
 
         # Now set elements that differ between locked/unlocked
