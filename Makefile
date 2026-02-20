@@ -27,15 +27,8 @@ $(TARGET_DIR):
 $(MPY_DIR)/mpy-cross/Makefile:
 	git submodule update --init --recursive
 
-# Sync JSON language files with source code (dry run — warns about drift,
-# does NOT modify files; run 'python3 tools/sync_i18n.py' manually to apply)
-sync-i18n:
-	@echo Checking i18n language files for sync with source code...
-	@mkdir -p build
-	python3 tools/sync_i18n.py --dry-run
-
 # i18n compilation
-build-i18n: sync-i18n
+build-i18n:
 	@echo Building i18n files...
 	@mkdir -p build/flash_image/i18n
 	@cd scenarios/MockUI/src/MockUI/i18n && python3 lang_compiler.py generate_keys languages/specter_ui_en.json
@@ -201,4 +194,4 @@ rag-index:
 rag-search:
 	cd .rag && .venv/bin/python search.py "$(QUERY)"
 
-.PHONY: all clean sync-i18n build-i18n rag-setup rag-index rag-search
+.PHONY: all clean build-i18n rag-setup rag-index rag-search

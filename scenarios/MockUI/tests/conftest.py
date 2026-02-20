@@ -4,12 +4,6 @@ import os
 import shutil
 from pathlib import Path
 
-"""Pytest configuration for MockUI tests."""
-import json
-import os
-import shutil
-from pathlib import Path
-
 import pytest
 
 # Import state classes (micropython/lvgl already mocked by scenarios/conftest.py)
