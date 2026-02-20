@@ -17,6 +17,12 @@ BINARY_FILE_SUFFIX = ".bin"
 JSON_FILE_PREFIX = "specter_ui_"
 JSON_FILE_SUFFIX = ".json"
 
+# Translation Placeholder
+# Used by sync_i18n.py when adding a new key that has not yet been translated.
+# i18n_manager.t() recognises this value and falls back to the default language,
+# preventing the raw placeholder from leaking into the UI.
+FILL_PLACEHOLDER = "<FILL>"
+
 # Binary Format Size Constants (in bytes)
 MAGIC_SIZE = 4        # "LANG" signature
 VERSION_SIZE = 4      # uint32 version number

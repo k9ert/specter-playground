@@ -168,10 +168,13 @@ Filesystem in git repository:
 # Build-time tools
 /tools/
 ├── make_fat_image.py        # Creates FAT12 image from staged files in build/flash_image/
-└── merge_firmware_flash.py  # Combines firmware binary with filesystem image for flashing
+├── merge_firmware_flash.py  # Combines firmware binary with filesystem image for flashing
+└── sync_i18n.py             # Sync JSON language files with source code and default language file (adds/removes keys)
 
 # Temporary build artefacts:
 /build/
+├── i18n_sync_master.log              # Master log from last sync-i18n run (always written, incl. dry-run)
+├── i18n_sync_specter_ui_XX.log       # Per-language log from last sync-i18n run
 └── flash_image/             # Staging area for files to be included in flash filesystem image
     ├── flash_fs.img         # Generated FAT12 image containing staged files (created by build-flash-image target)
     ├── i18n/
@@ -266,6 +269,10 @@ Binary File Format (.bin):
 
 **Purpose:** JSON ↔ binary conversion and file I/O (location-agnostic)
 
+**Key Constants:**
+
+- `FILL_PLACEHOLDER = "<FILL>"` → Sentinel value written by `sync_i18n.py` for keys that have not yet been translated. `i18n_manager.t()` detects this value at runtime and falls back to English so the placeholder never appears in the UI. Imported by `sync_i18n.py` to keep both in sync.
+
 **Key Functions:**
 
 - `generate_translation_keys(json_path)` → Creates `translation_keys.py` from default language [used during build process to generate key mapping]
@@ -312,9 +319,10 @@ Binary File Format (.bin):
 
 - **Graceful Degradation:**
   1. Call `lang_compiler.read_translation_from_binary(current_lang_file, key_index)`
-  2. If returns "missing", call same function with `default_lang_file`
+  2. If returns `"missing"`, call same function with `default_lang_file`
   3. If still missing, return `"STR_MISSING"`
-  4. **No embedded strings** (except fallback `"STR_MISSING"`)
+  4. If the resolved text equals `FILL_PLACEHOLDER` (`"<FILL>"`), fall back to the default language (English). If even English has `<FILL>` (brand-new key not yet given an English value), return `"STR_MISSING"`.
+  5. **No placeholder text ever reaches the UI** — `<FILL>` is always caught before rendering
 
 **Responsibility Boundary:**
 
@@ -360,7 +368,8 @@ KEY_TO_INDEX = {
 
 #### Dedicated Makefile targets
 
-- `build-i18n`: Generates translation keys and compiles default language JSON to binary to `build/flash_image/i18n/` via `lang_compiler.py`
+- `sync-i18n`: Runs `tools/sync_i18n.py --dry-run` during the build to **detect** drift between source code and language files. Writes logs to `build/` but **does not modify any files**. If drift is detected, run `python3 tools/sync_i18n.py` manually to apply changes before the next build. **Called automatically as the first step of `build-i18n`.**
+- `build-i18n`: Depends on `sync-i18n`. Generates translation keys and compiles default language JSON to binary to `build/flash_image/i18n/` via `lang_compiler.py`
 - `build-flash-image`: Creates FAT12 image from staged file in `build/flash_image/` via `tools/make_fat_image.py`
 - `mockui`: Builds firmware and merges it with embedded filesystem for language file via `tools/merge_firmware_flash.py`
 
@@ -376,8 +385,37 @@ make mockui ADD_LANG=de,fr, ..
 #### Used helper scripts
 
 - `lang_compiler.py`: For JSON ↔ binary conversion and validation
-- `make_fat_image.py`: For creating FAT12 image from staged files in `build/flash_image/`
-- `merge_firmware_flash.py`: For combining firmware binary with filesystem image for flashing (if needed; otherwise can flash separately via ST-Link)
+- `tools/sync_i18n.py`: Synchronizes JSON language files with source code and the default language file (see below)
+- `tools/make_fat_image.py`: For creating FAT12 image from staged files in `build/flash_image/`
+- `tools/merge_firmware_flash.py`: For combining firmware binary with filesystem image for flashing (if needed; otherwise can flash separately via ST-Link)
+
+#### Synchronizing language files with source code
+
+The build target `sync-i18n` runs the tool in **dry-run mode** to detect — but not fix — drift. To actually apply changes, run manually:
+
+```bash
+# Apply changes (add/remove keys, update ref_en)
+python3 tools/sync_i18n.py
+
+# Dry run — show what would change without touching any file
+python3 tools/sync_i18n.py --dry-run
+
+# Override directories
+python3 tools/sync_i18n.py \
+    --languages-dir scenarios/MockUI/i18n/languages \
+    --source-dir    scenarios/MockUI \
+    --log-dir       build
+```
+
+What the tool does:
+
+1. **Scans source code** for all i18n key usages — recognises `t("KEY")`, `i18n["KEY"]`, `i18n("KEY")`, `i18n_manager["KEY"]`, `i18n_manager("KEY")` (single and double quotes).
+2. **Syncs English master** (`specter_ui_en.json`): adds missing keys with `<FILL>`, removes obsolete keys.
+3. **Syncs all other language files**: adds new keys with `<FILL>` + `ref_en`, updates `ref_en` when English text changed, removes obsolete keys, migrates any plain-string values to the standard `{text, ref_en}` format (with a warning).
+4. **Validates filenames** using `extract_language_code_from_filename()` — non-conforming files are skipped with a warning.
+5. **Writes logs to `build/`** immediately as changes are detected (open/write/close per entry — crash-safe). Log files are always created, even in dry-run mode. The header line `*** DRY RUN — no changes will be made ***` appears at the top of each log file when applicable.
+
+`<FILL>` values in compiled binaries are automatically caught at runtime by `i18n_manager.t()` and replaced with the English fallback — they never reach the UI.
 
 #### Translation Key Generation
 
