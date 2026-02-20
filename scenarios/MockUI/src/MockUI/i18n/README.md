@@ -156,7 +156,7 @@ Filesystem in git repository:
 
 ```bash
 # Runtime infrastructure/code
-/scenarios/MockUI/i18n/
+/scenarios/MockUI/src/MockUI/i18n/
 ├── __init__.py              # Module exports
 ├── i18n_manager.py          # Core i18n management class
 ├── lang_compiler.py         # JSON to binary converter, binary format master

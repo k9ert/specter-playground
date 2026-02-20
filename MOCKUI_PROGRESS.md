@@ -17,8 +17,8 @@ translated English text on the STM32F469 Discovery board.
 - `manifests/mockui.py` - Frozen manifest including disco libs, platform, MockUI scenarios
 - `Makefile` - Added `mockui` target + `FROZEN_MANIFEST_MOCKUI` variable
 - `scenarios/MockUI/basic/symbol_lib/icon.py` - **Fixed**: switched ARGB8888 -> A8 format
-- `scenarios/MockUI/i18n/translations_embedded.py` - **New**: embedded English translations for frozen firmware
-- `scenarios/MockUI/i18n/i18n_manager.py` - **Fixed**: added fallback to embedded translations
+- `scenarios/MockUI/src/MockUI/i18n/translations_embedded.py` - **New**: embedded English translations for frozen firmware
+- `scenarios/MockUI/src/MockUI/i18n/i18n_manager.py` - **Fixed**: added fallback to embedded translations
 
 ## Issues Found & Fixed
 
