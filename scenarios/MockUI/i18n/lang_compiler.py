@@ -255,10 +255,9 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
     # Generate mapping
     key_to_index = {key: i for i, key in enumerate(keys)}
     
-    # Determine output path
+    # Determine output path — always write to CWD (not the JSON subdirectory)
     if output_path is None:
-        json_dir = os.path.dirname(default_lang_json_path) or '.'
-        output_path = os.path.join(json_dir, "translation_keys.py")
+        output_path = os.path.join('.', "translation_keys.py")
     
     # Write translation_keys.py with both Keys class and dictionary
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -365,9 +364,9 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     
     lang_code = filename_lang_code  # Use validated language code
     
-    # Determine output path
+    # Determine output path — always write to CWD (not the JSON subdirectory)
     if output_path is None:
-        output_path = _path_dirname(json_path) + '/' + get_binary_filename(lang_code)
+        output_path = './' + get_binary_filename(lang_code)
     
     # Extract translations - handle both formats
     translations = data.get('translations', {})
@@ -638,9 +637,11 @@ def main():
             spec.loader.exec_module(keys_module)
             key_to_index = keys_module.KEY_TO_INDEX
         else:
-            # Try to find translation_keys.py in same directory
-            json_dir = os.path.dirname(json_path) or '.'
-            keys_path = os.path.join(json_dir, "translation_keys.py")
+            # Try to find translation_keys.py in CWD first, then fall back to JSON dir
+            keys_path = os.path.join('.', "translation_keys.py")
+            if not os.path.exists(keys_path):
+                json_dir = os.path.dirname(json_path) or '.'
+                keys_path = os.path.join(json_dir, "translation_keys.py")
             if os.path.exists(keys_path):
                 import importlib.util
                 spec = importlib.util.spec_from_file_location("keys", keys_path)

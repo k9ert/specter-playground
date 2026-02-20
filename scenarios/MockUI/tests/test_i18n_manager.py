@@ -150,7 +150,7 @@ def test_missing_translation_fallback():
         flash_dir.mkdir(parents=True)
         
         # Use the real English JSON from the project
-        real_en_json = Path(__file__).parent.parent / "i18n" / "specter_ui_en.json"
+        real_en_json = Path(__file__).parent.parent / "i18n" / "languages" / "specter_ui_en.json"
         
         # Copy it to temp dir
         test_en_json = temp_dir / "specter_ui_en.json"
@@ -231,7 +231,7 @@ def test_unknown_key_fallback():
         flash_dir.mkdir(parents=True)
         
         # Use the real English JSON from the project
-        real_en_json = Path(__file__).parent.parent / "i18n" / "specter_ui_en.json"
+        real_en_json = Path(__file__).parent.parent / "i18n" / "languages" / "specter_ui_en.json"
         
         # Copy and compile English
         test_en_json = temp_dir / "specter_ui_en.json"
@@ -283,7 +283,7 @@ def test_load_json_to_binary():
         flash_dir.mkdir(parents=True)
         
         # Use the real English JSON from the project
-        real_en_json = Path(__file__).parent.parent / "i18n" / "specter_ui_en.json"
+        real_en_json = Path(__file__).parent.parent / "i18n" / "languages" / "specter_ui_en.json"
         
         # Copy and compile English first (needed as default)
         test_en_json = temp_dir / "specter_ui_en.json"
@@ -367,7 +367,7 @@ def test_language_switching():
         flash_dir.mkdir(parents=True)
         
         # Use the real English JSON
-        real_en_json = Path(__file__).parent.parent / "i18n" / "specter_ui_en.json"
+        real_en_json = Path(__file__).parent.parent / "i18n" / "languages" / "specter_ui_en.json"
         
         # Load English translations
         with open(real_en_json, 'r', encoding='utf-8') as f:
