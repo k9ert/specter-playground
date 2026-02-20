@@ -268,7 +268,12 @@ class I18nManager:
                     print(f"Error: Could not extract language code from filename: {json_path}")
                     print(f"Expected format: {get_json_filename('XX')} where XX is 2-letter language code")
                     return False
-            
+
+            # Validate language code to prevent path traversal and invalid filenames
+            if not (len(lang_code) == 2 and lang_code.isalpha()):
+                print(f"Error: Invalid language code '{lang_code}': must be exactly 2 letters")
+                return False
+
             # Construct target path in flash directory
             output_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
             

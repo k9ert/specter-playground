@@ -13,6 +13,13 @@ DEBUG ?= 0
 USE_DBOOT ?= 0
 ADD_LANG ?=
 
+# Validate ADD_LANG to prevent shell injection (only lowercase letters and commas allowed)
+ifneq ($(ADD_LANG),)
+ifneq ($(shell echo "$(ADD_LANG)" | grep -E '^[a-z,]+$$'),$(ADD_LANG))
+$(error ADD_LANG contains invalid characters. Use only lowercase letters and commas, e.g. ADD_LANG=de,fr)
+endif
+endif
+
 $(TARGET_DIR):
 	mkdir -p $(TARGET_DIR)
 
