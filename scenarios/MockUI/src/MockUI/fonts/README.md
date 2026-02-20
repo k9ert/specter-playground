@@ -33,7 +33,7 @@ Each font includes:
 import lvgl as lv
 
 # Load custom font
-font_12_de = lv.font_load("scenarios/MockUI/fonts/montserrat_12_de.bin")
+font_12_de = lv.font_load("scenarios/MockUI/src/MockUI/fonts/montserrat_12_de.bin")
 if font_12_de:
     lv.font_default = font_12_de
 ```
@@ -120,7 +120,7 @@ LV_FONT_DECLARE(montserrat_16_de);
 
 **Example:**
 ```python
-# scenarios/MockUI/fonts/font_loader.py
+# scenarios/MockUI/src/MockUI/fonts/font_loader.py
 import lvgl as lv
 import os
 
@@ -242,7 +242,7 @@ FontLoaderDE: Loaded 11/11 German umlaut fonts
 To regenerate the fonts (e.g., to add more characters):
 
 ```bash
-cd scenarios/MockUI/fonts
+cd scenarios/MockUI/src/MockUI/fonts
 ./generate_fonts_with_umlauts.sh
 ```
 

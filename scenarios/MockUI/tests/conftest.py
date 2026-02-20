@@ -4,6 +4,12 @@ import os
 import shutil
 from pathlib import Path
 
+"""Pytest configuration for MockUI tests."""
+import json
+import os
+import shutil
+from pathlib import Path
+
 import pytest
 
 # Import state classes (micropython/lvgl already mocked by scenarios/conftest.py)
@@ -19,7 +25,7 @@ import MockUI.i18n.lang_compiler as lang_compiler
 # ---------------------------------------------------------------------------
 # Path to real language source files in the repo
 # ---------------------------------------------------------------------------
-_I18N_LANGUAGES_DIR = Path(__file__).parent.parent / "i18n" / "languages"
+_I18N_LANGUAGES_DIR = Path(__file__).parent.parent / "src" / "MockUI" / "i18n" / "languages"
 _EN_JSON = _I18N_LANGUAGES_DIR / "specter_ui_en.json"
 _DE_JSON = _I18N_LANGUAGES_DIR / "specter_ui_de.json"
 
