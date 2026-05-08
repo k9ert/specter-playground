@@ -1,14 +1,22 @@
 import lvgl as lv
 
-from .ui_consts import CONTENT_PCT
+from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, TITLE_ROW_HEIGHT, BATTERY_OFFSET_X
 from ..stubs import UIState, SpecterState
+from ..stubs.battery import Battery
+from ..stubs.ui_state import Context
 from ..i18n import I18nManager
 from ..tour import GuidedTour
 from .keyboard_manager import KeyboardManager
 from .animations import create_anims_for_transition
+from .context_bar import ContextBar
 
 from .navigation_bar import NavigationBar
 from .widgets.containers import flex_col
+
+# Pixel heights computed from percentages so we can shift content down
+# when the context bar is active.
+_CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100  # 736 px
+_BATT_Y = (TITLE_ROW_HEIGHT - 20) // 2           # centre 20px battery in title row
 from .action_screen import ActionScreen
 from .main_menu import MainMenu
 from .locked_menu import LockedMenu
@@ -79,8 +87,20 @@ class SpecterGui(lv.obj):
         self.navigation_bar = NavigationBar(self)
         self.navigation_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
 
-        # Content area fills from top to just above nav bar (CONTENT_PCT%)
-        self.content = flex_col(self, width=lv.pct(100), height=lv.pct(CONTENT_PCT))
+        # Context bar — created/destroyed by _sync_context_bar(); never animates
+        self.context_bar = None
+
+        # Battery — persistent child of SpecterGui, always at top-right
+        if self.device_state.has_battery:
+            self._battery = Battery(self)
+            self._battery.VALUE = self.device_state.battery_pct
+            self._battery.update()
+            self._battery.align(lv.ALIGN.TOP_RIGHT, BATTERY_OFFSET_X, _BATT_Y)
+        else:
+            self._battery = None
+
+        # Content area: pixel-sized so we can shift it when context bar appears
+        self.content = flex_col(self, width=lv.pct(100), height=_CONTENT_H)
         self.content.set_style_radius(0, 0)
         self.content.align(lv.ALIGN.TOP_MID, 0, 0)
         self.content.set_scroll_dir(lv.DIR.NONE)
@@ -111,6 +131,11 @@ class SpecterGui(lv.obj):
         """Centralized refresh method for all UI components."""
         self.current_screen.refresh()
         self.navigation_bar.refresh()
+        if self.context_bar:
+            self.context_bar.refresh()
+        if self._battery:
+            self._battery.VALUE = self.device_state.battery_pct
+            self._battery.update()
 
     def show_menu(self, target_menu_id=None):
         # Drop all input while animating
@@ -138,6 +163,7 @@ class SpecterGui(lv.obj):
             if self.current_screen:
                 self.current_screen.delete()
                 self.current_screen = None
+            self._sync_context_bar()
             self._build_screen(curr_menu)
             self.refresh_ui()
 
@@ -204,9 +230,44 @@ class SpecterGui(lv.obj):
         else:
             self.current_screen = ActionScreen(current, self)
 
+    def _sync_context_bar(self):
+        """Create or destroy the GUI-level context bar and adjust content geometry.
+
+        Called before building a new screen (both animated and non-animated).
+        The context bar never participates in animations; it stays fixed at y=0.
+        """
+        ctx = self.ui_state.active_context
+        needs_bar = (
+            (ctx == Context.SEED and self.ui_state.active_seed is not None)
+            or (ctx == Context.WALLET and self.ui_state.active_wallet is not None)
+        )
+
+        if needs_bar and self.context_bar is None:
+            self.context_bar = ContextBar(self)
+            # Raise context bar above content so it is never obscured during
+            # the slide animation (content children slide underneath it).
+            self.context_bar.move_foreground()
+            # Push battery in front of context bar too
+            if self._battery:
+                self._battery.move_foreground()
+            # Shift content down to leave room for context bar
+            self.content.set_height(_CONTENT_H - TITLE_ROW_HEIGHT)
+            self.content.align(lv.ALIGN.TOP_MID, 0, TITLE_ROW_HEIGHT)
+
+        elif not needs_bar and self.context_bar is not None:
+            self.context_bar.delete()
+            self.context_bar = None
+            # Restore full content area
+            self.content.set_height(_CONTENT_H)
+            self.content.align(lv.ALIGN.TOP_MID, 0, 0)
+
     def _do_transition(self, anim_type):
         """Animate from the current screen to a freshly-built new screen."""
         self._animating = True
+
+        # Sync context bar first so content geometry is correct before the
+        # new screen is built and before the animation starts.
+        self._sync_context_bar()
 
         # Switch content to absolute layout so we can position screens manually
         self.content.set_layout(lv.LAYOUT.NONE)

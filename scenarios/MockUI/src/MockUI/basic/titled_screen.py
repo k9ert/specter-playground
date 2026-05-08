@@ -1,65 +1,37 @@
 """Base class for all views (menus, action screens, etc.) that have a title.
 
 Provides a fixed-height title bar at the top (containing a centred title
-label), an optional context bar for SEED/WALLET screens, and a body area
-below that fills the remaining space.  Battery placement is handled here;
-subclasses no longer need to create the Battery widget themselves.
+label) and a body area below that fills the remaining space.
 
 Layout variants (absolute, no flex on root):
 
-  Default (no context, show_title=True):
+  Default (show_title=True):
     ┌────────────────────────────────────────┐
-    │  title_bar  (TITLE_ROW_HEIGHT px)   [B]│
+    │  title_bar  (TITLE_ROW_HEIGHT px)      │
     ├────────────────────────────────────────┤
     │  (TITLE_PADDING gap)                   │
     ├────────────────────────────────────────┤
     │  body  (fills remaining height)        │
     └────────────────────────────────────────┘
 
-  SEED / WALLET context, show_title=True:
+  show_title=False:
     ┌────────────────────────────────────────┐
-    │  _context_bar  (TITLE_ROW_HEIGHT px)[B]│  ← seed/wallet info
-    ├────────────────────────────────────────┤
-    │  title_bar     (TITLE_ROW_HEIGHT px)   │  ← screen-specific title
-    ├────────────────────────────────────────┤
-    │  (TITLE_PADDING gap)                   │
+    │  (transparent spacer TITLE_ROW_HEIGHT) │
     ├────────────────────────────────────────┤
     │  body  (fills remaining height)        │
     └────────────────────────────────────────┘
 
-  SEED / WALLET context, show_title=False:
-    ┌────────────────────────────────────────┐
-    │  _context_bar  (TITLE_ROW_HEIGHT px)[B]│
-    ├────────────────────────────────────────┤
-    │  body  (fills remaining height)        │
-    └────────────────────────────────────────┘
-
-  No context, show_title=False:
-    ┌────────────────────────────────────────┐
-    │  (transparent spacer TITLE_ROW_HEIGHT) │  ← [B] floats here
-    ├────────────────────────────────────────┤
-    │  body  (fills remaining height)        │
-    └────────────────────────────────────────┘
-
-[B] = battery, always a direct child of TitledScreen, top-right aligned
-      (only when show_battery=True and device_state.has_battery).
+[Battery] and [ContextBar] float above the content area, owned by SpecterGui.
 """
 
 import lvgl as lv
 from .ui_consts import (
     TITLE_ROW_HEIGHT, TITLE_PADDING, SCREEN_HEIGHT, CONTENT_PCT,
-    TITLE_FONT, BATTERY_OFFSET_X,
+    TITLE_FONT,
 )
 from .widgets.labels import body_label
 from .widgets.containers import bare_strip
 from .specter_gui_base import SpecterGuiElement, configure_as_bare
-from .context_bar import ContextBar
-from ..stubs.ui_state import Context
-from ..stubs.battery import Battery
-
-# Vertical offset so the battery is centred within the top TITLE_ROW_HEIGHT strip.
-# Battery height is 20 px (set in Battery.__init__).
-_BATT_Y = (TITLE_ROW_HEIGHT - 20) // 2
 
 
 class TitledScreen(SpecterGuiElement):
@@ -76,8 +48,7 @@ class TitledScreen(SpecterGuiElement):
                             or None when show_title=False
         self.title        - lv.label centred inside title_bar,
                             or None when show_title=False
-        self.body         - lv.obj below all header strips; put content here
-        self._context_bar - ContextBar instance, or None when not applicable
+        self.body         - lv.obj below the title bar; put content here
 
     Subclasses must guard before accessing self.title / self.title_bar:
         if self.show_title:
@@ -98,57 +69,32 @@ class TitledScreen(SpecterGuiElement):
         configure_as_bare(self, width=lv.pct(100), height=lv.pct(100))
         self.set_scroll_dir(lv.DIR.NONE)
 
-        # ── Determine layout ──────────────────────────────────────────────────
-        ui_state = self.ui_state
-        ctx = self.context
-        has_context_bar = (
-            (ctx == Context.SEED and ui_state.active_seed is not None)
-            or (ctx == Context.WALLET and ui_state.active_wallet is not None)
-        )
-
         y_body = 0  # accumulated y-offset for the body widget
 
-        # ── 1. Context bar (SEED / WALLET context only) ───────────────────────
-        self.context_bar = None
-        if has_context_bar:
-            self.context_bar = ContextBar(self)
-            y_body = TITLE_ROW_HEIGHT
-
-        # ── 2. Title bar ──────────────────────────────────────────────────────
+        # ── 1. Title bar ──────────────────────────────────────────────────────
         self.title_bar = None
         self.title = None
         if show_title:
-            self.title_bar = bare_strip(self, TITLE_ROW_HEIGHT, y_body)
+            self.title_bar = bare_strip(self, TITLE_ROW_HEIGHT, 0)
             self.title = body_label(self.title_bar, title, font=TITLE_FONT)
             self.title.align(lv.ALIGN.CENTER, 0, 0)
-            y_body += TITLE_ROW_HEIGHT + TITLE_PADDING
-        elif not has_context_bar:
-            # No header strip at all — place an invisible spacer so the battery
-            # widget has a reserved row and body content starts below it.
+            y_body = TITLE_ROW_HEIGHT + TITLE_PADDING
+        else:
+            # No title strip — place an invisible spacer so the battery widget
+            # (floating above content at y=0) doesn't overlap body content.
             self.spacer = bare_strip(self, TITLE_ROW_HEIGHT, 0)
             self.spacer.set_style_bg_opa(lv.OPA.TRANSP, 0)
             y_body = TITLE_ROW_HEIGHT
 
-        # ── 3. Battery — always a direct child of self ────────────────────────
-        if self.device_state.has_battery:
-            self.batt = Battery(self)
-            self.batt.VALUE = self.device_state.battery_pct
-            self.batt.update()
-            self.batt.align(lv.ALIGN.TOP_RIGHT, BATTERY_OFFSET_X, _BATT_Y)
-
-        # ── 4. Body ───────────────────────────────────────────────────────────
+        # ── 2. Body ───────────────────────────────────────────────────────────
         content_h = SCREEN_HEIGHT * CONTENT_PCT // 100
         self.body = bare_strip(self, content_h - y_body, y_body)
         # Disable scrolling on body; subclasses can re-enable via set_scroll_dir.
         self.body.set_scroll_dir(lv.DIR.NONE)
 
     def refresh(self):
-        """Refresh dynamic content: battery level (in-place, no rebuild)."""
-        if hasattr(self, "batt"):
-            self.batt.VALUE = self.device_state.battery_pct
-            self.batt.update()
-        if self.context_bar:
-            self.context_bar.refresh()
+        """Refresh dynamic content (override in subclasses as needed)."""
+        pass
 
     def on_back(self, e):
         if e.get_code() == lv.EVENT.CLICKED:

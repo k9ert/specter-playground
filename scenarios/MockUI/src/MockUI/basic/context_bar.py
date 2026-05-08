@@ -1,8 +1,9 @@
 """ContextBar — active-seed / active-wallet info strip at the top of screens.
 
-Rendered automatically by TitledScreen when ``ui_state.active_context`` is
-SEED or WALLET and the corresponding active object is not None.  Sits at y=0
-on the TitledScreen root (TITLE_ROW_HEIGHT tall) and provides:
+Owned directly by SpecterGui, so it stays fixed and
+does not participate in screen-transition animations.
+
+Sits at y=0 on the SpecterGui root (TITLE_ROW_HEIGHT tall) and provides:
 
   SEED context:
     [KEY icon] [name textarea*] [RELAY icon] [fingerprint] [PASSPHRASE icon†]
@@ -13,9 +14,6 @@ on the TitledScreen root (TITLE_ROW_HEIGHT tall) and provides:
   * Editable: tap to open keyboard, commit to rename seed / wallet.
   † Passphrase icon visible only when passphrase is set; white = active,
     grey = inactive; tap to toggle ``passphrase_active``.
-
-The Battery widget is placed inside this strip by TitledScreen when
-``show_battery=True``.
 """
 
 import lvgl as lv
@@ -50,21 +48,20 @@ _NET_W  = 42               # net label "test"/"sig" etc.
 
 
 class ContextBar(SpecterGuiElement):
-    """Top info strip rendered on screens in SEED or WALLET context.
+    """Top info strip rendered when a seed or wallet context is active.
 
-    Instantiated by :class:`~basic.titled_screen.TitledScreen`; do not
-    create directly.  The Battery widget (when enabled) is placed inside
-    this strip by TitledScreen after construction.
+    Owned by :class:`~basic.specter_gui.SpecterGui` — created/destroyed by
+    ``_sync_context_bar()``.  Sits at y=0 on the SpecterGui root and never
+    participates in screen-transition animations.
     """
 
-    def __init__(self, screen):
+    def __init__(self, gui):
         """
         Args:
-            screen: The :class:`TitledScreen` (an ``lv.obj``) that owns
-                    this bar.  ``screen.gui`` must already be set.
+            gui: The :class:`SpecterGui` instance that owns this bar.
         """
-        super().__init__(screen)
-        self.gui = screen.gui
+        super().__init__(gui)
+        self.gui = gui
 
         configure_as_bare(self, width=lv.pct(100), height=TITLE_ROW_HEIGHT)
         self.set_scroll_dir(lv.DIR.NONE)
@@ -87,8 +84,6 @@ class ContextBar(SpecterGuiElement):
             main_align=lv.FLEX_ALIGN.START,
         )
         row.align(lv.ALIGN.LEFT_MID, 0, 0)
-        row.set_scroll_dir(lv.DIR.NONE)
-        row.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
 
         ctx = self.context
         if ctx == Context.SEED:
