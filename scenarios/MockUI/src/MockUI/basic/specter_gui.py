@@ -1,13 +1,13 @@
 import lvgl as lv
 
-from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE_ROW_HEIGHT, BATTERY_OFFSET_X, ANIM_MS_HORIZONTAL
+from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, TITLE_ROW_HEIGHT, BATTERY_OFFSET_X, ANIM_MS_VERTICAL
 from ..stubs import UIState, SpecterState
 from ..stubs.battery import Battery
 from ..stubs.ui_state import Context
 from ..i18n import I18nManager
 from ..tour import GuidedTour
 from .keyboard_manager import KeyboardManager
-from .animations import create_anims_for_transition, GUIAnimations, slide_x
+from .animations import create_anims_for_transition, GUIAnimations, slide_y
 from .context_bar import ContextBar
 
 from .navigation_bar import NavigationBar
@@ -243,7 +243,6 @@ class SpecterGui(lv.obj):
 
         if needs_bar and self.context_bar is None:
             self.context_bar = ContextBar(self)
-            self.context_bar._context_type = ctx
             self.context_bar.move_foreground()
             # Push battery in front of context bar too
             if self._battery:
@@ -260,106 +259,64 @@ class SpecterGui(lv.obj):
             self.content.align(lv.ALIGN.TOP_MID, 0, 0)
 
     def _do_transition(self, anim_type):
-        """Animate from the current screen to a freshly-built new screen.
-
-        Context bar behaviour:
-          - Same context (seed→seed, wallet→wallet): bar stays fixed.
-          - Context changes on horizontal_push_in / push_out: old bar slides
-            out with old_screen, new bar (if needed) slides in with new_screen.
-          - Context changes on other animation types (slide / vertical): bar
-            snaps to its new state once the animation completes.
-        """
+        """Animate from the current screen to a freshly-built new screen."""
         self._animating = True
-        W = SCREEN_WIDTH
 
-        # ── Determine context-bar animation needs ──────────────────────────
         old_bar = self.context_bar
-        old_has_bar = old_bar is not None
-        old_ctx_type = old_bar._context_type if old_bar else None
-
         new_ctx = self.ui_state.active_context
         new_needs_bar = (
             (new_ctx == Context.SEED and self.ui_state.active_seed is not None)
             or (new_ctx == Context.WALLET and self.ui_state.active_wallet is not None)
         )
-        same_context = old_has_bar and new_needs_bar and old_ctx_type == new_ctx
+        same_ctx = old_bar is not None and new_needs_bar and old_bar.context_type == new_ctx
 
-        # Bar only animates for horizontal push transitions where context changes.
-        animate_bar = (not same_context) and anim_type in (
-            GUIAnimations.horizontal_push_in, GUIAnimations.horizontal_push_out
-        )
-
-        # ── Adjust content geometry for new context state ──────────────────
-        # Only the enter/leave cases change content height; seed↔wallet keeps
-        # the same TITLE_ROW_HEIGHT offset so no adjustment is needed.
-        if not same_context:
-            if new_needs_bar and not old_has_bar:
+        # Resize content before LAYOUT.NONE so flex reflows old_screen to the new height
+        if not same_ctx:
+            if new_needs_bar and old_bar is None:
                 self.content.set_height(_CONTENT_H - TITLE_ROW_HEIGHT)
                 self.content.align(lv.ALIGN.TOP_MID, 0, TITLE_ROW_HEIGHT)
-            elif not new_needs_bar and old_has_bar:
+            elif not new_needs_bar and old_bar is not None:
                 self.content.set_height(_CONTENT_H)
                 self.content.align(lv.ALIGN.TOP_MID, 0, 0)
+                self.context_bar = None  # clear ref; keep old_bar alive for animation
 
-        # ── Switch content to absolute layout for manual positioning ───────
         self.content.set_layout(lv.LAYOUT.NONE)
-
-        # Freeze old_screen at explicit pixel size so a content resize doesn't
-        # cause a visible jump while both screens coexist.
         old_screen = self.current_screen
-        old_screen.set_height(old_screen.get_height())
-
-        # ── Create new context bar (context-changing + animated path only) ─
-        new_bar = None
-        if animate_bar and new_needs_bar:
-            new_bar = ContextBar(self)
-            new_bar._context_type = new_ctx
-            new_bar.move_foreground()
-            if self._battery:
-                self._battery.move_foreground()
-
-        # ── Build incoming screen ──────────────────────────────────────────
         self.current_screen = None
         self._build_screen()
         new_screen = self.current_screen
 
-        # ── Completion callback ────────────────────────────────────────────
+        # Create incoming bar for entering-context case (after LAYOUT.NONE)
+        if not same_ctx and new_needs_bar and old_bar is None:
+            self.context_bar = ContextBar(self)
+            self.context_bar.move_foreground()
+            if self._battery:
+                self._battery.move_foreground()
+        new_bar = self.context_bar
+
         def _on_done(anim):
             self._animating = False
             self._anim_refs = None
             self.content.set_layout(lv.LAYOUT.FLEX)
             self.content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
             old_screen.delete()
-
-            if animate_bar:
-                # Swap: delete old bar, install new bar as live context bar.
-                if old_bar:
+            if not same_ctx:
+                if old_bar is not None:
                     old_bar.delete()
-                if new_bar:
-                    new_bar.set_x(0)
-                self.context_bar = new_bar
-            elif not same_context:
-                # Slide / vertical with context change: snap bar to new state.
-                if old_bar:
-                    old_bar.delete()
+                if self.context_bar is old_bar:  # seed↔wallet: stale bar, recreate
                     self.context_bar = None
-                self._sync_context_bar()
-
+                    self._sync_context_bar()
             self.refresh_ui()
 
-        # ── Assemble and start animations ──────────────────────────────────
         anims = create_anims_for_transition(old_screen, new_screen, anim_type, on_done_cb=_on_done)
 
-        if animate_bar:
-            if anim_type == GUIAnimations.horizontal_push_in:
-                if old_bar:
-                    anims.append(slide_x(old_bar, 0, -W, ANIM_MS_HORIZONTAL))
-                if new_bar:
-                    anims.append(slide_x(new_bar, W, 0, ANIM_MS_HORIZONTAL))
-            elif anim_type == GUIAnimations.horizontal_push_out:
-                if old_bar:
-                    anims.append(slide_x(old_bar, 0, W, ANIM_MS_HORIZONTAL))
-                if new_bar:
-                    anims.append(slide_x(new_bar, -W, 0, ANIM_MS_HORIZONTAL))
+        # Animate bar vertically in sync with content on context transitions
+        if not same_ctx:
+            if anim_type == GUIAnimations.vertical_slide_in and new_bar:
+                anims.append(slide_y(new_bar, _CONTENT_H, 0, ANIM_MS_VERTICAL))
+            elif anim_type == GUIAnimations.vertical_slide_out and old_bar:
+                old_bar.move_foreground()
+                anims.append(slide_y(old_bar, 0, _CONTENT_H, ANIM_MS_VERTICAL))
 
         self._anim_refs = anims
         for a in anims:

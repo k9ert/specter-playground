@@ -60,9 +60,7 @@ class ContextBar(SpecterGuiElement):
         self.set_scroll_dir(lv.DIR.NONE)
         self.align(lv.ALIGN.TOP_MID, 0, 0)
 
-        # Store the context type at creation time so _do_transition can tell
-        # old bar type from new, even after ui_state has advanced to the new context.
-        self._context_type = self.context
+        self.context_type = self.context
 
         self._build()
 
