@@ -24,8 +24,8 @@ class GenericMenu(TitledScreen):
         # TitledScreen sets self.gui, self.device_state, self.ui_state, self.i18n, self.on_navigate, self.body, etc.
         super().__init__("", parent)
 
-        title = self.get_title(self.t, self.device_state)
-        if self.show_title:
+        if self.title:
+            title = self.get_title(self.t, self.device_state)
             self.title.set_text(title)
 
         self.body.set_layout(lv.LAYOUT.FLEX)

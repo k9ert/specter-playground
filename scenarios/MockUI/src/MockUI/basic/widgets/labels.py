@@ -22,7 +22,7 @@ def text_width(text, font):
     return total
 
 
-def best_font_for_name(text, max_w, max_h):
+def best_font_for_size(text, max_w, max_h):
     """Return *(font, display_text)* fitting *text* within max_w × max_h px.
 
     Tries each font in ``_NAME_FONTS`` (largest first) for a single-line fit.

@@ -41,7 +41,7 @@ from .ui_consts import (
 from .symbol_lib import BTC_ICONS
 from .widgets.containers import flex_row
 from .widgets.action_modal import ActionModal
-from .widgets.labels import best_font_for_name
+from .widgets.labels import best_font_for_size
 from .widgets.icon_widgets import make_icon
 from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
 from .widgets.wallet_widgets import add_wallet_type_icon, wallet_signing_color
@@ -161,7 +161,7 @@ class TopBar(lv.obj):
         wallet_name_w = max(10, (info_w - fixed_seed_w - fixed_wallet_w) // 2) if show_wallet else 0
 
         # ── Seed name ─────────────────────────────────────────────────────────
-        seed_font, seed_text = best_font_for_name(seed.label, seed_name_w, STATUS_BTN_HEIGHT)
+        seed_font, seed_text = best_font_for_size(seed.label, seed_name_w, STATUS_BTN_HEIGHT)
         seed_lbl = lv.label(self._info_cont)
         seed_lbl.set_text(seed_text)
         seed_lbl.set_style_text_font(seed_font, 0)
@@ -190,7 +190,7 @@ class TopBar(lv.obj):
             sep_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
             # Wallet name
-            wallet_font, wallet_text = best_font_for_name(
+            wallet_font, wallet_text = best_font_for_size(
                 wallet.label, wallet_name_w, STATUS_BTN_HEIGHT
             )
             wallet_lbl = lv.label(self._info_cont)

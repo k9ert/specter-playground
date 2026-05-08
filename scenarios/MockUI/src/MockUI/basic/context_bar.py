@@ -1,32 +1,17 @@
 """ContextBar — active-seed / active-wallet info strip at the top of screens.
-
-Owned directly by SpecterGui, so it stays fixed and
-does not participate in screen-transition animations.
-
-Sits at y=0 on the SpecterGui root (TITLE_ROW_HEIGHT tall) and provides:
-
-  SEED context:
-    [KEY icon] [name textarea*] [RELAY icon] [fingerprint] [PASSPHRASE icon†]
-
-  WALLET context:
-    [WALLET icon] [name textarea*] [type icon] [Acc:n?] [net label?]
-
-  * Editable: tap to open keyboard, commit to rename seed / wallet.
-  † Passphrase icon visible only when passphrase is set; white = active,
-    grey = inactive; tap to toggle ``passphrase_active``.
 """
 
 import lvgl as lv
 
 from .ui_consts import (
     TITLE_ROW_HEIGHT, WHITE_HEX,
-    TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH,
+    SMALL_TEXT_FONT, SCREEN_WIDTH,
     BTC_ICON_WIDTH, FINGERPRINT_LBL_WIDTH,
 )
 from .specter_gui_base import SpecterGuiElement, delete_all_children_of, configure_as_bare
 from .symbol_lib import BTC_ICONS
 from .widgets.containers import flex_row
-from .widgets.labels import body_label, best_font_for_name
+from .widgets.labels import body_label, best_font_for_size
 from .widgets.inputs import title_textarea
 from .widgets.icon_widgets import make_icon
 from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
@@ -50,9 +35,17 @@ _NET_W  = 42               # net label "test"/"sig" etc.
 class ContextBar(SpecterGuiElement):
     """Top info strip rendered when a seed or wallet context is active.
 
-    Owned by :class:`~basic.specter_gui.SpecterGui` — created/destroyed by
-    ``_sync_context_bar()``.  Sits at y=0 on the SpecterGui root and never
-    participates in screen-transition animations.
+    It renders:
+
+      SEED context:
+        [KEY icon] [name textarea*] [PASSPHRASE icon†] [FINGERPRINT]
+
+      WALLET context:
+        [WALLET icon] [name textarea*] [type icon] [Acc:n?] [net label?]
+
+      * Editable: tap to open keyboard, commit to rename seed / wallet.
+      † Passphrase icon visible only when passphrase is set; white = active,
+        grey = inactive; tap to toggle ``passphrase_active``.
     """
 
     def __init__(self, gui):
@@ -65,9 +58,11 @@ class ContextBar(SpecterGuiElement):
 
         configure_as_bare(self, width=lv.pct(100), height=TITLE_ROW_HEIGHT)
         self.set_scroll_dir(lv.DIR.NONE)
-        # Use NONE layout so the battery can be absolutely positioned later
-        self.set_layout(lv.LAYOUT.NONE)
         self.align(lv.ALIGN.TOP_MID, 0, 0)
+
+        # Store the context type at creation time so _do_transition can tell
+        # old bar type from new, even after ui_state has advanced to the new context.
+        self._context_type = self.context
 
         self._build()
 
@@ -75,7 +70,8 @@ class ContextBar(SpecterGuiElement):
 
     def _build(self):
         """Create child widgets for the current context."""
-        # Content flex row — leaves _BATT_RESERVE px on the right for battery.
+        # Flex row — leaves _BATT_RESERVE px on the right so the battery
+        # widget (owned by SpecterGui, floating above) doesn't overlap content.
         row = flex_row(
             self,
             width=SCREEN_WIDTH - _BATT_RESERVE,
@@ -83,7 +79,6 @@ class ContextBar(SpecterGuiElement):
             pad=0,
             main_align=lv.FLEX_ALIGN.START,
         )
-        row.align(lv.ALIGN.LEFT_MID, 0, 0)
 
         ctx = self.context
         if ctx == Context.SEED:
@@ -102,7 +97,7 @@ class ContextBar(SpecterGuiElement):
         fixed = _ICON_W + _ICON_W + (_ICON_W if has_passphrase else 0) + _FP_W
         name_w = _ROW_W - fixed
 
-        font, display_text = best_font_for_name(seed.label, name_w, TITLE_ROW_HEIGHT)
+        font, display_text = best_font_for_size(seed.label, name_w, TITLE_ROW_HEIGHT)
 
         self._name_ta = title_textarea(row)
         self._name_ta.set_width(name_w)
@@ -138,7 +133,7 @@ class ContextBar(SpecterGuiElement):
         fixed = _ICON_W + _ICON_W + (_ACC_W if has_account else 0) + (_NET_W if show_net else 0)
         name_w = _ROW_W - fixed
 
-        font, display_text = best_font_for_name(wallet.label, name_w, TITLE_ROW_HEIGHT)
+        font, display_text = best_font_for_size(wallet.label, name_w, TITLE_ROW_HEIGHT)
 
         if wallet.is_default_wallet():
             # show "Default" as non-editable text

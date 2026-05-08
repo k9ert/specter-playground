@@ -26,7 +26,7 @@ from .ui_consts import (
 from .symbol_lib import BTC_ICONS
 from .widgets.containers import flex_col, flex_row
 from .widgets.btn import Btn
-from .widgets.labels import _make_label, best_font_for_name
+from .widgets.labels import _make_label, best_font_for_size
 from .widgets.icon_widgets import make_icon
 from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
 from .widgets.wallet_widgets import add_wallet_type_icon, wallet_signing_color, wallet_account_text, wallet_net_text
@@ -263,7 +263,7 @@ class SeedDropUp(_DropUp):
             - BTC_ICON_WIDTH            # delete button
         )
         name_lbl_w = max(10, name_w)
-        name_font, seed_label = best_font_for_name(seed.label, name_lbl_w, _CARD_H)
+        name_font, seed_label = best_font_for_size(seed.label, name_lbl_w, _CARD_H)
         name_lbl = _make_label(row, seed_label, width=name_lbl_w, font=name_font)
         name_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
@@ -373,7 +373,7 @@ class WalletDropUp(_DropUp):
             - BTC_ICON_WIDTH       # delete button
         )
         name_lbl_w = max(10, name_w)
-        name_font, wallet_label = best_font_for_name(wallet.label, name_lbl_w, _CARD_H)
+        name_font, wallet_label = best_font_for_size(wallet.label, name_lbl_w, _CARD_H)
         name_lbl = _make_label(row, wallet_label, width=name_lbl_w, font=name_font)
         name_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 

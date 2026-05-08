@@ -1,6 +1,6 @@
 """Base class for all views (menus, action screens, etc.) that have a title.
 
-Provides a fixed-height title bar at the top (containing a centred title
+Provides an optional fixed-height title bar at the top (containing a centred title
 label) and a body area below that fills the remaining space.
 
 Layout variants (absolute, no flex on root):
@@ -21,7 +21,6 @@ Layout variants (absolute, no flex on root):
     │  body  (fills remaining height)        │
     └────────────────────────────────────────┘
 
-[Battery] and [ContextBar] float above the content area, owned by SpecterGui.
 """
 
 import lvgl as lv
@@ -39,7 +38,6 @@ class TitledScreen(SpecterGuiElement):
 
     Attributes available to subclasses:
         self.gui          - the SpecterGui that owns this screen
-        self.show_title   - True when a title bar was created
         self.device_state - gui.device_state shorthand
         self.ui_state     - gui.ui_state shorthand
         self.i18n         - gui.i18n shorthand
@@ -50,9 +48,8 @@ class TitledScreen(SpecterGuiElement):
                             or None when show_title=False
         self.body         - lv.obj below the title bar; put content here
 
-    Subclasses must guard before accessing self.title / self.title_bar:
-        if self.show_title:
-            self.title.set_text(...)
+    Subclasses must guard before accessing self.title / self.title_bar
+    self.title and self.title_bar might be None
     """
 
     def __init__(self, title, parent, *, show_title=True):
@@ -63,7 +60,6 @@ class TitledScreen(SpecterGuiElement):
 
         # Convenience shortcut — must be set before any property access.
         self.gui = parent
-        self.show_title = show_title
 
         # Root: fill parent completely, no decoration.
         configure_as_bare(self, width=lv.pct(100), height=lv.pct(100))
@@ -94,7 +90,6 @@ class TitledScreen(SpecterGuiElement):
 
     def refresh(self):
         """Refresh dynamic content (override in subclasses as needed)."""
-        pass
 
     def on_back(self, e):
         if e.get_code() == lv.EVENT.CLICKED:
