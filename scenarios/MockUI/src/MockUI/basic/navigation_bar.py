@@ -31,7 +31,7 @@ from .ui_consts import (
 from .symbol_lib import BTC_ICONS
 from .widgets.btn import Btn
 from .widgets.modal_overlay import ModalOverlay
-from .specter_gui_base import SpecterGuiElement
+from .specter_gui_base import SpecterGuiElement, configure_as_bare
 from .dropup import SeedDropUp, WalletDropUp, DropUpState
 from ..stubs.ui_state import Context
 
@@ -53,12 +53,8 @@ class NavigationBar(SpecterGuiElement):
         self._wallet_dropup._on_closed = self._on_any_panel_closed
 
         # ── Bar container style ───────────────────────────────────────────────
-        self.set_width(lv.pct(100))
-        self.set_height(lv.pct(STATUS_BAR_PCT))
+        configure_as_bare(self, width=lv.pct(100), height=lv.pct(STATUS_BAR_PCT))
         self.set_layout(lv.LAYOUT.NONE)   # absolute child positioning
-        self.set_style_pad_all(0, 0)
-        self.set_style_radius(0, 0)
-        self.set_style_border_width(0, 0)
         self.set_scroll_dir(lv.DIR.NONE)
 
         h = STATUS_BTN_HEIGHT

@@ -3,7 +3,7 @@ from ..basic.menu import GenericMenu
 from ..basic.titled_screen import TitledScreen
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
-from ..basic.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX, SMALL_PAD
+from ..basic.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX
 from ..basic.widgets.icon_widgets import make_icon
 
 
@@ -25,14 +25,7 @@ class SettingsMenu(GenericMenu):
         # 1. Interface icon row at the top
         self._build_iface_row(state)
 
-        # 2. Battery in title bar top-right
-        from ..stubs.battery import Battery
-        self.batt = Battery(self.title_bar)
-        self.batt.VALUE = getattr(state, "battery_pct", None)
-        self.batt.update()
-        self.batt.align(lv.ALIGN.RIGHT_MID, -SMALL_PAD, 0)
-
-        # 3. Menu items below
+        # 2. Menu items below
         menu_items = self.get_menu_items(t, state)
         self._build_menu_items(menu_items)
 

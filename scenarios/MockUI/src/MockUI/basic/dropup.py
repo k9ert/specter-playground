@@ -20,7 +20,7 @@ from .widgets.action_modal import ActionModal
 from .confirm_modals import confirm_delete_seed, confirm_delete_wallet
 from .ui_consts import (
     BTC_ICON_WIDTH, SMALL_TEXT_FONT, STATUS_BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
-    STATUS_BAR_PCT, WHITE_HEX, GREY_HEX, ORANGE_HEX, BIG_PAD,
+    STATUS_BAR_PCT, WHITE_HEX, ORANGE_HEX, BIG_PAD,
     DROPUP_DIVIDER_OPA, ANIM_MS_VERTICAL, TEXT_FONT, SMALL_TEXT_FONT
 )
 from .symbol_lib import BTC_ICONS
@@ -28,6 +28,8 @@ from .widgets.containers import flex_col, flex_row
 from .widgets.btn import Btn
 from .widgets.labels import _make_label, best_font_for_name
 from .widgets.icon_widgets import make_icon
+from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
+from .widgets.wallet_widgets import add_wallet_type_icon, wallet_signing_color, wallet_account_text, wallet_net_text
 from .animations import slide_y
 from .specter_gui_base import SpecterGuiMixin
 
@@ -213,7 +215,6 @@ def _card_row(parent):
     # pad_all also sets pad_column/pad_row, which adds inter-item gaps in flex
     # layout and causes horizontal overflow.  Zero it out explicitly.
     row.set_style_pad_column(0, 0)
-    row.set_style_radius(0, 0)
     row.set_style_border_width(1, 0)
     row.set_style_border_side(lv.BORDER_SIDE.BOTTOM, 0)
     row.set_style_border_color(WHITE_HEX, 0)
@@ -292,30 +293,10 @@ class SeedDropUp(_DropUp):
             warn_img.add_event_cb(_make_warn_cb(seed), lv.EVENT.CLICKED, None)
 
         # ── Passphrase indicator (optional, clickable) ────────────────────────
-        if show_passphrase:
-            pp_active = getattr(seed, "passphrase_active", False)
-            pp_color = WHITE_HEX if pp_active else GREY_HEX
-            pp_img = make_icon(row, BTC_ICONS.PASSWORD, pp_color)
-            pp_img.add_flag(lv.obj.FLAG.CLICKABLE)
-
-            # Capture seed in closure
-            def _make_pp_cb(s):
-                def _cb(e):
-                    if e.get_code() == lv.EVENT.CLICKED:
-                        e.stop_bubbling = 1  # don't trigger row navigation
-                        s.passphrase_active = not getattr(s, "passphrase_active", False)
-                        # Rebuild drop-up to reflect passphrase state change
-                        self.gui.refresh_ui()
-                return _cb
-            pp_img.add_event_cb(_make_pp_cb(seed), lv.EVENT.CLICKED, None)
+        passphrase_toggle(row, seed, self.gui, stop_bubbling=True)
 
         # ── Fingerprint: RELAY icon + first 4 hex chars ───────────────────────
-        fp_img = make_icon(row, BTC_ICONS.RELAY, WHITE_HEX)
-
-        raw_fp = seed.get_fingerprint()
-        raw_fp = raw_fp[2:] if raw_fp[:2].lower() == "0x" else raw_fp
-        fp_lbl = _make_label(row, raw_fp[:4], width=40, font=SMALL_TEXT_FONT)
-        fp_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+        fingerprint_badge(row, seed, digits=4)
 
         # ── Delete button ─────────────────────────────────────────────────────
         def _make_delete_seed_cb(s):
@@ -373,23 +354,15 @@ class WalletDropUp(_DropUp):
 
         # ── Wallet type icon ──────────────────────────────────────────────────
         state = self.device_state
-        if not wallet.is_standard():
-            type_icon = BTC_ICONS.CONSOLE
-        elif wallet.isMultiSig:
-            type_icon = BTC_ICONS.TWO_KEYS
-        else:
-            type_icon = BTC_ICONS.KEY
-        matched, required = state.signing_match_count(wallet)
-        key_color = WHITE_HEX if (required > 0 and matched >= required) else GREY_HEX
-
-        type_img = make_icon(row, type_icon, key_color)
+        add_wallet_type_icon(row, wallet, state)
+        key_color = wallet_signing_color(wallet, state)
 
         # ── Wallet name ───────────────────────────────────────────────────────
         show_account = any(getattr(wallet, "account", 0) != 0 for wallet in state.registered_wallets)
         show_net = any(wallet.net != "mainnet" for wallet in state.registered_wallets)
         thresh_w = 40 if wallet.isMultiSig and wallet.threshold else 0
         acc_w = 36 if show_account else 0
-        net_w = 36 if show_net else 0
+        net_w = 42 if show_net else 0
         name_w = (
             SCREEN_WIDTH
             - 2 * BIG_PAD
@@ -412,13 +385,12 @@ class WalletDropUp(_DropUp):
 
         # ── Account number (optional) ─────────────────────────────────────────
         if show_account:
-            acc_lbl = _make_label(row, "#" + str(wallet.account), width=acc_w, font=SMALL_TEXT_FONT)
+            acc_lbl = _make_label(row, wallet_account_text(wallet), width=acc_w, font=SMALL_TEXT_FONT)
             acc_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         # ── Network (optional) ────────────────────────────────────────────────
         if show_net:
-            net_map = {"testnet": "test", "signet": "sig", "mainnet": "main"}
-            net_lbl = _make_label(row, net_map.get(wallet.net, wallet.net), width=net_w, font=SMALL_TEXT_FONT)
+            net_lbl = _make_label(row, wallet_net_text(wallet), width=net_w, font=SMALL_TEXT_FONT)
             net_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         # ── Delete button (not shown for default wallet) ──────────────────────

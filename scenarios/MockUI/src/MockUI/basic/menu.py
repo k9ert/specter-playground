@@ -1,5 +1,5 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WIDTH_PCT, SWITCH_HEIGHT, SWITCH_WIDTH, BATTERY_OFFSET_X, PAD, SMALL_PAD, SMALL_TEXT_FONT, BTC_ICON_WIDTH, DEFAULT_MODAL_BG_OPA, SCREEN_WIDTH, SCREEN_HEIGHT
+from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WIDTH_PCT, SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD, SMALL_TEXT_FONT, BTC_ICON_WIDTH, DEFAULT_MODAL_BG_OPA, SCREEN_WIDTH, SCREEN_HEIGHT
 from .titled_screen import TitledScreen
 from .symbol_lib import Icon, BTC_ICONS
 from .widgets.modal_overlay import ModalOverlay
@@ -7,7 +7,7 @@ from .widgets.btn import Btn
 from .widgets.containers import flex_col, dialog_card, flex_row
 from .widgets.labels import body_label, section_header, form_label
 from .widgets.icon_widgets import make_icon
-from ..stubs.battery import Battery
+from .specter_gui_base import delete_all_children_of
 
 
 
@@ -25,14 +25,8 @@ class GenericMenu(TitledScreen):
         super().__init__("", parent)
 
         title = self.get_title(self.t, self.device_state)
-        self.title.set_text(title)
-
-        # Battery widget in top-right corner of title bar
-        if self.device_state.has_battery:
-            self.batt = Battery(self.title_bar)
-            self.batt.VALUE = self.device_state.battery_pct
-            self.batt.update()
-            self.batt.align(lv.ALIGN.RIGHT_MID, BATTERY_OFFSET_X, 0)
+        if self.show_title:
+            self.title.set_text(title)
 
         self.body.set_layout(lv.LAYOUT.FLEX)
         self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
@@ -40,10 +34,8 @@ class GenericMenu(TitledScreen):
         self.fill_body()
 
     def refresh(self):
-        # Refresh battery level
-        if self.device_state.has_battery:
-            self.batt.VALUE = self.device_state.battery_pct
-            self.batt.update()
+        # Delegate to TitledScreen (updates battery, context bar, etc.)
+        super().refresh()
 
     def fill_body(self):
         menu_items = self.get_menu_items(self.t, self.device_state)
@@ -51,13 +43,8 @@ class GenericMenu(TitledScreen):
         self.post_init(self.t, self.device_state)
         self._configure_scroll()
 
-    def clear_body(self):
-        for i in reversed(range(self.body.get_child_count())):
-            child = self.body.get_child(i)
-            child.delete()
-
     def rebuild_body(self):
-        self.clear_body()
+        delete_all_children_of(self.body)
         self.fill_body()
 
     def _configure_scroll(self):
@@ -165,7 +152,6 @@ class GenericMenu(TitledScreen):
                 # Right-side container: [suffixes...] [help?] [caret — always reserved]
                 right_cont = flex_row(btn._btn, width=lv.SIZE_CONTENT, height=lv.pct(100), main_align=lv.FLEX_ALIGN.START)
                 right_cont.set_style_bg_opa(lv.OPA.TRANSP, 0)
-                right_cont.set_style_radius(0, 0)
                 right_cont.set_style_pad_column(SMALL_PAD, 0)
                 right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
                 right_cont.set_scroll_dir(lv.DIR.NONE)

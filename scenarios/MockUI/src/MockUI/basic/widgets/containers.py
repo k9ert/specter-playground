@@ -1,10 +1,11 @@
 """Container helpers — flex wrappers with Specter default styling.
 
-All containers have border and padding zeroed by default.
+All containers have border, padding, and radius zeroed by default.
 """
 
 import lvgl as lv
 from ..ui_consts import DIALOG_RADIUS, BIG_PAD
+from ..specter_gui_base import configure_as_bare
 
 
 def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_ALIGN.START):
@@ -15,7 +16,10 @@ def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_A
     cont.set_flex_flow(flow)
     cont.set_flex_align(main_align, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
     cont.set_style_border_width(0, 0)
+    cont.set_style_radius(0, 0)
     cont.set_style_pad_all(pad, 0)
+    cont.set_style_pad_column(pad, 0)
+    cont.set_style_pad_row(pad, 0)
     return cont
 
 
@@ -33,6 +37,18 @@ def flex_row(parent, width=None, height=None, pad=0, main_align=lv.FLEX_ALIGN.SP
         parent, lv.FLEX_FLOW.ROW, 
         width, height, pad, main_align,
     )
+
+
+def bare_strip(parent, height, y=0):
+    """Full-width, no-decoration horizontal strip at absolute y inside *parent*.
+
+    Border, padding, and radius are all zeroed.  Positioned via TOP_MID align
+    so it spans the full parent width regardless of parent padding.
+    """
+    strip = lv.obj(parent)
+    configure_as_bare(strip, width=lv.pct(100), height=height)
+    strip.align(lv.ALIGN.TOP_MID, 0, y)
+    return strip
 
 
 def dialog_card(overlay, w, h, x, y, pad=BIG_PAD):

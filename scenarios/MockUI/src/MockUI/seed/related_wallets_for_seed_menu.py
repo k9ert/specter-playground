@@ -1,7 +1,8 @@
 import lvgl as lv
-from ..basic import WHITE_HEX, GREY_HEX, GenericMenu
+from ..basic import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
+from ..basic.widgets.wallet_widgets import wallet_signing_color
 
 
 def _wallet_type_rank(wallet):
@@ -43,7 +44,7 @@ class RelatedWalletsForSeedMenu(GenericMenu):
         related.sort(key=_wallet_type_rank)
 
         for wallet in related:
-            # Type icon + color
+            # Type icon + signing color
             if not wallet.is_standard():
                 type_icon = BTC_ICONS.CONSOLE
             elif wallet.isMultiSig:
@@ -51,8 +52,7 @@ class RelatedWalletsForSeedMenu(GenericMenu):
             else:
                 type_icon = BTC_ICONS.KEY
 
-            matched, required = state.signing_match_count(wallet)
-            key_color = WHITE_HEX if (required > 0 and matched >= required) else GREY_HEX
+            key_color = wallet_signing_color(wallet, state)
 
             # Right-side suffix: threshold, account, network
             suffix = []

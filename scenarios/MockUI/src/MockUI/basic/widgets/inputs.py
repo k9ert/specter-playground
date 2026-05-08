@@ -18,10 +18,10 @@ def title_textarea(parent, accepted_chars=ACCEPTED_CHARS):
     ta.set_width(TITLE_TA_WIDTH)
     ta.set_height(TITLE_ROW_HEIGHT)
     ta.set_style_text_font(TITLE_FONT, 0)
-    ta.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-    ta.set_style_border_width(2, lv.PART.MAIN)
+    ta.set_style_text_align(lv.TEXT_ALIGN.LEFT, 0)
+    ta.set_style_border_width(1, lv.PART.MAIN)
     ta.set_style_border_color(WHITE_HEX, lv.PART.MAIN)
-    ta.align(lv.ALIGN.CENTER, 0, 0)
+    ta.set_one_line(True)
     ta.set_accepted_chars(accepted_chars)
     return ta
 
@@ -33,4 +33,6 @@ def form_textarea(parent, width=lv.pct(60), font=TEXT_FONT):
     ta.set_width(width)
     ta.set_height(50)
     ta.set_style_text_font(font, 0)
+    ta.set_style_border_width(1, lv.PART.MAIN)
+    ta.set_style_border_color(WHITE_HEX, lv.PART.MAIN)
     return ta

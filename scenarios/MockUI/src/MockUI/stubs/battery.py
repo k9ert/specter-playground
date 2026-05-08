@@ -1,6 +1,7 @@
 import lvgl as lv
 from ..basic import GREEN_HEX, ORANGE_HEX, RED_HEX
 from ..basic.widgets import set_label_color
+from ..basic.specter_gui_base import configure_as_bare
 
 class Battery(lv.obj):
     VALUE = None
@@ -15,8 +16,7 @@ class Battery(lv.obj):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_style_pad_all(0, 0)
-        self.set_style_border_width(0, 0)
+        configure_as_bare(self)
         self.level = lv.label(self)
         self.icon = lv.label(self)
         self.charge = lv.label(self)

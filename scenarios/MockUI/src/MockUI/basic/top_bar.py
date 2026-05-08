@@ -36,13 +36,15 @@ import lvgl as lv
 from ..stubs import Battery
 from .ui_consts import (
     BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, STATUS_BTN_WIDTH,
-    GREEN_HEX, WHITE_HEX, GREY_HEX, ORANGE_HEX, SCREEN_WIDTH,
+    GREEN_HEX, WHITE_HEX, ORANGE_HEX, SCREEN_WIDTH,
 )
 from .symbol_lib import BTC_ICONS
 from .widgets.containers import flex_row
 from .widgets.action_modal import ActionModal
 from .widgets.labels import best_font_for_name
 from .widgets.icon_widgets import make_icon
+from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
+from .widgets.wallet_widgets import add_wallet_type_icon, wallet_signing_color
 _FP_ICON_W  = BTC_ICON_WIDTH          # RELAY icon
 _FP_TEXT_W  = 40                       # 4-char hex fingerprint
 _PP_ICON_W  = BTC_ICON_WIDTH           # PASSWORD icon (optional)
@@ -167,24 +169,10 @@ class TopBar(lv.obj):
         seed_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         # ── Fingerprint: RELAY icon + first 4 hex chars ───────────────────────
-        fp_img = make_icon(self._info_cont, BTC_ICONS.RELAY, WHITE_HEX)
-
-        fp_lbl = lv.label(self._info_cont)
-        raw_fp = seed.get_fingerprint()
-        if raw_fp.startswith("0x") or raw_fp.startswith("0X"):
-            raw_fp = raw_fp[2:]
-        fp_lbl.set_text(raw_fp[:4])
-        fp_lbl.set_style_text_font(lv.font_montserrat_16, 0)
-        fp_lbl.set_width(_FP_TEXT_W)
-        fp_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+        fingerprint_badge(self._info_cont, seed, digits=4)
 
         # ── Passphrase indicator (optional, clickable) ────────────────────────
-        if show_passphrase:
-            pp_active = getattr(seed, "passphrase_active", False)
-            pp_color = WHITE_HEX if pp_active else GREY_HEX
-            pp_img = make_icon(self._info_cont, BTC_ICONS.PASSWORD, pp_color)
-            pp_img.add_flag(lv.obj.FLAG.CLICKABLE)
-            pp_img.add_event_cb(self._toggle_passphrase_cb, lv.EVENT.CLICKED, None)
+        passphrase_toggle(self._info_cont, seed, self.gui)
 
         # ── Backup warning (optional, clickable) ─────────────────────────────
         if show_warning:
@@ -212,15 +200,8 @@ class TopBar(lv.obj):
             wallet_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
             # Wallet type icon
-            if not wallet.is_standard():
-                type_icon = BTC_ICONS.CONSOLE
-            elif wallet.isMultiSig:
-                type_icon = BTC_ICONS.TWO_KEYS
-            else:
-                type_icon = BTC_ICONS.KEY
-            matched, required = state.signing_match_count(wallet)
-            key_color = WHITE_HEX if (required > 0 and matched >= required) else GREY_HEX
-            type_img = make_icon(self._info_cont, type_icon, key_color)
+            add_wallet_type_icon(self._info_cont, wallet, state)
+            key_color = wallet_signing_color(wallet, state)
 
             # Multisig threshold "X/Y"
             if wallet.isMultiSig and wallet.threshold is not None:
@@ -267,13 +248,3 @@ class TopBar(lv.obj):
                 (BTC_ICONS.CHECK, "I backed it up", None, _mark_backed_up),
             ],
         )
-
-    def _toggle_passphrase_cb(self, e):
-        """Toggle passphrase_active on the active seed."""
-        if e.get_code() != lv.EVENT.CLICKED:
-            return
-        seed = self.gui.specter_state.active_seed
-        if seed is None:
-            return
-        seed.passphrase_active = not getattr(seed, "passphrase_active", False)
-        self.gui.refresh_ui()

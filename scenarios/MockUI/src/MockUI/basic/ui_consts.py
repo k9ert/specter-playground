@@ -5,7 +5,7 @@ import lvgl as lv
 SCREEN_WIDTH = const(480)
 SCREEN_HEIGHT = const(800)
 
-# --- Menu / button sizes (1.5× scaled for 800×480 touch target) ---
+# --- Menu / button sizes ---
 BTN_HEIGHT = const(75)           # menu button height (px)
 BTN_WIDTH = const(100)           # menu button width (percent of screen width)
 PIN_BTN_HEIGHT = const(85)       # lock screen PIN keypad button height (px)
@@ -14,12 +14,13 @@ BACK_BTN_HEIGHT = const(70)      # back button height (px)
 BACK_BTN_WIDTH = const(48)       # back button width (px)
 MENU_PCT = const(100)
 TITLE_ROW_HEIGHT = const(60)     # fixed height reserved for the title + back-btn row
-TITLE_TA_WIDTH = const(270)      # width of editable title text area (px)
+TITLE_TA_WIDTH = const(200)      # width of editable title text area (px)
 TITLE_PADDING = const(15)        # gap between title row and button container
 STATUS_BTN_HEIGHT = const(50)    # status bar button height (was 30)
 STATUS_BTN_WIDTH = const(60)     # status bar button width  (was 40)
 SWITCH_HEIGHT = const(82)        # toggle switch height (was 55)
 SWITCH_WIDTH = const(45)         # toggle switch width  (was 30)
+FINGERPRINT_LBL_WIDTH = const(40)  # width of fingerprint labels (px)
 
 SMALL_PAD = const(4)
 PAD = const(8)
@@ -36,9 +37,6 @@ MAX_HISTORY_DEPTH = const(10)      # maximum number of entries in the back-navig
 # --- Icon sizes ---
 BTC_ICON_WIDTH = const(42)            # layout space per icon (native bitmap size)
 BTC_ICON_ZOOM = const(256)            # LVGL zoom: 256=100% — bitmap is already 42×42, no scaling needed
-ONE_LETTER_SYMBOL_WIDTH = const(16)   # status bar 1-letter label (was 11)
-TWO_LETTER_SYMBOL_WIDTH = const(28)   # status bar 2-letter label (was 19)
-THREE_LETTER_SYMBOL_WIDTH = const(40) # status bar 3-letter label (was 27)
 
 # --- Font sizes (FontLoaderDE, sizes 8–28 available) ---
 MENU_TITLE_FONT_SIZE = const(24)  # screen/menu title font

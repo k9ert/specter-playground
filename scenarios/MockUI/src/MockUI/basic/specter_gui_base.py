@@ -17,6 +17,23 @@ same properties independently.
 import lvgl as lv
 
 
+def delete_all_children_of(widget):
+    for i in reversed(range(widget.get_child_count())):
+        widget.get_child(i).delete()
+
+
+def configure_as_bare(obj, width=None, height=None):
+    """Zero padding, border, and radius on an existing lv.obj (mutating).
+    """
+    if width is not None:
+        obj.set_width(width)
+    if height is not None:
+        obj.set_height(height)
+    obj.set_style_pad_all(0, 0)
+    obj.set_style_border_width(0, 0)
+    obj.set_style_radius(0, 0)
+
+
 class SpecterGuiMixin:
     """Pure-Python base: ``device_state``, ``ui_state``, ``i18n``, ``t``, ``on_navigate`` from ``self.gui``."""
 
@@ -58,7 +75,6 @@ class SpecterGuiMixin:
 
     def refresh(self):
         pass  # optional helper for non-LVGL controllers to trigger a UI refresh after changing state
-
 
 class SpecterGuiElement(lv.obj):
     """``lv.obj`` subclass: ``device_state``, ``ui_state``, ``i18n``, ``t``, ``on_navigate`` from ``self.gui``."""

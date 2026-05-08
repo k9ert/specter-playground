@@ -1,9 +1,8 @@
-from ..basic import ORANGE_HEX, RED_HEX, WHITE_HEX, GenericMenu, TITLE_ROW_HEIGHT
+from ..basic import ORANGE_HEX, RED_HEX, WHITE_HEX, GenericMenu, TITLE_ROW_HEIGHT, SMALL_PAD
 from ..basic.symbol_lib import BTC_ICONS
-from ..basic.keyboard_manager import Layout
 from ..basic.widgets.action_modal import ActionModal
 from ..basic.confirm_modals import confirm_delete_seed
-from ..basic.widgets import Btn, title_textarea, MenuItem
+from ..basic.widgets import Btn, MenuItem
 import lvgl as lv
 
 class SeedPhraseMenu(GenericMenu):
@@ -45,45 +44,19 @@ class SeedPhraseMenu(GenericMenu):
         return menu_items
 
     def post_init(self, t, state):
-        # Replace the default title label with editable text area + delete button
-        # (same pattern as WalletMenu)
-        self.title.delete()
+        # The ContextBar (shown automatically in SEED context) handles the
+        # editable seed name and fingerprint display.  Here we only add the
+        # delete button so the user can remove this seed from the device.
+        textarea_height = TITLE_ROW_HEIGHT - 10
 
-        # Text area for seed name (editable) – lives in title_bar, centred
-        self.name_textarea = title_textarea(self.title_bar)
-        self.name_textarea.set_text(self.ui_state.active_seed.label)
-
-        textarea_height = self.name_textarea.get_height()
-
-        # Key icon (transparent, non-clickable) – left of textarea
-        self.icon_btn = Btn(
-            self.title_bar,
-            icon=BTC_ICONS.KEY,
-            size=(textarea_height, textarea_height),
-        )
-        self.icon_btn.make_background_transparent()
-        self.icon_btn._btn.remove_flag(lv.obj.FLAG.CLICKABLE)
-        self.icon_btn.align_to(self.name_textarea, lv.ALIGN.OUT_LEFT_MID, -6, 0)
-
-        # Red trash button – square, matching textarea height
         self.delete_btn = Btn(
             self.title_bar,
             icon=BTC_ICONS.TRASH,
             color=RED_HEX,
             size=(textarea_height, textarea_height),
         )
-        self.delete_btn.align_to(self.name_textarea, lv.ALIGN.OUT_RIGHT_MID, 6, 0)
+        self.delete_btn.align(lv.ALIGN.RIGHT_MID, -SMALL_PAD, 0)
 
-        def _on_commit(new_name):
-            self.ui_state.active_seed.label = new_name
-            self.gui.refresh_ui()
-
-        keyboard_binder = lambda e: self.gui.keyboard_manager.bind(
-            self.name_textarea, Layout.FULL, _on_commit
-        )
-        self.name_textarea.add_event_cb(keyboard_binder, lv.EVENT.CLICKED, None)
-
-        # Trash button shows delete confirmation popup
         def _on_delete(e):
             if e.get_code() != lv.EVENT.CLICKED:
                 return
