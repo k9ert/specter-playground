@@ -2,9 +2,6 @@
 
 Keeps track of the UI-specific state in a small, mutable object so the
 navigation controller and menus can be kept stateless and simple.
-
-Designed to avoid typing and external deps so it runs in the MicroPython
-simulator environment.
 """
 
 import json

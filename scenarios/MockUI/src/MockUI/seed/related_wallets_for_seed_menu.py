@@ -6,7 +6,7 @@ from ..basic.widgets.wallet_widgets import wallet_signing_color
 
 
 def _wallet_type_rank(wallet):
-    """Return (type_rank, n, m) for sort ordering."""
+    """Return (type_rank, n, m, account) for sort ordering."""
     if not wallet.is_standard():
         type_rank = 2  # custom / miniscript
     elif wallet.isMultiSig:

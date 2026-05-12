@@ -178,9 +178,9 @@
       "text": "Seedphrase anzeigen",
       "ref_en": "Show Seed"
     },
-    "SEEDPHRASE_MENU_STORAGE": {
-      "text": "Speicher",
-      "ref_en": "Storage"
+    "SEEDPHRASE_MENU_BACKUP": {
+      "text": "Backup",
+      "ref_en": "Backup"
     },
     "SEEDPHRASE_MENU_STORE_TO": {
       "text": "Speichern auf",

@@ -1,13 +1,13 @@
 import lvgl as lv
 
-from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, TITLE_ROW_HEIGHT, BATTERY_OFFSET_X, ANIM_MS_VERTICAL
+from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, TITLE_ROW_HEIGHT, BATTERY_OFFSET_X
 from ..stubs import UIState, SpecterState
 from ..stubs.battery import Battery
 from ..stubs.ui_state import Context
 from ..i18n import I18nManager
 from ..tour import GuidedTour
 from .keyboard_manager import KeyboardManager
-from .animations import create_anims_for_transition, GUIAnimations, slide_y
+from .animations import create_anims_for_transition, GUIAnimations
 from .context_bar import ContextBar
 
 from .navigation_bar import NavigationBar
@@ -136,7 +136,7 @@ class SpecterGui(lv.obj):
             self._battery.VALUE = self.device_state.battery_pct
             self._battery.update()
 
-    def show_menu(self, target_menu_id=None):
+    def show_menu(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
         # Drop all input while animating
         if self._animating:
             return
@@ -155,6 +155,10 @@ class SpecterGui(lv.obj):
         else:
             anim = self.ui_state.push_menu(target_menu_id)
 
+        if target_seed != "unset":
+            self.ui_state.set_active_seed(target_seed)
+        if target_wallet != "unset":
+            self.ui_state.set_active_wallet(target_wallet)
         curr_menu = self.ui_state.current_menu_id
 
         if anim is not None and self.ui_state.are_animations_enabled:
@@ -163,8 +167,10 @@ class SpecterGui(lv.obj):
             if self.current_screen:
                 self.current_screen.delete()
                 self.current_screen = None
-            self._sync_context_bar()
+            abandoned_bar = self._sync_context_bar()
             self._build_screen(curr_menu)
+            if abandoned_bar:
+                abandoned_bar.delete()
             self.refresh_ui()
 
         if self.ui_state.current_menu_id == "start_intro_tour":
@@ -172,7 +178,10 @@ class SpecterGui(lv.obj):
             GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
 
     def _build_screen(self, current=None):
-        """Instantiate the correct screen class for *current* menu_id."""
+        """Instantiate the correct screen class for *current* menu_id.
+
+        Requires _sync_context_bar() to have been called first by the caller.
+        """
         if current is None:
             current = self.ui_state.current_menu_id
 
@@ -231,68 +240,53 @@ class SpecterGui(lv.obj):
             self.current_screen = ActionScreen(current, self)
 
     def _sync_context_bar(self):
-        """Create or destroy the GUI-level context bar and adjust content geometry.
+        """Create/replace context bar and adjust content geometry to match current ui_state.
 
-        Called before building a new screen (both animated and non-animated).
+        Returns the abandoned bar widget if one was replaced or removed, else None.
+        Never deletes it — the caller decides when to do so.
+        Safe to call while content is in FLEX layout (geometry changes then resize children
+        automatically) or in LAYOUT.NONE (idempotent, no visible change).
         """
         ctx = self.ui_state.active_context
         needs_bar = (
             (ctx == Context.SEED and self.ui_state.active_seed is not None)
             or (ctx == Context.WALLET and self.ui_state.active_wallet is not None)
         )
-
-        if needs_bar and self.context_bar is None:
-            self.context_bar = ContextBar(self)
-            self.context_bar.move_foreground()
-            # Push battery in front of context bar too
-            if self._battery:
-                self._battery.move_foreground()
-            # Shift content down to leave room for context bar
+        if needs_bar:
+            if self.context_bar is None or self.context_bar.context_type != ctx:
+                abandoned = self.context_bar  # may be None
+                self.context_bar = ContextBar(self)
+                self.context_bar.move_foreground()
+                if self._battery:
+                    self._battery.move_foreground()
+            else:
+                abandoned = None  # same bar kept
             self.content.set_height(_CONTENT_H - TITLE_ROW_HEIGHT)
             self.content.align(lv.ALIGN.TOP_MID, 0, TITLE_ROW_HEIGHT)
-
-        elif not needs_bar and self.context_bar is not None:
-            self.context_bar.delete()
+        else:
+            abandoned = self.context_bar  # may be None
             self.context_bar = None
-            # Restore full content area
             self.content.set_height(_CONTENT_H)
             self.content.align(lv.ALIGN.TOP_MID, 0, 0)
+        return abandoned
 
     def _do_transition(self, anim_type):
         """Animate from the current screen to a freshly-built new screen."""
         self._animating = True
 
-        old_bar = self.context_bar
-        new_ctx = self.ui_state.active_context
-        new_needs_bar = (
-            (new_ctx == Context.SEED and self.ui_state.active_seed is not None)
-            or (new_ctx == Context.WALLET and self.ui_state.active_wallet is not None)
-        )
-        same_ctx = old_bar is not None and new_needs_bar and old_bar.context_type == new_ctx
-
-        # Resize content before LAYOUT.NONE so flex reflows old_screen to the new height
-        if not same_ctx:
-            if new_needs_bar and old_bar is None:
-                self.content.set_height(_CONTENT_H - TITLE_ROW_HEIGHT)
-                self.content.align(lv.ALIGN.TOP_MID, 0, TITLE_ROW_HEIGHT)
-            elif not new_needs_bar and old_bar is not None:
-                self.content.set_height(_CONTENT_H)
-                self.content.align(lv.ALIGN.TOP_MID, 0, 0)
-                self.context_bar = None  # clear ref; keep old_bar alive for animation
-
-        self.content.set_layout(lv.LAYOUT.NONE)
+        old_bar = self.context_bar    # save before _sync_context_bar may detach/replace it
         old_screen = self.current_screen
         self.current_screen = None
-        self._build_screen()
-        new_screen = self.current_screen
 
-        # Create incoming bar for entering-context case (after LAYOUT.NONE)
-        if not same_ctx and new_needs_bar and old_bar is None:
-            self.context_bar = ContextBar(self)
-            self.context_bar.move_foreground()
-            if self._battery:
-                self._battery.move_foreground()
+        # _sync_context_bar while still FLEX: geometry change causes flex to resize
+        # old_screen to the new height, so old/new screens are equal-height for animation.
+        self._sync_context_bar()
+        old_screen.set_height(old_screen.get_height())  # pin at flex-computed size
+        self.content.set_layout(lv.LAYOUT.NONE)
+
+        self._build_screen()  # bar already synced above; just builds new_screen
         new_bar = self.context_bar
+        new_screen = self.current_screen
 
         def _on_done(anim):
             self._animating = False
@@ -300,24 +294,14 @@ class SpecterGui(lv.obj):
             self.content.set_layout(lv.LAYOUT.FLEX)
             self.content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
             old_screen.delete()
-            if not same_ctx:
-                if old_bar is not None:
-                    old_bar.delete()
-                if self.context_bar is old_bar:  # seed↔wallet: stale bar, recreate
-                    self.context_bar = None
-                    self._sync_context_bar()
+            if old_bar and old_bar is not new_bar:
+                old_bar.delete()
             self.refresh_ui()
 
-        anims = create_anims_for_transition(old_screen, new_screen, anim_type, on_done_cb=_on_done)
-
-        # Animate bar vertically in sync with content on context transitions
-        if not same_ctx:
-            if anim_type == GUIAnimations.vertical_slide_in and new_bar:
-                anims.append(slide_y(new_bar, _CONTENT_H, 0, ANIM_MS_VERTICAL))
-            elif anim_type == GUIAnimations.vertical_slide_out and old_bar:
-                old_bar.move_foreground()
-                anims.append(slide_y(old_bar, 0, _CONTENT_H, ANIM_MS_VERTICAL))
-
-        self._anim_refs = anims
-        for a in anims:
+        self._anim_refs = create_anims_for_transition(
+            old_screen, new_screen, anim_type, on_done_cb=_on_done,
+            old_bar=old_bar,
+            new_bar=new_bar,
+        )
+        for a in self._anim_refs:
             a.start()

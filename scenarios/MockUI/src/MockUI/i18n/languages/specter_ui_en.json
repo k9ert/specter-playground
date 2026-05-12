@@ -60,7 +60,7 @@
     "PASSPHRASE_MENU_CLEAR": "Clear",
     
     "SEEDPHRASE_MENU_SHOW": "Show Seed",
-    "SEEDPHRASE_MENU_STORAGE": "Storage",
+    "SEEDPHRASE_MENU_BACKUP": "Backup",
     "SEEDPHRASE_MENU_STORE_TO": "Store to",
     "SEEDPHRASE_MENU_CLEAR_FROM": "Clear from",
     "SEEDPHRASE_MENU_CLEAR_ALL": "all attached storage",

@@ -32,6 +32,7 @@ from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
 from .widgets.wallet_widgets import add_wallet_type_icon, wallet_signing_color, wallet_account_text, wallet_net_text
 from .animations import slide_y
 from .specter_gui_base import SpecterGuiMixin
+from ..stubs.ui_state import Context
 
 
 # ── Layout constants ──────────────────────────────────────────────────────────
@@ -236,7 +237,7 @@ class SeedDropUp(_DropUp):
         return self.t("MENU_ADD_SEED")
 
     def _navigate_add(self):
-        self.on_navigate("add_seed")
+        self.on_navigate("add_seed", target_seed=None)
 
     def _build_card(self, parent, seed):
         row = _card_row(parent)
@@ -246,8 +247,12 @@ class SeedDropUp(_DropUp):
             def _cb(e):
                 if e.get_code() == lv.EVENT.CLICKED:
                     self.close()
-                    self.ui_state.set_active_seed(s)
-                    self.on_navigate("manage_seedphrase")
+                    if self.ui_state.active_context == Context.SEED and self.ui_state.active_seed is not None:
+                        self.ui_state.set_active_seed(s)
+                        self.gui.refresh_ui()
+                        return
+                    else:
+                        self.on_navigate("manage_seedphrase", target_seed=s)
             return _cb
         row.add_event_cb(_make_row_cb(seed), lv.EVENT.CLICKED, None)
 
@@ -337,7 +342,8 @@ class WalletDropUp(_DropUp):
         return self.t("MENU_ADD_WALLET")
 
     def _navigate_add(self):
-        self.on_navigate("add_wallet")
+        #clear active wallet to avoid accidentally pre-filling add form with previously selected wallet's data
+        self.on_navigate("add_wallet", target_wallet=None)
 
     def _build_card(self, parent, wallet):
         row = _card_row(parent)
@@ -347,15 +353,14 @@ class WalletDropUp(_DropUp):
             def _cb(e):
                 if e.get_code() == lv.EVENT.CLICKED:
                     self.close()
-                    self.ui_state.set_active_wallet(w)
-                    self.on_navigate("manage_wallet")
+                    self.on_navigate("manage_wallet", target_wallet=w)
             return _cb
         row.add_event_cb(_make_row_cb(wallet), lv.EVENT.CLICKED, None)
 
         # ── Wallet type icon ──────────────────────────────────────────────────
         state = self.device_state
         add_wallet_type_icon(row, wallet, state)
-        key_color = wallet_signing_color(wallet, state)
+
 
         # ── Wallet name ───────────────────────────────────────────────────────
         show_account = any(getattr(wallet, "account", 0) != 0 for wallet in state.registered_wallets)
@@ -380,7 +385,7 @@ class WalletDropUp(_DropUp):
         # ── Multisig threshold ────────────────────────────────────────────────
         if wallet.isMultiSig and wallet.threshold is not None:
             n = len(wallet.required_fingerprints)
-            thresh_lbl = _make_label(row, str(wallet.threshold) + "/" + str(n), width=thresh_w, font=SMALL_TEXT_FONT, color=key_color)
+            thresh_lbl = _make_label(row, str(wallet.threshold) + "/" + str(n), width=thresh_w, font=SMALL_TEXT_FONT, color=wallet_signing_color(wallet, state))
             thresh_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         # ── Account number (optional) ─────────────────────────────────────────

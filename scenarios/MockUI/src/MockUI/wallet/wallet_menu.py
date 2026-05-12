@@ -66,32 +66,3 @@ class WalletMenu(GenericMenu):
                 confirm_delete_wallet(t, wallet.label, _do_delete)
 
             self.delete_btn.add_event_cb(_on_delete, lv.EVENT.CLICKED, None)
-
-        # Account row (shown for both default and custom wallets)
-        self._add_account_row(t, state)
-
-    def _add_account_row(self, t, state):
-        """Add read-only Account label row. Account is fixed at wallet creation time."""
-        wallet = self.ui_state.active_wallet
-        if wallet is None:
-            return
-
-        row = lv.obj(self.body)
-        row.set_width(lv.pct(BTN_WIDTH))
-        row.set_height(BTN_HEIGHT)
-        row.set_layout(lv.LAYOUT.FLEX)
-        row.set_flex_flow(lv.FLEX_FLOW.ROW)
-        row.set_flex_align(lv.FLEX_ALIGN.SPACE_BETWEEN, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-        row.set_style_pad_hor(16, 0)
-        row.set_style_radius(8, 0)
-        row.set_style_border_width(0, 0)
-
-        desc_lbl = lv.label(row)
-        desc_lbl.set_text(t("WALLET_MENU_SELECT_ACCOUNT"))
-        desc_lbl.set_style_text_font(lv.font_montserrat_22, 0)
-
-        val_lbl = lv.label(row)
-        val_lbl.set_style_text_font(lv.font_montserrat_22, 0)
-        val_lbl.set_text(str(wallet.account))
-
-        row.move_to_index(1)

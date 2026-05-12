@@ -13,24 +13,6 @@ class SeedPhraseMenu(GenericMenu):
     TITLE_KEY = "MENU_MANAGE_SEED"
 
     def get_menu_items(self, t, state):
-        menu_items = []
-
-        menu_items.append(MenuItem(BTC_ICONS.VISIBLE, t("SEEDPHRASE_MENU_SHOW"), "show_seedphrase", color=ORANGE_HEX))
-
-        pp_label = t("MENU_CHANGE_CLEAR_PASSPHRASE") if self.ui_state.active_seed.passphrase else t("MENU_SET_PASSPHRASE")
-        menu_items.append(MenuItem(BTC_ICONS.PASSWORD, pp_label, "set_passphrase", is_submenu=True))
-
-        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_STORAGE")))
-        menu_items.append(MenuItem(lv.SYMBOL.DOWNLOAD, t("SEEDPHRASE_MENU_STORE_TO") + "...", "store_seedphrase", is_submenu=True))
-        menu_items.append(MenuItem(BTC_ICONS.TRASH, t("SEEDPHRASE_MENU_CLEAR_FROM") + "...", "clear_seedphrase", color=RED_HEX, is_submenu=True))
-
-        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_ADVANCED")))
-        menu_items.append(MenuItem(BTC_ICONS.SHARED_WALLET, t("SEEDPHRASE_MENU_BIP85"), "derive_bip85"))
-
-        # Explore section
-        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_EXPLORE")))
-        menu_items.append(MenuItem(BTC_ICONS.WALLET, t("SEEDPHRASE_MENU_RELATED_WALLETS"), "related_wallets_for_seed", is_submenu=True))
-
         # Sign message (only when signing is possible)
         has_controlled_input = (state.QR_enabled() or state.SD_detected())
         can_sign_msg = (
@@ -38,8 +20,25 @@ class SeedPhraseMenu(GenericMenu):
             and not all(wallet.isMultiSig for wallet in state.registered_wallets)
             and has_controlled_input
         )
+
+        menu_items = []
+
+        menu_items.append(MenuItem(BTC_ICONS.VISIBLE, t("SEEDPHRASE_MENU_SHOW"), "show_seedphrase", color=ORANGE_HEX))
+
+        pp_label = t("MENU_CHANGE_CLEAR_PASSPHRASE") if self.ui_state.active_seed.passphrase else t("MENU_SET_PASSPHRASE")
+        menu_items.append(MenuItem(BTC_ICONS.PASSWORD, pp_label, "set_passphrase", is_submenu=True))
+
+        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_BACKUP")))
+        menu_items.append(MenuItem(lv.SYMBOL.DOWNLOAD, t("SEEDPHRASE_MENU_STORE_TO") + "...", "store_seedphrase", is_submenu=True))
+
+        # Explore section
+        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_EXPLORE")))
+        menu_items.append(MenuItem(BTC_ICONS.WALLET, t("SEEDPHRASE_MENU_RELATED_WALLETS"), "related_wallets_for_seed", is_submenu=True))
+
+        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_ADVANCED")))
         if can_sign_msg:
-            menu_items.append(MenuItem(BTC_ICONS.SIGN, t("MAIN_MENU_SIGN_MESSAGE"), "sign_message"))
+            menu_items.append(MenuItem(BTC_ICONS.SIGN, t("MAIN_MENU_SIGN_MESSAGE"), "sign_message"))        
+        menu_items.append(MenuItem(BTC_ICONS.SHARED_WALLET, t("SEEDPHRASE_MENU_BIP85"), "derive_bip85"))
 
         return menu_items
 

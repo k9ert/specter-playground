@@ -69,3 +69,10 @@ class PassphraseMenu(TitledScreen):
             self.ui_state.active_seed.passphrase = None
         # Refresh UI
         self.gui.refresh_ui()
+
+    def refresh(self):
+        if not self.pa_ta.has_state(lv.STATE.FOCUSED):
+            val = ""
+            if self.ui_state.active_seed and self.ui_state.active_seed.passphrase is not None:
+                val = self.ui_state.active_seed.passphrase
+            self.pa_ta.set_text(val)
