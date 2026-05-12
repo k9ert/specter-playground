@@ -58,10 +58,15 @@ class CreateCustomWalletMenu(TitledScreen):
 
         self.fp_ta = form_textarea(self.fp_row, width=lv.pct(55), font=lv.font_montserrat_16)
         sig_text = ""
-        if self.ui_state.active_seed:
-            # Pre-fill with active seed's fingerprint for convenience
-            fp1 = self.ui_state.active_seed.get_fingerprint()
+        if self.device_state.loaded_seeds:
+            if self.ui_state.active_seed:
+                # Pre-fill with active seed's fingerprint for convenience
+                fp1 = self.ui_state.active_seed.get_fingerprint()
+            else:
+                fp1 = self.device_state.loaded_seeds[0].get_fingerprint()
+
             sig_text = fp1[:]
+
             if self.device_state.loaded_seeds and len(self.device_state.loaded_seeds) > 1:
                 # If multiple seeds are loaded, add a second fingerprint for testing
                 fps = [s.get_fingerprint()[:] for s in self.device_state.loaded_seeds if s.get_fingerprint() != fp1]
@@ -176,6 +181,11 @@ class CreateCustomWalletMenu(TitledScreen):
                     fp = fp.strip()
                     if fp and fp not in fps:
                         fps.append(fp)
+        else:
+            # For singlesig, just take the first fingerprint (or 0xabcd if empty)
+            raw = self.fp_ta.get_text().strip()
+            fp = raw.split(",")[0].strip() if raw else "0xabcd"
+            fps.append(fp)
 
         # Build a dummy descriptor string
         if is_custom:

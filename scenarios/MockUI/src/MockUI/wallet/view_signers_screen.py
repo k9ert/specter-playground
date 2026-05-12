@@ -17,33 +17,33 @@ class ViewSignersScreen(GenericMenu):
         s4w = state.seeds_for_wallet(self.ui_state.active_wallet)
         loaded_fp4w = Seed.get_fingerprints(s4w) if s4w else []
 
+        if self.ui_state.active_wallet.is_default_wallet():
+            fp_list = loaded_fp4w
+        else:
+            fp_list = self.ui_state.active_wallet.required_fingerprints
+
         menu_items = []
-        for fp in self.ui_state.active_wallet.required_fingerprints:
+        for fp in fp_list:
             signer_name = fp[2:]  # do not show "0x" hex prefix in fingerprint
-            icon = None
-            target = None
+            icon = BTC_ICONS.KEY_OUTLINE
+            target = lambda e: None
 
             if s4w and fp in loaded_fp4w:
                 matched_seed = s4w[loaded_fp4w.index(fp)]
                 signer_name += " (" + matched_seed.label + ")"
-                icon = BTC_ICONS.CHECK
+                icon = BTC_ICONS.KEY
 
                 def _make_seed_cb(seed):
                     def _cb(e):
                         if e.get_code() != lv.EVENT.CLICKED:
                             return
-                        self.ui_state.set_active_seed(seed)
-                        self.on_navigate("manage_seedphrase")
+                        self.on_navigate("manage_seedphrase", target_seed=seed)
                     return _cb
 
                 target = _make_seed_cb(matched_seed)
 
             menu_items.append(MenuItem(icon, signer_name, target=target))
         return menu_items
-    
-    def post_init(self, t, state):
-        """Add wallet name to title."""
-        title = self.title.get_text()
-        title += "," + self.ui_state.active_wallet.label
-        self.title.set_text(title)
 
+    def refresh(self):
+        self.rebuild_body()

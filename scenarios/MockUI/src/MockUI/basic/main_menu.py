@@ -71,8 +71,10 @@ class MainMenu(GenericMenu):
 
         # ── Actions section ─────────────────────────────────────────────────
         if has_seed_that_is_not_backed_up:
-            menu_items.append(MenuItem(text=t("MAIN_MENU_BACKUP_SECTION")))
-            menu_items.append(MenuItem(BTC_ICONS.MNEMONIC, t("MAIN_MENU_BACKUP_SEED"), "backup_seed", size=1.5, color=ORANGE_HEX, help_key="HELP_BACKUP_SEED"))
+            menu_items += [
+                MenuItem(text=t("MAIN_MENU_BACKUP_SECTION")),
+                MenuItem(BTC_ICONS.MNEMONIC, t("MAIN_MENU_BACKUP_SEED"), "backup_seed", size=1.5, color=ORANGE_HEX, help_key="HELP_BACKUP_SEED"),
+            ]
 
 
         if has_controlled_input:
@@ -83,13 +85,17 @@ class MainMenu(GenericMenu):
                 menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("MAIN_MENU_LOAD_FROM_SD"), "load_sd"))
 
         # ── Explore section ─────────────────────────────────────────────────
-        menu_items.append(MenuItem(text=t("WALLET_MENU_EXPLORE")))
-        menu_items.append(MenuItem(BTC_ICONS.MENU, t("WALLET_MENU_VIEW_ADDRESSES"), "view_addresses"))
+        menu_items += [
+            MenuItem(text=t("WALLET_MENU_EXPLORE")),
+            MenuItem(BTC_ICONS.MENU, t("WALLET_MENU_VIEW_ADDRESSES"), "view_addresses"),
+        ]
 
         # ── Connect Companion App (only if wallet not yet exported) ─────────
         if has_wallet_that_was_never_synched:
-            menu_items.append(MenuItem(text=t("MAIN_MENU_CONNECT_SECTION")))
-            menu_items.append(MenuItem(BTC_ICONS.LINK, t("MAIN_MENU_CONNECT_COMPANION"), "connect_sw_wallet", size=1.5))
+            menu_items += [
+                MenuItem(text=t("MAIN_MENU_CONNECT_SECTION")),
+                MenuItem(BTC_ICONS.LINK, t("MAIN_MENU_CONNECT_COMPANION"), "connect_sw_wallet", size=1.5),
+            ]
 
         return menu_items
     

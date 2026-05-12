@@ -26,10 +26,8 @@ from .ui_consts import (
 from .symbol_lib import BTC_ICONS
 from .widgets.containers import flex_col, flex_row
 from .widgets.btn import Btn
-from .widgets.labels import _make_label, best_font_for_size
-from .widgets.icon_widgets import make_icon
-from .widgets.seed_widgets import fingerprint_badge, passphrase_toggle
-from .widgets.wallet_widgets import add_wallet_type_icon, wallet_signing_color, wallet_account_text, wallet_net_text
+from .widgets.seed_widgets import build_seed_card
+from .widgets.wallet_widgets import build_wallet_card, wallet_net_text
 from .animations import slide_y
 from .specter_gui_base import SpecterGuiMixin
 from ..stubs.ui_state import Context
@@ -41,8 +39,6 @@ _PANEL_MAX_H = SCREEN_HEIGHT - _NAV_BAR_H            # max panel height
 
 _CARD_H = STATUS_BTN_HEIGHT + 2 * BIG_PAD + 2   # height per item card
 _ADD_BTN_H = STATUS_BTN_HEIGHT                     # "Add …" button height
-
-_FP_SLOT_W = BTC_ICON_WIDTH + 40   # RELAY icon + 4-char fingerprint label
 
 
 _CLOSED = const(0)
@@ -204,27 +200,6 @@ class _DropUp(SpecterGuiMixin):
         self._navigate_add()
 
 
-def _card_row(parent):
-    """Full-width horizontal flex row for a card, with left-aligned items."""
-    row = flex_row(
-        parent,
-        width=SCREEN_WIDTH,
-        height=_CARD_H,
-        pad=BIG_PAD,
-        main_align=lv.FLEX_ALIGN.START,
-    )
-    # pad_all also sets pad_column/pad_row, which adds inter-item gaps in flex
-    # layout and causes horizontal overflow.  Zero it out explicitly.
-    row.set_style_pad_column(0, 0)
-    row.set_style_border_width(1, 0)
-    row.set_style_border_side(lv.BORDER_SIDE.BOTTOM, 0)
-    row.set_style_border_color(WHITE_HEX, 0)
-    row.set_style_border_opa(DROPUP_DIVIDER_OPA, 0)
-    row.set_scroll_dir(lv.DIR.NONE)
-    row.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
-    return row
-
-
 # ── Seed Drop-Up ──────────────────────────────────────────────────────────────
 
 class SeedDropUp(_DropUp):
@@ -240,9 +215,6 @@ class SeedDropUp(_DropUp):
         self.on_navigate("add_seed", target_seed=None)
 
     def _build_card(self, parent, seed):
-        row = _card_row(parent)
-
-        # ── Row click → navigate to seed manage menu ──────────────────────────
         def _make_row_cb(s):
             def _cb(e):
                 if e.get_code() == lv.EVENT.CLICKED:
@@ -250,65 +222,27 @@ class SeedDropUp(_DropUp):
                     if self.ui_state.active_context == Context.SEED and self.ui_state.active_seed is not None:
                         self.ui_state.set_active_seed(s)
                         self.gui.refresh_ui()
-                        return
                     else:
                         self.on_navigate("manage_seedphrase", target_seed=s)
             return _cb
-        row.add_event_cb(_make_row_cb(seed), lv.EVENT.CLICKED, None)
 
-        # ── Seed name ─────────────────────────────────────────────────────────
-        show_passphrase = seed.passphrase is not None
-        show_warning = not seed.is_backed_up
-        name_w = (
-            SCREEN_WIDTH
-            - 2 * BIG_PAD            # row padding
-            - _FP_SLOT_W                # RELAY icon + 4-char fp
-            - (BTC_ICON_WIDTH if show_passphrase else 0)
-            - (BTC_ICON_WIDTH if show_warning else 0)
-            - BTC_ICON_WIDTH            # delete button
-        )
-        name_lbl_w = max(10, name_w)
-        name_font, seed_label = best_font_for_size(seed.label, name_lbl_w, _CARD_H)
-        name_lbl = _make_label(row, seed_label, width=name_lbl_w, font=name_font)
-        name_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+        def _make_warn_cb(s):
+            def _cb():
+                t = self.t
+                def _mark_backed_up():
+                    s.is_backed_up = True
+                    self.gui.refresh_ui()
+                ActionModal(
+                    text=t("MODAL_BACKUP_WARNING_TEXT"),
+                    buttons=[
+                        (BTC_ICONS.CHECK, t("MODAL_BACKUP_CONFIRMED_BTN"), None, _mark_backed_up),
+                        (None,            t("COMMON_OK"),                  None, None),
+                    ],
+                )
+            return _cb
 
-        # ── Backup warning (optional, clickable) ──────────────────────────────
-        if show_warning:
-            warn_img = make_icon(row, BTC_ICONS.ALERT_CIRCLE, ORANGE_HEX)
-            warn_img.add_flag(lv.obj.FLAG.CLICKABLE)
-
-            def _make_warn_cb(s):
-                def _cb(e):
-                    if e.get_code() == lv.EVENT.CLICKED:
-                        e.stop_bubbling = 1  # don't trigger row navigation
-                        t = self.t
-
-                        def _mark_backed_up():
-                            s.is_backed_up = True
-                            self.gui.refresh_ui()
-
-                        ActionModal(
-                            text=t("MODAL_BACKUP_WARNING_TEXT"),
-                            buttons=[
-                                (BTC_ICONS.CHECK, t("MODAL_BACKUP_CONFIRMED_BTN"), None, _mark_backed_up),
-                                (None,            t("COMMON_OK"),                  None, None),
-                            ],
-                        )
-                return _cb
-            warn_img.add_event_cb(_make_warn_cb(seed), lv.EVENT.CLICKED, None)
-
-        # ── Passphrase indicator (optional, clickable) ────────────────────────
-        passphrase_toggle(row, seed, self.gui, stop_bubbling=True)
-
-        # ── Fingerprint: RELAY icon + first 4 hex chars ───────────────────────
-        fingerprint_badge(row, seed, digits=4)
-
-        # ── Delete button ─────────────────────────────────────────────────────
-        def _make_delete_seed_cb(s):
-            def _cb(event=None):
-                if event is not None:
-                    event.stop_bubbling = 1
-
+        def _make_delete_cb(s):
+            def _cb():
                 def _do_delete():
                     self.device_state.remove_seed(s)
                     if self.ui_state.active_seed is s:
@@ -320,13 +254,15 @@ class SeedDropUp(_DropUp):
                 confirm_delete_seed(self.t, s.label, _do_delete)
             return _cb
 
-        del_btn = Btn(
-            row,
-            icon=BTC_ICONS.TRASH,
-            size=(BTC_ICON_WIDTH, _CARD_H),
-            callback=_make_delete_seed_cb(seed),
+        build_seed_card(
+            parent,
+            seed,
+            slots=("name", "backup_warning", "passphrase", "fingerprint", "delete"),
+            on_card_click=_make_row_cb(seed),
+            on_backup_warning=_make_warn_cb(seed),
+            on_delete=_make_delete_cb(seed),
+            gui=self.gui,
         )
-        del_btn.make_background_transparent()
 
 
 
@@ -346,78 +282,45 @@ class WalletDropUp(_DropUp):
         self.on_navigate("add_wallet", target_wallet=None)
 
     def _build_card(self, parent, wallet):
-        row = _card_row(parent)
+        state = self.device_state
+        # Cross-wallet alignment: show account/net columns if any wallet uses them
+        any_account = any(getattr(w, "account", 0) != 0 for w in state.registered_wallets)
+        any_net     = any(w.net != "mainnet" for w in state.registered_wallets)
 
-        # ── Row click → navigate to wallet manage menu ────────────────────────
+        active_slots = ["type_icon", "name", "threshold"]
+        if any_account:
+            active_slots.append("account")
+        if any_net:
+            active_slots.append("net")
+        if not wallet.is_default_wallet():
+            active_slots.append("delete")
+
         def _make_row_cb(w):
             def _cb(e):
                 if e.get_code() == lv.EVENT.CLICKED:
                     self.close()
-                    self.on_navigate("manage_wallet", target_wallet=w)
-            return _cb
-        row.add_event_cb(_make_row_cb(wallet), lv.EVENT.CLICKED, None)
-
-        # ── Wallet type icon ──────────────────────────────────────────────────
-        state = self.device_state
-        add_wallet_type_icon(row, wallet, state)
-
-
-        # ── Wallet name ───────────────────────────────────────────────────────
-        show_account = any(getattr(wallet, "account", 0) != 0 for wallet in state.registered_wallets)
-        show_net = any(wallet.net != "mainnet" for wallet in state.registered_wallets)
-        thresh_w = 40 if wallet.isMultiSig and wallet.threshold else 0
-        acc_w = 36 if show_account else 0
-        net_w = 42 if show_net else 0
-        name_w = (
-            SCREEN_WIDTH
-            - 2 * BIG_PAD
-            - BTC_ICON_WIDTH       # type icon
-            - thresh_w
-            - acc_w
-            - net_w
-            - BTC_ICON_WIDTH       # delete button
-        )
-        name_lbl_w = max(10, name_w)
-        name_font, wallet_label = best_font_for_size(wallet.label, name_lbl_w, _CARD_H)
-        name_lbl = _make_label(row, wallet_label, width=name_lbl_w, font=name_font)
-        name_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
-
-        # ── Multisig threshold ────────────────────────────────────────────────
-        if wallet.isMultiSig and wallet.threshold is not None:
-            n = len(wallet.required_fingerprints)
-            thresh_lbl = _make_label(row, str(wallet.threshold) + "/" + str(n), width=thresh_w, font=SMALL_TEXT_FONT, color=wallet_signing_color(wallet, state))
-            thresh_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
-
-        # ── Account number (optional) ─────────────────────────────────────────
-        if show_account:
-            acc_lbl = _make_label(row, wallet_account_text(wallet), width=acc_w, font=SMALL_TEXT_FONT)
-            acc_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
-
-        # ── Network (optional) ────────────────────────────────────────────────
-        if show_net:
-            net_lbl = _make_label(row, wallet_net_text(wallet), width=net_w, font=SMALL_TEXT_FONT)
-            net_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
-
-        # ── Delete button (not shown for default wallet) ──────────────────────
-        if not wallet.is_default_wallet():
-            def _make_delete_wallet_cb(w):
-                def _cb(event=None):
-                    if event is not None:
-                        event.stop_bubbling = 1
-
-                    def _do_delete():
-                        self.device_state.remove_wallet(w)
-                        if self.ui_state.active_wallet is w:
-                            self.ui_state.active_wallet = None
+                    if self.ui_state.active_context == Context.WALLET and self.ui_state.active_wallet is not None:
+                        self.ui_state.set_active_wallet(w)
                         self.gui.refresh_ui()
+                    else:  
+                        self.on_navigate("manage_wallet", target_wallet=w)
+            return _cb
 
-                    confirm_delete_wallet(self.t, w.label, _do_delete)
-                return _cb
+        def _make_delete_cb(w):
+            def _cb():
+                def _do_delete():
+                    self.device_state.remove_wallet(w)
+                    if self.ui_state.active_wallet is w:
+                        self.ui_state.active_wallet = None
+                    self.gui.refresh_ui()
+                confirm_delete_wallet(self.t, w.label, _do_delete)
+            return _cb
 
-            del_btn = Btn(
-                row,
-                icon=BTC_ICONS.TRASH,
-                size=(BTC_ICON_WIDTH, _CARD_H),
-                callback=_make_delete_wallet_cb(wallet),
-            )
-            del_btn.make_background_transparent()
+        build_wallet_card(
+            parent,
+            wallet,
+            state,
+            slots=active_slots,
+            on_card_click=_make_row_cb(wallet),
+            on_delete=_make_delete_cb(wallet) if not wallet.is_default_wallet() else None,
+        )

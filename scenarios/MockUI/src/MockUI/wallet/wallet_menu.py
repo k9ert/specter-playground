@@ -15,14 +15,17 @@ class WalletMenu(GenericMenu):
     def get_menu_items(self, t, state):
         menu_items = []
 
-        menu_items.append(MenuItem(text=t("WALLET_MENU_EXPLORE")))
-        menu_items.append(MenuItem(BTC_ICONS.MENU, t("WALLET_MENU_VIEW_ADDRESSES"), "view_addresses"))
-        if (self.ui_state.active_wallet and self.ui_state.active_wallet.isMultiSig):
-            menu_items.append(MenuItem(BTC_ICONS.ADDRESS_BOOK, t("WALLET_MENU_VIEW_SIGNERS"), "view_signers", is_submenu=True))
+        menu_items += [
+            MenuItem(text=t("WALLET_MENU_EXPLORE")),
+            MenuItem(BTC_ICONS.MENU, t("WALLET_MENU_VIEW_ADDRESSES"), "view_addresses"),
+            MenuItem(BTC_ICONS.ADDRESS_BOOK, t("WALLET_MENU_VIEW_SIGNERS"), "view_signers", is_submenu=True),
+        ]
 
-        menu_items.append(MenuItem(text=t("WALLET_MENU_MANAGE")))
-        menu_items.append(MenuItem(BTC_ICONS.CONSOLE, t("WALLET_MENU_MANAGE_DESCRIPTOR"), "manage_wallet_descriptor"))
-        menu_items.append(MenuItem(BTC_ICONS.BITCOIN, t("WALLET_MENU_CHANGE_NETWORK"), "change_network"))
+        menu_items += [
+            MenuItem(text=t("WALLET_MENU_MANAGE")),
+            MenuItem(BTC_ICONS.CONSOLE, t("WALLET_MENU_MANAGE_DESCRIPTOR"), "manage_wallet_descriptor"),
+            MenuItem(BTC_ICONS.BITCOIN, t("WALLET_MENU_CHANGE_NETWORK"), "change_network"),
+        ]
 
         menu_items += [
             MenuItem(text=t("WALLET_MENU_CONNECT_EXPORT")),

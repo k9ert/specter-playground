@@ -4,7 +4,7 @@ All containers have border, padding, and radius zeroed by default.
 """
 
 import lvgl as lv
-from ..ui_consts import DIALOG_RADIUS, BIG_PAD
+from ..ui_consts import DIALOG_RADIUS, BIG_PAD, WHITE_HEX, DROPUP_DIVIDER_OPA
 from ..specter_gui_base import configure_as_bare
 
 
@@ -49,6 +49,36 @@ def bare_strip(parent, height, y=0):
     configure_as_bare(strip, width=lv.pct(100), height=height)
     strip.align(lv.ALIGN.TOP_MID, 0, y)
     return strip
+
+
+def card_row(parent, height, width, pad=BIG_PAD, border=True):
+    """Full-width horizontal flex row styled as an item card.
+
+    Bottom divider line is drawn via border-bottom at low opacity.
+    Pass ``border=False`` to suppress the divider (e.g. in the context bar).
+    ``pad_column`` is explicitly zeroed so inter-item gaps in the flex layout
+    don't cause horizontal overflow.
+
+    Args:
+        parent: LVGL parent object.
+        height: Row height in pixels.
+        width:  Row width in pixels.
+        pad:    Left/right/top/bottom padding; defaults to ``BIG_PAD``.
+
+    Returns:
+        The created ``lv.obj`` flex-row widget.
+    """
+    row = flex_row(parent, width=width, height=height, pad=pad, main_align=lv.FLEX_ALIGN.START)
+    row.set_style_bg_opa(lv.OPA.TRANSP, 0)
+    row.set_style_pad_column(0, 0)
+    if border:
+        row.set_style_border_width(1, 0)
+        row.set_style_border_side(lv.BORDER_SIDE.BOTTOM, 0)
+        row.set_style_border_color(WHITE_HEX, 0)
+        row.set_style_border_opa(DROPUP_DIVIDER_OPA, 0)
+    row.set_scroll_dir(lv.DIR.NONE)
+    row.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+    return row
 
 
 def dialog_card(overlay, w, h, x, y, pad=BIG_PAD):

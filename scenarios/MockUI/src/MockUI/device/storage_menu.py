@@ -14,7 +14,9 @@ class StorageMenu(GenericMenu):
             menu_items.append(MenuItem(BTC_ICONS.SMARTCARD, t("STORAGE_MENU_SMARTCARD"), "smartcard"))
 
         if state.SD_detected():
-            menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("STORAGE_MENU_SD_CARD"), "sdcard"))
-            menu_items.append(MenuItem(BTC_ICONS.COPY, t("MENU_MANAGE_BACKUPS"), "manage_backups", is_submenu=True))
+            menu_items += [
+                MenuItem(BTC_ICONS.SD_CARD, t("STORAGE_MENU_SD_CARD"), "sdcard"),
+                MenuItem(BTC_ICONS.COPY, t("MENU_MANAGE_BACKUPS"), "manage_backups", is_submenu=True),
+            ]
 
         return menu_items

@@ -15,7 +15,9 @@ class ClearSeedphraseMenu(GenericMenu):
             menu_items.append(MenuItem(BTC_ICONS.SMARTCARD, t("HARDWARE_SMARTCARD"), "clear_from_smartcard", color=RED_HEX))
         if state.SD_hasSeed():
             menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), "clear_from_sd", color=RED_HEX))
-        menu_items.append(MenuItem(BTC_ICONS.FILE, t("HARDWARE_INTERNAL_FLASH"), "clear_from_flash", color=RED_HEX))
-        menu_items.append(MenuItem(BTC_ICONS.TRASH, t("SEEDPHRASE_MENU_CLEAR_ALL"), "clear_all_storage", color=RED_HEX))
+        menu_items += [
+            MenuItem(BTC_ICONS.FILE, t("HARDWARE_INTERNAL_FLASH"), "clear_from_flash", color=RED_HEX),
+            MenuItem(BTC_ICONS.TRASH, t("SEEDPHRASE_MENU_CLEAR_ALL"), "clear_all_storage", color=RED_HEX),
+        ]
 
         return menu_items

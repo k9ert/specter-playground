@@ -2,7 +2,7 @@ import lvgl as lv
 import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
 from .titled_screen import TitledScreen
 from .symbol_lib import BTC_ICONS
-from .ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, TEXT_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH
+from .ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH, SMALL_PAD
 from .widgets.btn import Btn
 from .widgets.containers import flex_row
 from .widgets.labels import body_label
@@ -85,6 +85,7 @@ class LockedMenu(TitledScreen):
                 width=lv.pct(100),
                 height=lv.SIZE_CONTENT,
                 main_align=lv.FLEX_ALIGN.CENTER,
+                pad=SMALL_PAD,
             )
             for k in row:
                 if k == "Del":
@@ -94,6 +95,7 @@ class LockedMenu(TitledScreen):
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_del(e),
                     )
+                    b.make_background_transparent()
                 elif k == "OK":
                     b = Btn(
                         row_cont,
@@ -101,6 +103,7 @@ class LockedMenu(TitledScreen):
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_ok(e),
                     )
+                    b.make_background_transparent()
                 else:
                     b = Btn(
                         row_cont,
@@ -109,6 +112,7 @@ class LockedMenu(TitledScreen):
                         font=TITLE_FONT,
                         callback=lambda e, d=k: self._on_digit(e, d),
                     )
+                    b.make_background_transparent()
 
     def _update_mask(self):
         self.mask_lbl.set_text("*" * len(self.pin_buf))

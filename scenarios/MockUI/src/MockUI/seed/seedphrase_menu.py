@@ -28,12 +28,16 @@ class SeedPhraseMenu(GenericMenu):
         pp_label = t("MENU_CHANGE_CLEAR_PASSPHRASE") if self.ui_state.active_seed.passphrase else t("MENU_SET_PASSPHRASE")
         menu_items.append(MenuItem(BTC_ICONS.PASSWORD, pp_label, "set_passphrase", is_submenu=True))
 
-        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_BACKUP")))
-        menu_items.append(MenuItem(lv.SYMBOL.DOWNLOAD, t("SEEDPHRASE_MENU_STORE_TO") + "...", "store_seedphrase", is_submenu=True))
+        menu_items += [
+            MenuItem(text=t("SEEDPHRASE_MENU_BACKUP")),
+            MenuItem(lv.SYMBOL.DOWNLOAD, t("SEEDPHRASE_MENU_STORE_TO") + "...", "store_seedphrase", is_submenu=True),
+        ]
 
         # Explore section
-        menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_EXPLORE")))
-        menu_items.append(MenuItem(BTC_ICONS.WALLET, t("SEEDPHRASE_MENU_RELATED_WALLETS"), "related_wallets_for_seed", is_submenu=True))
+        menu_items += [
+            MenuItem(text=t("SEEDPHRASE_MENU_EXPLORE")),
+            MenuItem(BTC_ICONS.WALLET, t("SEEDPHRASE_MENU_RELATED_WALLETS"), "related_wallets_for_seed", is_submenu=True),
+        ]
 
         menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_ADVANCED")))
         if can_sign_msg:

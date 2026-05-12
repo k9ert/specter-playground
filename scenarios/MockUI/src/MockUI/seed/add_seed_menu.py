@@ -16,8 +16,10 @@ class AddSeedMenu(GenericMenu):
         menu_items = []
 
         # Generate section
-        menu_items.append(MenuItem(text=t("ADD_SEED_GENERATE_SECTION")))
-        menu_items.append(MenuItem(BTC_ICONS.MNEMONIC, t("ADD_SEED_GENERATE_SEED"), "generate_seedphrase", is_submenu=True))
+        menu_items += [
+            MenuItem(text=t("ADD_SEED_GENERATE_SECTION")),
+            MenuItem(BTC_ICONS.MNEMONIC, t("ADD_SEED_GENERATE_SEED"), "generate_seedphrase", is_submenu=True),
+        ]
 
         # Import section
         menu_items.append(MenuItem(text=t("ADD_SEED_IMPORT_SECTION")))

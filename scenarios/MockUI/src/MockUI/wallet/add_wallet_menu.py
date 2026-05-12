@@ -26,7 +26,9 @@ class AddWalletMenu(GenericMenu):
             menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), "import_from_sd"))
 
         # Customize section
-        menu_items.append(MenuItem(text=t("ADD_WALLET_CUSTOMIZE")))
-        menu_items.append(MenuItem(BTC_ICONS.CONSOLE, t("ADD_WALLET_CREATE_CUSTOM"), "create_custom_wallet", is_submenu=True))
+        menu_items += [
+            MenuItem(text=t("ADD_WALLET_CUSTOMIZE")),
+            MenuItem(BTC_ICONS.CONSOLE, t("ADD_WALLET_CREATE_CUSTOM"), "create_custom_wallet", is_submenu=True),
+        ]
 
         return menu_items
