@@ -1,8 +1,8 @@
 import lvgl as lv
 
-from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, TITLE_ROW_HEIGHT, BATTERY_OFFSET_X
+from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE_ROW_HEIGHT, BATTERY_WIDTH
 from ..stubs import UIState, SpecterState
-from ..stubs.battery import Battery
+from .widgets.battery import Battery
 from ..stubs.ui_state import Context
 from ..i18n import I18nManager
 from ..tour import GuidedTour
@@ -16,7 +16,11 @@ from .widgets.containers import flex_col
 # Pixel heights computed from percentages so we can shift content down
 # when the context bar is active.
 _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
-_BATT_Y = (TITLE_ROW_HEIGHT - 20) // 2           # centre 20px battery in title row
+# Pixels reserved on the right side for the battery widget
+# Row width available for content
+CONTEXT_BAR_WIDTH = SCREEN_WIDTH - BATTERY_WIDTH
+
+
 from .action_screen import ActionScreen
 from .main_menu import MainMenu
 from .locked_menu import LockedMenu
@@ -90,31 +94,44 @@ class SpecterGui(lv.obj):
         # Context bar — created/destroyed by _sync_context_bar()
         self.context_bar = None
 
-        # Battery — persistent child of SpecterGui, always at top-right
-        if self.device_state.has_battery:
-            self._battery = Battery(self)
-            self._battery.VALUE = self.device_state.battery_pct
-            self._battery.update()
-            self._battery.align(lv.ALIGN.TOP_RIGHT, BATTERY_OFFSET_X, _BATT_Y)
-        else:
-            self._battery = None
-
         # Content area: pixel-sized so we can shift it when context bar appears
         self.content = flex_col(self, width=lv.pct(100), height=_CONTENT_H)
         self.content.align(lv.ALIGN.TOP_MID, 0, 0)
         self.content.set_scroll_dir(lv.DIR.NONE)
 
+        # Battery — persistent child of SpecterGui, always at top-right
+        if self.device_state.has_battery:
+            self._battery = Battery(self, width=BATTERY_WIDTH, height=TITLE_ROW_HEIGHT)
+            self._battery.align(lv.ALIGN.TOP_LEFT, CONTEXT_BAR_WIDTH, 0)
+            self._battery.VALUE = self.device_state.battery_pct
+            self._battery.CHARGING = self.device_state.charging
+            self._battery.update()
+        else:
+            self._battery = None
+
         # initially show the current menu of ui_state (i.e. "main" by default unless loaded differently)
         self.show_menu(self.ui_state.current_menu_id)
         
+
         # Start guided tour on first startup (after UI is fully constructed)
         if self.ui_state.is_run_tour_on_startup:
             GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
 
         # periodic refresh every 30 seconds [e.g. to update battery level]
         def _tick(timer):
+            #TODO: DUMMY CODE TO CYCLE THROUGH BATTERY STATES FOR TESTING PURPOSES — REPLACE WITH ACTUAL DEVICE STATE UPDATE LOGIC
+            if self.device_state.is_charging:
+                self.device_state.battery_pct = min(100, self.device_state.battery_pct + 10)
+                if self.device_state.battery_pct == 100:
+                    self.device_state.is_charging = False
+            else:                
+                self.device_state.battery_pct = max(0, self.device_state.battery_pct - 10)
+                if self.device_state.battery_pct == 0:
+                    self.device_state.is_charging = True
+            #END OF DUMMY CODE
+            
             self.refresh_ui()
-        lv.timer_create(_tick, 30_000, None)
+        lv.timer_create(_tick, 2_000, None)
 
     def change_language(self, lang_code):
         """
@@ -134,6 +151,7 @@ class SpecterGui(lv.obj):
             self.context_bar.refresh()
         if self._battery:
             self._battery.VALUE = self.device_state.battery_pct
+            self._battery.CHARGING = self.device_state.is_charging
             self._battery.update()
 
     def show_menu(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
@@ -255,7 +273,7 @@ class SpecterGui(lv.obj):
         if needs_bar:
             if self.context_bar is None or self.context_bar.context_type != ctx:
                 abandoned = self.context_bar  # may be None
-                self.context_bar = ContextBar(self)
+                self.context_bar = ContextBar(self, width=CONTEXT_BAR_WIDTH, height=TITLE_ROW_HEIGHT)
                 self.context_bar.move_foreground()
                 if self._battery:
                     self._battery.move_foreground()

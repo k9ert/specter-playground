@@ -87,6 +87,7 @@ class _DropUp(SpecterGuiMixin):
             width=SCREEN_WIDTH,
             height=_PANEL_MAX_H,
             main_align=lv.FLEX_ALIGN.START,
+            transparent_bg=False,
         )
         self._panel.set_style_radius(0, 0)
         self._panel.set_style_pad_row(0, 0)

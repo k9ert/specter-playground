@@ -1,4 +1,4 @@
-"""Bitcoin icon library aggregator — 170 icons at 42×42 px.
+"""Bitcoin icon library aggregator — 175 icons at 42×42 px.
 
 AUTO-GENERATED — do not edit directly.
 Regenerate with:
@@ -20,10 +20,15 @@ from .icons.arrow_right import ARROW_RIGHT
 from .icons.arrow_up import ARROW_UP
 from .icons.bank import BANK
 from .icons.battery_2 import BATTERY_2
+from .icons.battery_2_outline import BATTERY_2_OUTLINE
 from .icons.battery_3 import BATTERY_3
+from .icons.battery_3_outline import BATTERY_3_OUTLINE
 from .icons.battery_4 import BATTERY_4
+from .icons.battery_4_outline import BATTERY_4_OUTLINE
 from .icons.battery_empty import BATTERY_EMPTY
+from .icons.battery_empty_outline import BATTERY_EMPTY_OUTLINE
 from .icons.battery_full import BATTERY_FULL
+from .icons.battery_full_outline import BATTERY_FULL_OUTLINE
 from .icons.bell import BELL
 from .icons.bitaxe import BITAXE
 from .icons.bitcoin import BITCOIN
@@ -95,8 +100,8 @@ from .icons.info_circle import INFO_CIRCLE
 from .icons.invoice import INVOICE
 from .icons.iou import IOU
 from .icons.key import KEY
-from .icons.keyboard import KEYBOARD
 from .icons.key_outline import KEY_OUTLINE
+from .icons.keyboard import KEYBOARD
 from .icons.lightning import LIGHTNING
 from .icons.lightning_circle import LIGHTNING_CIRCLE
 from .icons.link import LINK
@@ -185,7 +190,7 @@ from .icons.water_bucket import WATER_BUCKET
 
 class BTC_ICONS:
     """
-    Library of Bitcoin-themed icons (170 total, 42×42 px).
+    Library of Bitcoin-themed icons (175 total, 42×42 px).
 
     Icons default to white; pass a color to tint them:
         BTC_ICONS.WALLET(lv.color_hex(0xFF0000))  # red
@@ -201,10 +206,15 @@ class BTC_ICONS:
     ARROW_UP = ARROW_UP
     BANK = BANK
     BATTERY_2 = BATTERY_2
+    BATTERY_2_OUTLINE = BATTERY_2_OUTLINE
     BATTERY_3 = BATTERY_3
+    BATTERY_3_OUTLINE = BATTERY_3_OUTLINE
     BATTERY_4 = BATTERY_4
+    BATTERY_4_OUTLINE = BATTERY_4_OUTLINE
     BATTERY_EMPTY = BATTERY_EMPTY
+    BATTERY_EMPTY_OUTLINE = BATTERY_EMPTY_OUTLINE
     BATTERY_FULL = BATTERY_FULL
+    BATTERY_FULL_OUTLINE = BATTERY_FULL_OUTLINE
     BELL = BELL
     BITAXE = BITAXE
     BITCOIN = BITCOIN
@@ -276,8 +286,8 @@ class BTC_ICONS:
     INVOICE = INVOICE
     IOU = IOU
     KEY = KEY
-    KEYBOARD = KEYBOARD
     KEY_OUTLINE = KEY_OUTLINE
+    KEYBOARD = KEYBOARD
     LIGHTNING = LIGHTNING
     LIGHTNING_CIRCLE = LIGHTNING_CIRCLE
     LINK = LINK

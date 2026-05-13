@@ -159,9 +159,11 @@ class NavigationBar(SpecterGuiElement):
             else:
                 self.buttons["Wallet"].update_icon(BTC_ICONS.WALLET_OUTLINE)
             #Wallet icon: invisible when no seed loaded
-            self.buttons["Wallet"].set_visible(self.gui.device_state and 
-                                               (len(self.gui.device_state.loaded_seeds) > 0) or
-                                               (len(self.gui.device_state.registered_wallets) > 1) )
+            self.buttons["Wallet"].set_visible(
+                self.gui.device_state and 
+                ((len(self.gui.device_state.loaded_seeds) > 0) or
+                 (len(self.gui.device_state.registered_wallets) > 1))
+            )
 
             # Device icon
             if self.context == Context.DEVICE and not seed_open and not wallet_open:

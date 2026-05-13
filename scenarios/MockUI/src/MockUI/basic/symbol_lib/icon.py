@@ -149,9 +149,9 @@ class Icon:
 
         return Icon._global_image_dsc_cache[cache_key]
 
-    def add_to_parent(self, parent, zoom=None):
+    def apply_icon_to(self, parent, zoom=None):
         """
-        Add this icon to a parent lv.image object.
+        Apply this icon to a parent lv.image object.
         Sets the A8 image source and applies the icon colour via the
         LVGL ``image_recolor`` style property.
 

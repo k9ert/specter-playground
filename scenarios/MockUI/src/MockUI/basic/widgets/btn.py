@@ -57,7 +57,7 @@ class Btn:
         if icon is not None:
             self._ico_img = lv.image(self._btn)
             icon(to_lv_color(fontcolor))
-            icon.add_to_parent(self._ico_img)
+            icon.apply_icon_to(self._ico_img)
             if text is None:
                 self._ico_img.center()
         else:
@@ -79,7 +79,7 @@ class Btn:
 
     def update_icon(self, icon):
         if self._ico_img is not None:
-            icon.add_to_parent(self._ico_img)
+            icon.apply_icon_to(self._ico_img)
 
     def make_background_transparent(self):
         """Remove button background, border and shadow.

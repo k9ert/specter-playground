@@ -29,7 +29,7 @@ class MainMenu(GenericMenu):
 
         # Generate New Key
         gen_size = 1.0+slots_remaining/slots_used if not Seed_detected else 1
-        menu_items.append(MenuItem(BTC_ICONS.MNEMONIC, t("ADD_SEED_GENERATE_SEED"), "generate_seedphrase", size=gen_size, is_submenu=True))
+        menu_items.append(MenuItem(BTC_ICONS.DICE, t("ADD_SEED_GENERATE_SEED"), "generate_seedphrase", size=gen_size, is_submenu=True))
 
         menu_items.append(MenuItem(text=t("ADD_SEED_IMPORT_SECTION")))
 
@@ -41,11 +41,11 @@ class MainMenu(GenericMenu):
         # Scan QR
         qr_size = 1.0+slots_remaining/slots_used if not Seed_detected else 1
         if state.QR_enabled():
-            menu_items.append(MenuItem(BTC_ICONS.SCAN, t("HARDWARE_QR_CODE"), "import_from_qr", size=qr_size))
+            menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("HARDWARE_QR_CODE"), "import_from_qr", size=qr_size))
 
         # Keyboard
         kb_size = 1.0+slots_remaining/slots_used if not Seed_detected else 1
-        menu_items.append(MenuItem(lv.SYMBOL.KEYBOARD, t("COMMON_KEYBOARD"), "import_from_keyboard", size=kb_size))
+        menu_items.append(MenuItem(BTC_ICONS.KEYBOARD, t("COMMON_KEYBOARD"), "import_from_keyboard", size=kb_size))
 
         # SD Card (only if key data detected)
         if state.SD_hasSeed():
@@ -80,7 +80,7 @@ class MainMenu(GenericMenu):
         if has_controlled_input:
             menu_items.append(MenuItem(text=t("MAIN_MENU_PROCESS_INPUT")))
             if state.QR_enabled():
-                menu_items.append(MenuItem(BTC_ICONS.SCAN, t("MAIN_MENU_SCAN_QR"), "scan_qr", size=1.5, help_key="HELP_SCAN_QR"))
+                menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("MAIN_MENU_SCAN_QR"), "scan_qr", size=1.5, help_key="HELP_SCAN_QR"))
             if state.SD_detected():
                 menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("MAIN_MENU_LOAD_FROM_SD"), "load_sd"))
 

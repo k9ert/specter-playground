@@ -29,7 +29,7 @@ BIG_PAD = const(12)
 # --- Status bar / content area layout ---
 STATUS_BAR_PCT = const(8)        # navigation bar (bottom), % of screen height
 CONTENT_PCT = const(92)          # 100 - STATUS_BAR_PCT (no top bar)
-BATTERY_OFFSET_X = const(-10)     # battery widget offset from right corner (px)
+BATTERY_WIDTH = const(50)        # battery widget width (px)
 
 # --- Navigation history ---
 MAX_HISTORY_DEPTH = const(10)      # maximum number of entries in the back-navigation stack

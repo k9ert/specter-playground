@@ -66,7 +66,10 @@ class GenericMenu(TitledScreen):
                 size = 1
 
             if target_behavior is None and (get_value is None or set_value is None):
-                section_header(self.body, text, color=fontcolor)
+                row = flex_row(self.body, width = lv.pct(100), main_align=lv.FLEX_ALIGN.START)
+                if icon and isinstance(icon, Icon):
+                    make_icon(row, icon, color=fontcolor if fontcolor else None)
+                section_header(row, text, color=fontcolor).set_flex_grow(1)
             elif get_value is not None and set_value is not None:
                 # ── Toggle row ─────────────────────────────────────────────
                 row = flex_row(self.body, height=SWITCH_HEIGHT, main_align=lv.FLEX_ALIGN.START)
@@ -114,8 +117,13 @@ class GenericMenu(TitledScreen):
                     body_label(btn._btn, icon, width=lv.SIZE_CONTENT, color=fontcolor, recolor=True).align(lv.ALIGN.LEFT_MID, PAD, 0)
 
                 # Right-side container: [suffixes...] [help?] [caret — always reserved]
-                right_cont = flex_row(btn._btn, width=lv.SIZE_CONTENT, height=lv.pct(100), main_align=lv.FLEX_ALIGN.START)
-                right_cont.set_style_bg_opa(lv.OPA.TRANSP, 0)
+                right_cont = flex_row(
+                    btn._btn, 
+                    width=lv.SIZE_CONTENT, 
+                    height=lv.pct(100), 
+                    main_align=lv.FLEX_ALIGN.START, 
+                    transparent_bg=True
+                 )
                 right_cont.set_style_pad_column(SMALL_PAD, 0)
                 right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
                 right_cont.set_scroll_dir(lv.DIR.NONE)

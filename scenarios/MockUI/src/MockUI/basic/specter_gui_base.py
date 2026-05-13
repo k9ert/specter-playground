@@ -22,7 +22,7 @@ def delete_all_children_of(widget):
         widget.get_child(i).delete()
 
 
-def configure_as_bare(obj, width=None, height=None):
+def configure_as_bare(obj, width=None, height=None, transparent_bg=True):
     """Zero padding, border, and radius on an existing lv.obj (mutating).
     """
     if width is not None:
@@ -32,6 +32,8 @@ def configure_as_bare(obj, width=None, height=None):
     obj.set_style_pad_all(0, 0)
     obj.set_style_border_width(0, 0)
     obj.set_style_radius(0, 0)
+    if transparent_bg:
+        obj.set_style_bg_opa(0, 0)
 
 
 class SpecterGuiMixin:

@@ -62,7 +62,7 @@ class TitledScreen(SpecterGuiElement):
         self.gui = parent
 
         # Root: fill parent completely, no decoration.
-        configure_as_bare(self, width=lv.pct(100), height=lv.pct(100))
+        configure_as_bare(self, width=lv.pct(100), height=lv.pct(100), transparent_bg=False)
         self.set_scroll_dir(lv.DIR.NONE)
 
         y_body = 0  # accumulated y-offset for the body widget
@@ -71,15 +71,14 @@ class TitledScreen(SpecterGuiElement):
         self.title_bar = None
         self.title = None
         if show_title:
-            self.title_bar = bare_strip(self, TITLE_ROW_HEIGHT, 0)
+            self.title_bar = bare_strip(self, TITLE_ROW_HEIGHT, 0, False)
             self.title = body_label(self.title_bar, title, font=TITLE_FONT)
             self.title.align(lv.ALIGN.CENTER, 0, 0)
             y_body = TITLE_ROW_HEIGHT + TITLE_PADDING
         else:
             # No title strip — place an invisible spacer so the battery widget
             # (floating above content at y=0) doesn't overlap body content.
-            self.spacer = bare_strip(self, TITLE_ROW_HEIGHT, 0)
-            self.spacer.set_style_bg_opa(lv.OPA.TRANSP, 0)
+            self.spacer = bare_strip(self, TITLE_ROW_HEIGHT, 0, False)
             y_body = TITLE_ROW_HEIGHT
 
         # ── 2. Body ───────────────────────────────────────────────────────────

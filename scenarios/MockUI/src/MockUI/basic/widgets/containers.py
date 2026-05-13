@@ -8,7 +8,7 @@ from ..ui_consts import DIALOG_RADIUS, BIG_PAD, WHITE_HEX, DROPUP_DIVIDER_OPA
 from ..specter_gui_base import configure_as_bare
 
 
-def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_ALIGN.START):
+def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_ALIGN.START, transparent_bg=True):
     cont = lv.obj(parent)
     cont.set_width(width if width is not None else lv.pct(100))
     cont.set_height(height if height is not None else lv.SIZE_CONTENT)
@@ -20,38 +20,40 @@ def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_A
     cont.set_style_pad_all(pad, 0)
     cont.set_style_pad_column(pad, 0)
     cont.set_style_pad_row(pad, 0)
+    if transparent_bg:
+        cont.set_style_bg_opa(lv.OPA.TRANSP, 0)
     return cont
 
 
-def flex_col(parent, width=None, height=None, pad=0, main_align=lv.FLEX_ALIGN.START):
+def flex_col(parent, width=None, height=None, pad=0, main_align=lv.FLEX_ALIGN.START, transparent_bg=True):
     """lv.obj flex-column container."""
     return _flex_container(
         parent, lv.FLEX_FLOW.COLUMN,
-        width, height, pad, main_align,
+        width, height, pad, main_align, transparent_bg
     )
 
 
-def flex_row(parent, width=None, height=None, pad=0, main_align=lv.FLEX_ALIGN.SPACE_EVENLY):
+def flex_row(parent, width=None, height=None, pad=0, main_align=lv.FLEX_ALIGN.SPACE_EVENLY, transparent_bg=True):
     """lv.obj flex-row container."""
     return _flex_container(
         parent, lv.FLEX_FLOW.ROW, 
-        width, height, pad, main_align,
+        width, height, pad, main_align, transparent_bg
     )
 
 
-def bare_strip(parent, height, y=0):
+def bare_strip(parent, height, y=0, transparent_bg=True):
     """Full-width, no-decoration horizontal strip at absolute y inside *parent*.
 
     Border, padding, and radius are all zeroed.  Positioned via TOP_MID align
     so it spans the full parent width regardless of parent padding.
     """
     strip = lv.obj(parent)
-    configure_as_bare(strip, width=lv.pct(100), height=height)
+    configure_as_bare(strip, width=lv.pct(100), height=height, transparent_bg=transparent_bg)
     strip.align(lv.ALIGN.TOP_MID, 0, y)
     return strip
 
 
-def card_row(parent, height, width, pad=BIG_PAD, border=True):
+def card_row(parent, height, width, pad=BIG_PAD, border=True, transparent_bg=True):
     """Full-width horizontal flex row styled as an item card.
 
     Bottom divider line is drawn via border-bottom at low opacity.
@@ -68,8 +70,7 @@ def card_row(parent, height, width, pad=BIG_PAD, border=True):
     Returns:
         The created ``lv.obj`` flex-row widget.
     """
-    row = flex_row(parent, width=width, height=height, pad=pad, main_align=lv.FLEX_ALIGN.START)
-    row.set_style_bg_opa(lv.OPA.TRANSP, 0)
+    row = flex_row(parent, width=width, height=height, pad=pad, main_align=lv.FLEX_ALIGN.START, transparent_bg=transparent_bg)
     row.set_style_pad_column(0, 0)
     if border:
         row.set_style_border_width(1, 0)

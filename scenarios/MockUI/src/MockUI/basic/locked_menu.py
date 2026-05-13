@@ -95,7 +95,6 @@ class LockedMenu(TitledScreen):
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_del(e),
                     )
-                    b.make_background_transparent()
                 elif k == "OK":
                     b = Btn(
                         row_cont,
@@ -103,7 +102,6 @@ class LockedMenu(TitledScreen):
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_ok(e),
                     )
-                    b.make_background_transparent()
                 else:
                     b = Btn(
                         row_cont,
@@ -112,7 +110,7 @@ class LockedMenu(TitledScreen):
                         font=TITLE_FONT,
                         callback=lambda e, d=k: self._on_digit(e, d),
                     )
-                    b.make_background_transparent()
+                b.make_background_transparent()
 
     def _update_mask(self):
         self.mask_lbl.set_text("*" * len(self.pin_buf))

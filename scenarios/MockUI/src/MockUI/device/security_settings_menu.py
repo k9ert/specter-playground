@@ -22,7 +22,7 @@ class SecuritySettingsMenu(GenericMenu):
             menu_items.append(MenuItem(BTC_ICONS.COPY, t("MENU_MANAGE_BACKUPS"), "manage_backups", is_submenu=True))
 
         menu_items += [
-            MenuItem(text=lv.SYMBOL.WARNING + " " + t("DEVICE_MENU_DANGERZONE"), font_color=ORANGE_HEX),
+            MenuItem(BTC_ICONS.SIREN, text=t("DEVICE_MENU_DANGERZONE"), font_color=ORANGE_HEX),
             MenuItem(BTC_ICONS.ALERT_CIRCLE, t("DEVICE_MENU_WIPE"), "wipe_device", color=RED_HEX, help_key="HELP_DEVICE_MENU_WIPE"),
         ]
 

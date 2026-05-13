@@ -1,11 +1,11 @@
 """Image helpers — lv.image wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..ui_consts import BTC_ICON_WIDTH, WHITE_HEX
+from ..ui_consts import BTC_ICON_WIDTH, BTC_ICON_ZOOM, WHITE_HEX
 
 
-def make_icon(parent, icon, color=WHITE_HEX, width=BTC_ICON_WIDTH):
-    """Create an ``lv.image`` widget and attach *icon* to it.
+def make_icon(parent, icon, color=WHITE_HEX, width=BTC_ICON_WIDTH, zoom=BTC_ICON_ZOOM):
+    """Create an ``lv.image`` widget and apply *icon* to it.
 
     Args:
         parent: LVGL parent object.
@@ -22,5 +22,17 @@ def make_icon(parent, icon, color=WHITE_HEX, width=BTC_ICON_WIDTH):
     resolved = icon(color) if color is not None else icon
     img = lv.image(parent)
     img.set_width(width)
-    resolved.add_to_parent(img)
+    resolved.apply_icon_to(img, zoom=zoom)
     return img
+
+def set_visible(icon_widget, visible):
+    """Set *icon_widget* visible or hidden by adjusting its opacity.
+
+    Args:
+        icon_widget: The ``lv.image`` widget containing the icon.
+        visible:     Boolean visibility flag.
+    """
+    if visible:
+        icon_widget.set_style_opa(lv.OPA.COVER, 0)
+    else:
+        icon_widget.set_style_opa(lv.OPA.TRANSP, 0)

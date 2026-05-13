@@ -14,13 +14,6 @@ from .widgets.wallet_widgets import build_wallet_card, wallet_net_text
 from .keyboard_manager import Layout
 from ..stubs.ui_state import Context
 
-# Pixels reserved on the right side for the battery widget
-_BATT_RESERVE = 50
-
-# Row width available for content
-_ROW_W = SCREEN_WIDTH - _BATT_RESERVE
-
-
 
 class ContextBar(SpecterGuiElement):
     """Top info strip rendered when a seed or wallet context is active.
@@ -38,7 +31,7 @@ class ContextBar(SpecterGuiElement):
         grey = inactive; tap to toggle ``passphrase_active``.
     """
 
-    def __init__(self, gui):
+    def __init__(self, gui, width=SCREEN_WIDTH, height=TITLE_ROW_HEIGHT):
         """
         Args:
             gui: The :class:`SpecterGui` instance that owns this bar.
@@ -46,9 +39,9 @@ class ContextBar(SpecterGuiElement):
         super().__init__(gui)
         self.gui = gui
 
-        configure_as_bare(self, width=lv.pct(100), height=TITLE_ROW_HEIGHT)
+        configure_as_bare(self, width=width, height=height)
         self.set_scroll_dir(lv.DIR.NONE)
-        self.align(lv.ALIGN.TOP_MID, 0, 0)
+        self.align(lv.ALIGN.TOP_LEFT, 0, 0)
 
         self.context_type = self.context
 
@@ -79,14 +72,15 @@ class ContextBar(SpecterGuiElement):
         self._seed_row = build_seed_card(
             self,
             seed,
-            height=TITLE_ROW_HEIGHT,
-            width=_ROW_W,
+            height=self.get_height(),
+            width=self.get_width(),
             slots=("leading_icon", "name", "passphrase", "fingerprint"),
             leading_icon=BTC_ICONS.KEY_OUTLINE,
             on_name_click=_on_name_click,
             gui=self.gui,
             border=False,
         )
+        self._seed_row.align(lv.ALIGN.LEFT_MID, 0, 0)
 
     def _build_wallet(self):
         wallet = self.ui_state.active_wallet
@@ -114,14 +108,14 @@ class ContextBar(SpecterGuiElement):
             self,
             wallet,
             self.device_state,
-            height=TITLE_ROW_HEIGHT,
-            width=_ROW_W,
+            height=self.get_height(),
+            width=self.get_width(),
             slots=active_slots,
             leading_icon=BTC_ICONS.WALLET_OUTLINE,
             on_name_click=_on_name_click,
             border=False,
         )
-
+        self._wallet_row.align(lv.ALIGN.LEFT_MID, 0, 0)
     # ── Public API ────────────────────────────────────────────────────────
 
     def refresh(self):

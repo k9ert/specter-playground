@@ -30,7 +30,7 @@ class SeedPhraseMenu(GenericMenu):
 
         menu_items += [
             MenuItem(text=t("SEEDPHRASE_MENU_BACKUP")),
-            MenuItem(lv.SYMBOL.DOWNLOAD, t("SEEDPHRASE_MENU_STORE_TO") + "...", "store_seedphrase", is_submenu=True),
+            MenuItem(BTC_ICONS.RECEIVE, t("SEEDPHRASE_MENU_STORE_TO") + "...", "store_seedphrase", is_submenu=True),
         ]
 
         # Explore section

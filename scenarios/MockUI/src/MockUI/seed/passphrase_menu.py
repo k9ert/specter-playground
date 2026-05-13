@@ -2,6 +2,7 @@ import lvgl as lv
 from ..basic import TitledScreen, BTN_WIDTH, BTN_HEIGHT, SMALL_PAD
 from ..basic.keyboard_manager import Layout
 from ..basic.widgets import flex_col, flex_row, form_label, form_textarea, Btn, ACCEPTED_CHARS
+from ..basic.symbol_lib import BTC_ICONS
 
 def _sanitize_passphrase(text):
     return text.strip()
@@ -52,7 +53,8 @@ class PassphraseMenu(TitledScreen):
         # Clear button
         self.clear_btn = Btn(
             buttons_row,
-            text=lv.SYMBOL.CLOSE + " " + t("PASSPHRASE_MENU_CLEAR"),
+            icon=BTC_ICONS.CROSS,
+            text=t("PASSPHRASE_MENU_CLEAR"),
             size=(lv.pct(BTN_WIDTH), BTN_HEIGHT),
             callback=self._on_clear,
         )

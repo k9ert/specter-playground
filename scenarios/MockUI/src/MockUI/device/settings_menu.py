@@ -5,6 +5,7 @@ from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
 from ..basic.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX
 from ..basic.widgets.icon_widgets import make_icon
+from ..basic.widgets.containers import flex_row
 
 
 class SettingsMenu(GenericMenu):
@@ -33,15 +34,7 @@ class SettingsMenu(GenericMenu):
         self._configure_scroll()
 
     def _build_iface_row(self, state):
-        row = lv.obj(self.body)
-        row.set_width(lv.pct(100))
-        row.set_height(STATUS_BTN_HEIGHT)
-        row.set_layout(lv.LAYOUT.FLEX)
-        row.set_flex_flow(lv.FLEX_FLOW.ROW)
-        row.set_flex_align(lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-        row.set_style_pad_all(0, 0)
-        row.set_style_border_width(0, 0)
-        row.set_style_radius(0, 0)
+        row = flex_row(self.body, width=lv.pct(100), height=STATUS_BTN_HEIGHT, main_align=lv.FLEX_ALIGN.CENTER)
 
         def _add_ico(icon, color):
             img = make_icon(row, icon, color)

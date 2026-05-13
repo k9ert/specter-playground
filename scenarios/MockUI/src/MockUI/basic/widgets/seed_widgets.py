@@ -30,7 +30,7 @@ def fingerprint_badge(parent, seed, digits=4):
 
     Returns the fingerprint ``lv.label``.
     """
-    make_icon(parent, BTC_ICONS.RELAY, WHITE_HEX)
+    make_icon(parent, BTC_ICONS.FINGERPRINT, WHITE_HEX)
     fp = seed.get_fingerprint()
     if fp[:2].lower() == "0x":
         fp = fp[2:]
@@ -100,7 +100,7 @@ def build_seed_card(
         ``"backup_warning"`` — ALERT_CIRCLE icon (orange), only rendered when seed is not backed up
         ``"passphrase"``     — PASSWORD toggle icon; only rendered when seed has a passphrase set.
                                Requires *gui* argument.
-        ``"fingerprint"``    — RELAY icon + first 4 hex chars of seed fingerprint
+        ``"fingerprint"``    — FINGERPRINT icon + first 4 hex chars of seed fingerprint
         ``"delete"``         — TRASH icon button; only rendered when *on_delete* is provided
 
     Args:
