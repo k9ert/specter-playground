@@ -65,6 +65,7 @@ class ContextBar(SpecterGuiElement):
         def _on_name_click(ta):
             def _on_commit(val):
                 if val and self.ui_state.active_seed:
+                    ta.remove_state(lv.STATE.FOCUSED)
                     self.ui_state.active_seed.label = val
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
@@ -100,6 +101,7 @@ class ContextBar(SpecterGuiElement):
         def _on_name_click(ta):
             def _on_commit(val):
                 if val and self.ui_state.active_wallet:
+                    ta.remove_state(lv.STATE.FOCUSED)
                     self.ui_state.active_wallet.label = val
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
