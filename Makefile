@@ -34,6 +34,16 @@ sync-i18n:
 	@mkdir -p build
 	python3 tools/sync_i18n.py --dry-run
 
+# Icon tree-shaking: remove unused BTC_ICONS from the firmware freeze path.
+# Moves unused icon files to tools/symbol_lib/icons_available/ and comments
+# them out in btc_icons.py.  Only needed for hardware builds (the simulator
+# has no flash-size constraint).  Run manually with --dry-run to preview:
+#   python3 tools/symbol_lib/trim_btc_icons.py --dry-run
+trim-icons:
+	@echo Trimming unused BTC_ICONS from firmware freeze path...
+	@mkdir -p build
+	python3 tools/symbol_lib/trim_btc_icons.py
+
 # i18n compilation
 build-i18n: sync-i18n
 	@echo Building i18n files...
@@ -140,7 +150,7 @@ hello: $(TARGET_DIR) mpy-cross $(MPY_DIR)/ports/stm32
 		$(TARGET_DIR)/hello.hex
 
 # MockUI firmware with embedded filesystem
-mockui: $(TARGET_DIR) mpy-cross build-i18n build-flash-image $(MPY_DIR)/ports/stm32
+mockui: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-flash-image $(MPY_DIR)/ports/stm32
 	@echo Building MockUI firmware
 	make -C $(MPY_DIR)/ports/stm32 \
 		BOARD=$(BOARD) \
