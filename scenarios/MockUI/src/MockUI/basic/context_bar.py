@@ -120,6 +120,7 @@ class ContextBar(SpecterGuiElement):
 
     def refresh(self):
         """Rebuild context bar content after seed / wallet data changes."""
-        delete_all_children_of(self)
-        self._build()
+        if not self.ta.has_state(lv.STATE.FOCUSED):
+            delete_all_children_of(self)
+            self._build()
 

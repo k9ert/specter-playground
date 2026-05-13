@@ -170,16 +170,16 @@ def build_wallet_card(
             editable = on_name_click is not None and not wallet.is_default_wallet()
             if editable:
                 from .inputs import title_textarea
-                ta = title_textarea(row)
-                ta.set_width(name_w)
-                ta.set_style_text_font(name_font, 0)
-                ta.set_text(display_text)
+                parent.ta = title_textarea(row)
+                parent.ta.set_width(name_w)
+                parent.ta.set_style_text_font(name_font, 0)
+                parent.ta.set_text(display_text)
                 def _make_name_cb(t):
                     def _cb(e):
                         if e.get_code() == lv.EVENT.CLICKED:
                             on_name_click(t)
                     return _cb
-                ta.add_event_cb(_make_name_cb(ta), lv.EVENT.CLICKED, None)
+                parent.ta.add_event_cb(_make_name_cb(parent.ta), lv.EVENT.CLICKED, None)
             else:
                 lbl = _make_label(row, display_text, width=name_w, font=name_font)
                 lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
