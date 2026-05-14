@@ -254,7 +254,7 @@ class SpecterGui(lv.obj):
             old_screen.view = new_view
             new_view.set_size(SCREEN_WIDTH, content_h)
 
-            refs = []
+            anims = []
             W = SCREEN_WIDTH
 
             def _cleanup_case3():
@@ -267,24 +267,25 @@ class SpecterGui(lv.obj):
 
             if anim_type == GUIAnimations.horizontal_slide_in:
                 new_view.set_x(W)
-                refs.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
+                anims.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
                                     on_done_cb=lambda a: _cleanup_case3()))
             elif anim_type == GUIAnimations.horizontal_slide_out:
                 new_view.set_x(0)
                 old_view.move_foreground()
-                refs.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
+                anims.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
                                     on_done_cb=lambda a: _cleanup_case3()))
 
-            for a in refs:
+            for a in anims:
                 a.start()
-            self._anim_refs = refs
+            self._anim_refs = anims
 
         else:
             # ── Cases 1/2: slide the entire Screen unit ───────────────────────
             new_screen = self._make_screen()
             self.screen = new_screen
 
-            # Clip container: same size as the content zone (480×_CONTENT_H).
+            # temporary clip container: same size as the content zone 
+            # (480×_CONTENT_H).
             # Both screens are reparented into it so LVGL's default parent-clip
             # prevents them from ever painting over the navigation bar below.
             anim_clip = lv.obj(self)
@@ -315,32 +316,32 @@ class SpecterGui(lv.obj):
                 self.navigation_bar.move_foreground()
                 self.refresh_ui()
 
-            refs = []
+            anims = []
             W = SCREEN_WIDTH
 
             if anim_type == GUIAnimations.horizontal_slide_in:
-                refs.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
+                anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
                                     on_done_cb=lambda a: _cleanup_whole()))
             elif anim_type == GUIAnimations.horizontal_slide_out:
                 old_screen.move_foreground()   # old on top within anim_clip
-                refs.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
                                     on_done_cb=lambda a: _cleanup_whole()))
             elif anim_type == GUIAnimations.horizontal_push_in:
-                refs.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
-                refs.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
+                anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
+                anims.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
                                     on_done_cb=lambda a: _cleanup_whole()))
             elif anim_type == GUIAnimations.horizontal_push_out:
-                refs.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
-                refs.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                anims.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
+                anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
                                     on_done_cb=lambda a: _cleanup_whole()))
             elif anim_type == GUIAnimations.vertical_slide_in:
-                refs.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
+                anims.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
                                     on_done_cb=lambda a: _cleanup_whole()))
             elif anim_type == GUIAnimations.vertical_slide_out:
                 old_screen.move_foreground()   # old on top within anim_clip
-                refs.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
+                anims.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
                                     on_done_cb=lambda a: _cleanup_whole()))
 
-            for a in refs:
+            for a in anims:
                 a.start()
-            self._anim_refs = refs
+            self._anim_refs = anims
