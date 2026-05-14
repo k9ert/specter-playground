@@ -59,7 +59,8 @@ class TitledScreen(SpecterGuiElement):
         super().__init__(lv_parent)
 
         # Convenience shortcut — must be set before any property access.
-        self.gui = parent
+        # When parent is a Screen, resolve gui from Screen.gui (→ SpecterGui).
+        self.gui = getattr(parent, "gui", parent)
 
         # Root: fill parent completely, no decoration.
         configure_as_bare(self, width=lv.pct(100), height=lv.pct(100), transparent_bg=False)

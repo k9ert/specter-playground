@@ -72,12 +72,6 @@ def create_anims_for_transition(old_screen, new_screen, anim_type, on_done_cb=No
     assert(content_w_old == SCREEN_WIDTH)  # caller must ensure this for horizontal animations
     W = SCREEN_WIDTH
 
-    content_h_old = old_screen.get_height()
-    content_h_new = new_screen.get_height()
-    # screen_h + context_bar_h must equal _CONTENT_H for both old and new
-    assert content_h_old + (old_bar.get_height() if old_bar else 0) == _CONTENT_H
-    assert content_h_new + (new_bar.get_height() if new_bar else 0) == _CONTENT_H
-
     if anim_type == GUIAnimations.horizontal_slide_in:
         anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL, on_done_cb=on_done_cb))
     elif anim_type == GUIAnimations.horizontal_slide_out:

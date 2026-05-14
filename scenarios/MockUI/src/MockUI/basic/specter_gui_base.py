@@ -75,6 +75,10 @@ class SpecterGuiMixin:
     def on_navigate(self):
         return self.gui.on_navigate
 
+    @property
+    def keyboard_manager(self):
+        return self.gui.keyboard_manager
+
     def refresh(self):
         pass  # optional helper for non-LVGL controllers to trigger a UI refresh after changing state
 
@@ -116,6 +120,10 @@ class SpecterGuiElement(lv.obj):
     @property
     def on_navigate(self):
         return self.gui.on_navigate
-    
+
+    @property
+    def keyboard_manager(self):
+        return self.gui.keyboard_manager
+
     def refresh(self):
         pass  # optional helper for LVGL components to trigger a UI refresh after changing state

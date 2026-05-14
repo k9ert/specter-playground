@@ -54,7 +54,7 @@ class SettingsMenu(GenericMenu):
 
     def _iface_ico_cb(self, e):
         if e.get_code() == lv.EVENT.CLICKED:
-            self.gui.show_menu("interfaces")
+            self.gui.navigate_to("interfaces")
 
     def get_menu_items(self, t, state):
         lang_code = self.i18n.get_language()

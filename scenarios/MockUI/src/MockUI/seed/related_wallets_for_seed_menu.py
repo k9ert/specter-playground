@@ -77,7 +77,6 @@ class RelatedWalletsForSeedMenu(TitledScreen):
         if not only_singlesig:
             section_header(self.body, self.t("COMMON_SINGLESIG"))
 
-
         for [i, wallet] in enumerate(wallets):
             if i > 0 and type[i] != type[i-1] and type[i] != WalletType.SINGLE_SIG:  # section header detection based on sorted order
                 if type[i] == WalletType.MULTISIG:

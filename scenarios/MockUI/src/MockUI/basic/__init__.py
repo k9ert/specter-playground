@@ -12,6 +12,7 @@ from .widgets.modal_overlay import ModalOverlay
 from .widgets.action_modal import ActionModal
 from .switch_add_menu import SwitchAddMenu
 from .specter_gui import SpecterGui
+from .app_screen import AppScreen
 from .symbol_lib import BTC_ICONS
 from .widgets import Btn, flex_col, flex_row, dialog_card
 from .widgets import body_label, section_header, form_label
@@ -39,7 +40,7 @@ __all__ = ["BTN_HEIGHT", "BTN_WIDTH", "BACK_BTN_HEIGHT", "BACK_BTN_WIDTH",
            "GREEN", "ORANGE", "RED", "WHITE", "GREY", "BLACK",
            "GREEN_HEX", "ORANGE_HEX", "RED_HEX", "WHITE_HEX", "GREY_HEX", "BLACK_HEX",
            "MainMenu", "LockedMenu", "ContextBar", "NavigationBar", "SeedDropUp", "WalletDropUp", "DropUpState", "ActionScreen",
-           "GenericMenu", "TitledScreen", "ModalOverlay", "ActionModal", "SpecterGui",
+           "GenericMenu", "TitledScreen", "ModalOverlay", "ActionModal", "SpecterGui", "AppScreen",
            "BTC_ICONS", "SwitchAddMenu",
            "MAX_HISTORY_DEPTH",
            "ANIM_MS_HORIZONTAL", "ANIM_MS_VERTICAL",

@@ -1,24 +1,17 @@
 import lvgl as lv
 
-from .ui_consts import CONTENT_PCT, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE_ROW_HEIGHT, BATTERY_WIDTH
+from .ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS
 from ..stubs import UIState, SpecterState
-from .widgets.battery import Battery
 from ..stubs.ui_state import Context
 from ..i18n import I18nManager
 from ..tour import GuidedTour
 from .keyboard_manager import KeyboardManager
-from .animations import create_anims_for_transition, GUIAnimations
-from .context_bar import ContextBar
-
+from .animations import slide_x, slide_y, GUIAnimations
 from .navigation_bar import NavigationBar
-from .widgets.containers import flex_col
+from .app_screen import AppScreen
+from .specter_gui_base import configure_as_bare
 
-# Pixel heights computed from percentages so we can shift content down
-# when the context bar is active.
 _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
-# Pixels reserved on the right side for the battery widget
-# Row width available for content
-CONTEXT_BAR_WIDTH = SCREEN_WIDTH - BATTERY_WIDTH
 
 
 from .action_screen import ActionScreen
@@ -67,8 +60,8 @@ class SpecterGui(lv.obj):
         super().__init__(*args, **kwargs)
         self.set_scroll_dir(lv.DIR.NONE)
 
-        self.on_navigate = self.show_menu
-        
+        self.on_navigate = self.navigate_to
+
         # Initialize i18n manager
         self.i18n = I18nManager()
 
@@ -82,92 +75,64 @@ class SpecterGui(lv.obj):
         else:
             self.ui_state = UIState()
 
-        self.current_screen = None
         self.keyboard_manager = KeyboardManager(self)
         self._animating = False   # True while a slide animation is running
         self._anim_refs = None    # holds Python callbacks + anim objects alive
 
-        # Navigation bar at bottom
+        # Active screen (screen.view holds the active TitledScreen widget)
+        self.screen = None
+
+        # Build the initial screen for the current ui_state menu
+        self.screen = self._make_screen()
+
+        # Navigation bar at bottom — always present, owned by SpecterGui
         self.navigation_bar = NavigationBar(self)
         self.navigation_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
-
-        # Context bar — created/destroyed by _sync_context_bar()
-        self.context_bar = None
-
-        # Content area: pixel-sized so we can shift it when context bar appears
-        self.content = flex_col(self, width=lv.pct(100), height=_CONTENT_H)
-        self.content.align(lv.ALIGN.TOP_MID, 0, 0)
-        self.content.set_scroll_dir(lv.DIR.NONE)
-
-        # Battery — persistent child of SpecterGui, always at top-right
-        if self.device_state.has_battery:
-            self._battery = Battery(self, width=BATTERY_WIDTH, height=TITLE_ROW_HEIGHT)
-            self._battery.align(lv.ALIGN.TOP_LEFT, CONTEXT_BAR_WIDTH, 0)
-            self._battery.VALUE = self.device_state.battery_pct
-            self._battery.CHARGING = self.device_state.charging
-            self._battery.update()
-        else:
-            self._battery = None
-
-        # initially show the current menu of ui_state (i.e. "main" by default unless loaded differently)
-        self.show_menu(self.ui_state.current_menu_id)
-        
 
         # Start guided tour on first startup (after UI is fully constructed)
         if self.ui_state.is_run_tour_on_startup:
             GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
 
-        # periodic refresh every 30 seconds [e.g. to update battery level]
+        # Periodic refresh (e.g. to update battery level)
         def _tick(timer):
             #TODO: DUMMY CODE TO CYCLE THROUGH BATTERY STATES FOR TESTING PURPOSES — REPLACE WITH ACTUAL DEVICE STATE UPDATE LOGIC
             if self.device_state.is_charging:
                 self.device_state.battery_pct = min(100, self.device_state.battery_pct + 10)
                 if self.device_state.battery_pct == 100:
                     self.device_state.is_charging = False
-            else:                
+            else:
                 self.device_state.battery_pct = max(0, self.device_state.battery_pct - 10)
                 if self.device_state.battery_pct == 0:
                     self.device_state.is_charging = True
             #END OF DUMMY CODE
-            
             self.refresh_ui()
-        lv.timer_create(_tick, 2_000, None)
+        lv.timer_create(_tick, GUI_REFRESH_MS, None)
 
     def change_language(self, lang_code):
-        """
-        Change the active language.
-        
-        Args:
-            lang_code: ISO 639-1 language code (e.g., 'en', 'de')
-        """
-        # Switch language in i18n manager
+        """Change the active language."""
         self.i18n.set_language(lang_code)
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
-        self.current_screen.refresh()
+        self.screen.refresh()
         self.navigation_bar.refresh()
-        if self.context_bar:
-            self.context_bar.refresh()
-        if self._battery:
-            self._battery.VALUE = self.device_state.battery_pct
-            self._battery.CHARGING = self.device_state.is_charging
-            self._battery.update()
 
-    def show_menu(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
+    def navigate_to(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
         # Drop all input while animating
         if self._animating:
             return
 
-        going_back = target_menu_id in [None, "back"]
-        
         if target_menu_id == "locked":
             self.device_state.lock()
+        if self.device_state.is_locked:
+            target_menu_id = "locked"
+
+        going_back = target_menu_id in [None, "back"]
 
         # Update UIState navigation history
         if going_back:
             anim = self.ui_state.pop_menu()
-        elif target_menu_id in ["start_intro_tour", "main"]:
+        elif target_menu_id in ["start_intro_tour", "main", "locked"]:
             anim = self.ui_state.clear_history()
             self.ui_state.current_menu_id = target_menu_id
         else:
@@ -177,152 +142,205 @@ class SpecterGui(lv.obj):
             self.ui_state.set_active_seed(target_seed)
         if target_wallet != "unset":
             self.ui_state.set_active_wallet(target_wallet)
-        curr_menu = self.ui_state.current_menu_id
 
         if anim is not None and self.ui_state.are_animations_enabled:
             self._do_transition(anim)
         else:
-            if self.current_screen:
-                self.current_screen.delete()
-                self.current_screen = None
-            abandoned_bar = self._sync_context_bar()
-            self._build_screen(curr_menu)
-            if abandoned_bar:
-                abandoned_bar.delete()
+            if self.screen:
+                self.screen.delete()
+            self.screen = self._make_screen()
             self.refresh_ui()
 
         if self.ui_state.current_menu_id == "start_intro_tour":
             self.ui_state.current_menu_id = "main"
             GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
 
-    def _build_screen(self, current=None):
-        """Instantiate the correct screen class for *current* menu_id.
+    def _make_screen(self):
+        """Create a new AppScreen for the current ui_state and populate it with a view.
 
-        Requires _sync_context_bar() to have been called first by the caller.
+        Returns the new AppScreen.  Does NOT delete any old screen.
         """
-        if current is None:
-            current = self.ui_state.current_menu_id
+        screen = AppScreen(self)
+        screen.view = self._build_view(screen, self.ui_state.current_menu_id)
+        return screen
 
-        # If the device is locked, always show the locked screen
-        if self.device_state.is_locked:
-            self.ui_state.clear_history()
-            self.ui_state.current_menu_id = "locked"
-            self.current_screen = LockedMenu(self)
-            return
-
-        if current in ("main", "start_intro_tour"):
-            self.current_screen = MainMenu(self)
-        elif current == "manage_wallet":
-            self.current_screen = WalletMenu(self)
-        elif current == "view_signers":
-            self.current_screen = ViewSignersScreen(self)
-        elif current == "manage_security_settings":
-            self.current_screen = SecuritySettingsMenu(self)
-        elif current == "manage_backups":
-            self.current_screen = BackupsMenu(self)
-        elif current == "manage_firmware":
-            self.current_screen = FirmwareMenu(self)
-        elif current == "connect_sw_wallet":
-            self.current_screen = ConnectWalletsMenu(self)
-        elif current == "add_seed":
-            self.current_screen = AddSeedMenu(self)
-        elif current == "add_wallet":
-            self.current_screen = AddWalletMenu(self)
-        elif current == "manage_security_features":
-            self.current_screen = SecurityFeaturesMenu(self)
-        elif current == "interfaces":
-            self.current_screen = InterfacesMenu(self)
-        elif current == "manage_seedphrase":
-            self.current_screen = SeedPhraseMenu(self)
-        elif current == "related_wallets_for_seed":
-            self.current_screen = RelatedWalletsForSeedMenu(self)
-        elif current == "store_seedphrase":
-            self.current_screen = StoreSeedphraseMenu(self)
-        elif current == "clear_seedphrase":
-            self.current_screen = ClearSeedphraseMenu(self)
-        elif current == "generate_seedphrase":
-            self.current_screen = GenerateSeedMenu(self)
-        elif current == "set_passphrase":
-            self.current_screen = PassphraseMenu(self)
-        elif current == "create_custom_wallet":
-            self.current_screen = CreateCustomWalletMenu(self)
-        elif current == "manage_storage":
-            self.current_screen = StorageMenu(self)
-        elif current == "select_language":
-            self.current_screen = LanguageMenu(self)
-        elif current == "manage_preferences":
-            self.current_screen = PreferencesMenu(self)
-        elif current == "manage_settings":
-            self.current_screen = SettingsMenu(self)
+    def _build_view(self, screen, menu_id):
+        """Instantiate and return the correct view class for *menu_id* into *screen*."""
+        if menu_id == "locked":
+            return LockedMenu(screen)
+        elif menu_id in ("main", "start_intro_tour"):
+            return MainMenu(screen)
+        elif menu_id == "manage_wallet":
+            return WalletMenu(screen)
+        elif menu_id == "view_signers":
+            return ViewSignersScreen(screen)
+        elif menu_id == "manage_security_settings":
+            return SecuritySettingsMenu(screen)
+        elif menu_id == "manage_backups":
+            return BackupsMenu(screen)
+        elif menu_id == "manage_firmware":
+            return FirmwareMenu(screen)
+        elif menu_id == "connect_sw_wallet":
+            return ConnectWalletsMenu(screen)
+        elif menu_id == "add_seed":
+            return AddSeedMenu(screen)
+        elif menu_id == "add_wallet":
+            return AddWalletMenu(screen)
+        elif menu_id == "manage_security_features":
+            return SecurityFeaturesMenu(screen)
+        elif menu_id == "interfaces":
+            return InterfacesMenu(screen)
+        elif menu_id == "manage_seedphrase":
+            return SeedPhraseMenu(screen)
+        elif menu_id == "related_wallets_for_seed":
+            return RelatedWalletsForSeedMenu(screen)
+        elif menu_id == "store_seedphrase":
+            return StoreSeedphraseMenu(screen)
+        elif menu_id == "clear_seedphrase":
+            return ClearSeedphraseMenu(screen)
+        elif menu_id == "generate_seedphrase":
+            return GenerateSeedMenu(screen)
+        elif menu_id == "set_passphrase":
+            return PassphraseMenu(screen)
+        elif menu_id == "create_custom_wallet":
+            return CreateCustomWalletMenu(screen)
+        elif menu_id == "manage_storage":
+            return StorageMenu(screen)
+        elif menu_id == "select_language":
+            return LanguageMenu(screen)
+        elif menu_id == "manage_preferences":
+            return PreferencesMenu(screen)
+        elif menu_id == "manage_settings":
+            return SettingsMenu(screen)
         else:
-            self.current_screen = ActionScreen(current, self)
-
-    def _sync_context_bar(self):
-        """Create/replace context bar and adjust content geometry to match current ui_state.
-
-        Returns the abandoned bar widget if one was replaced or removed, else None.
-        Never deletes it — the caller decides when to do so.
-        Safe to call while content is in FLEX layout (geometry changes then resize children
-        automatically) or in LAYOUT.NONE (idempotent, no visible change).
-        """
-        ctx = self.ui_state.active_context
-        needs_bar = (
-            (ctx == Context.SEED and self.ui_state.active_seed is not None)
-            or (ctx == Context.WALLET and self.ui_state.active_wallet is not None)
-        )
-        if needs_bar:
-            if self.context_bar is None or self.context_bar.context_type != ctx:
-                abandoned = self.context_bar  # may be None
-                self.context_bar = ContextBar(self, width=CONTEXT_BAR_WIDTH, height=TITLE_ROW_HEIGHT)
-                self.context_bar.move_foreground()
-                if self._battery:
-                    self._battery.move_foreground()
-            else:
-                abandoned = None  # same bar kept
-            self.content.set_height(_CONTENT_H - TITLE_ROW_HEIGHT)
-            self.content.align(lv.ALIGN.TOP_MID, 0, TITLE_ROW_HEIGHT)
-        else:
-            abandoned = self.context_bar  # may be None
-            self.context_bar = None
-            self.content.set_height(_CONTENT_H)
-            self.content.align(lv.ALIGN.TOP_MID, 0, 0)
-        return abandoned
+            return ActionScreen(menu_id, screen)
 
     def _do_transition(self, anim_type):
         """Animate from the current screen to a freshly-built new screen."""
         self._animating = True
 
-        old_bar = self.context_bar    # save before _sync_context_bar may detach/replace it
-        old_screen = self.current_screen
-        self.current_screen = None
+        old_screen = self.screen
+        old_view = self.screen.view
 
-        # _sync_context_bar while still FLEX: geometry change causes flex to resize
-        # old_screen to the new height, so old/new screens are equal-height for animation.
-        self._sync_context_bar()
-        old_screen.set_height(old_screen.get_height())  # pin at flex-computed size
-        self.content.set_layout(lv.LAYOUT.NONE)
-
-        self._build_screen()  # bar already synced above; just builds new_screen
-        new_bar = self.context_bar
-        new_screen = self.current_screen
-
-        def _on_done(anim):
-            self._animating = False
-            self._anim_refs = None
-            self.content.set_layout(lv.LAYOUT.FLEX)
-            self.content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-            old_screen.delete()
-            if old_bar and old_bar is not new_bar:
-                old_bar.delete()
-            self._battery.set_visible(True)
-            self.refresh_ui()
-
-        self._anim_refs = create_anims_for_transition(
-            old_screen, new_screen, anim_type, on_done_cb=_on_done,
-            old_bar=old_bar,
-            new_bar=new_bar,
+        # Determine transition case.
+        # Cases 1/2 (between contexts, or context without bar): animate the
+        #   entire Screen unit (bar + battery + content move together).        
+        # Case 3 (within SEED/WALLET context, bar stays): animate only the view
+        #   widget horizontally inside screen.content.
+        ctx = self.ui_state.active_context  # already updated by navigate_to
+        ctx_has_bar = old_screen.context_bar is not None
+        is_horizontal = anim_type in (
+            GUIAnimations.horizontal_slide_in,
+            GUIAnimations.horizontal_slide_out,
+            GUIAnimations.horizontal_push_in,
+            GUIAnimations.horizontal_push_out,
+        )
+        within_ctx_with_bar = (
+            ctx_has_bar
+            and is_horizontal
+            and (ctx == Context.SEED or ctx == Context.WALLET)
         )
 
-        self._battery.set_visible(False)
-        for a in self._anim_refs:
-            a.start()
+        if within_ctx_with_bar:
+            # ── Case 3: slide only the view inside the existing screen ────────
+            content = old_screen.content
+            content_h = content.get_height()
+            content.set_layout(lv.LAYOUT.NONE)
+            old_view.set_pos(0, 0)
+            old_view.set_size(SCREEN_WIDTH, content_h)
+
+            # Build new view into the same screen (added to content as 2nd child)
+            new_view = self._build_view(old_screen, self.ui_state.current_menu_id)
+            old_screen.view = new_view
+            new_view.set_size(SCREEN_WIDTH, content_h)
+
+            refs = []
+            W = SCREEN_WIDTH
+
+            def _cleanup_case3():
+                self._animating = False
+                self._anim_refs = None
+                old_view.delete()
+                content.set_layout(lv.LAYOUT.FLEX)
+                content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
+                self.refresh_ui()
+
+            if anim_type == GUIAnimations.horizontal_slide_in:
+                new_view.set_x(W)
+                refs.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
+                                    on_done_cb=lambda a: _cleanup_case3()))
+            elif anim_type == GUIAnimations.horizontal_slide_out:
+                new_view.set_x(0)
+                old_view.move_foreground()
+                refs.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
+                                    on_done_cb=lambda a: _cleanup_case3()))
+
+            for a in refs:
+                a.start()
+            self._anim_refs = refs
+
+        else:
+            # ── Cases 1/2: slide the entire Screen unit ───────────────────────
+            new_screen = self._make_screen()
+            self.screen = new_screen
+
+            # Clip container: same size as the content zone (480×_CONTENT_H).
+            # Both screens are reparented into it so LVGL's default parent-clip
+            # prevents them from ever painting over the navigation bar below.
+            anim_clip = lv.obj(self)
+            configure_as_bare(anim_clip, width=SCREEN_WIDTH, height=_CONTENT_H,
+                               transparent_bg=True)
+            anim_clip.set_pos(0, 0)
+            anim_clip.set_layout(lv.LAYOUT.NONE)
+            anim_clip.set_scroll_dir(lv.DIR.NONE)
+
+            # Reparent both screens; their coords were (0,0) relative to
+            # SpecterGui which is identical to (0,0) inside anim_clip.
+            old_screen.set_parent(anim_clip)
+            old_screen.set_pos(0, 0)
+            new_screen.set_parent(anim_clip)
+            new_screen.set_pos(0, 0)
+
+            # Navigation bar must remain above the clip container.
+            self.navigation_bar.move_foreground()
+
+            def _cleanup_whole():
+                self._animating = False
+                self._anim_refs = None
+                # Reparent new_screen back to SpecterGui before deleting the
+                # clip (which would otherwise take new_screen with it).
+                new_screen.set_parent(self)
+                new_screen.set_pos(0, 0)
+                anim_clip.delete()   # also deletes old_screen
+                self.navigation_bar.move_foreground()
+                self.refresh_ui()
+
+            refs = []
+            W = SCREEN_WIDTH
+
+            if anim_type == GUIAnimations.horizontal_slide_in:
+                refs.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
+                                    on_done_cb=lambda a: _cleanup_whole()))
+            elif anim_type == GUIAnimations.horizontal_slide_out:
+                old_screen.move_foreground()   # old on top within anim_clip
+                refs.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                                    on_done_cb=lambda a: _cleanup_whole()))
+            elif anim_type == GUIAnimations.horizontal_push_in:
+                refs.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
+                refs.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
+                                    on_done_cb=lambda a: _cleanup_whole()))
+            elif anim_type == GUIAnimations.horizontal_push_out:
+                refs.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
+                refs.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                                    on_done_cb=lambda a: _cleanup_whole()))
+            elif anim_type == GUIAnimations.vertical_slide_in:
+                refs.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
+                                    on_done_cb=lambda a: _cleanup_whole()))
+            elif anim_type == GUIAnimations.vertical_slide_out:
+                old_screen.move_foreground()   # old on top within anim_clip
+                refs.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
+                                    on_done_cb=lambda a: _cleanup_whole()))
+
+            for a in refs:
+                a.start()
+            self._anim_refs = refs

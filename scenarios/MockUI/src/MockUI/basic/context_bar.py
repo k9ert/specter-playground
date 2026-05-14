@@ -31,13 +31,13 @@ class ContextBar(SpecterGuiElement):
         grey = inactive; tap to toggle ``passphrase_active``.
     """
 
-    def __init__(self, gui, width=SCREEN_WIDTH, height=TITLE_ROW_HEIGHT):
+    def __init__(self, screen, width=SCREEN_WIDTH, height=TITLE_ROW_HEIGHT):
         """
         Args:
-            gui: The :class:`SpecterGui` instance that owns this bar.
+            screen: The :class:`Screen` instance that owns this bar.
         """
-        super().__init__(gui)
-        self.gui = gui
+        super().__init__(screen)
+        self.gui = screen.gui
 
         configure_as_bare(self, width=width, height=height)
         self.set_scroll_dir(lv.DIR.NONE)

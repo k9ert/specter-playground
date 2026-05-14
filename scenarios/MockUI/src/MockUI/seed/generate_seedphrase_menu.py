@@ -72,5 +72,5 @@ class GenerateSeedMenu(TitledScreen):
         if not self.ui_state.active_wallet:
             self.ui_state.set_active_wallet(default_wallet)
 
-        # Navigate home — show_menu("main") clears history and runs the exit animation
+        # Navigate home — navigate_to("main") clears history and runs the exit animation
         self.on_navigate("main")
