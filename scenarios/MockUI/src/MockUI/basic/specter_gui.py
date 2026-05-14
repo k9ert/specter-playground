@@ -314,6 +314,7 @@ class SpecterGui(lv.obj):
             old_screen.delete()
             if old_bar and old_bar is not new_bar:
                 old_bar.delete()
+            self._battery.set_visible(True)
             self.refresh_ui()
 
         self._anim_refs = create_anims_for_transition(
@@ -321,5 +322,7 @@ class SpecterGui(lv.obj):
             old_bar=old_bar,
             new_bar=new_bar,
         )
+
+        self._battery.set_visible(False)
         for a in self._anim_refs:
             a.start()

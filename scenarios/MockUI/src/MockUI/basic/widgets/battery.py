@@ -75,3 +75,9 @@ class Battery(lv.obj):
                 set_visible(self.charge, self.CHARGING)
 
                 break
+    
+    def set_visible(self, visible):
+        set_visible(self.level_bg, visible)
+        set_visible(self.level, visible)
+        set_visible(self.charge, visible)
+        set_visible(self.level_ol, visible)
