@@ -3,20 +3,26 @@ from ..basic.titled_screen import TitledScreen
 from ..basic.specter_gui_base import delete_all_children_of
 from ..basic.ui_consts import BTN_HEIGHT, BTN_WIDTH, SCREEN_WIDTH
 from ..basic.widgets.btn import Btn
+from ..basic.widgets.labels import section_header
 from ..basic.widgets.wallet_widgets import build_wallet_card
 from ..basic.symbol_lib import BTC_ICONS
 
+class WalletType:
+    SINGLE_SIG_DEFAULT = 0
+    SINGLE_SIG = 1
+    MULTISIG = 2
+    CUSTOM = 3
 
 def _wallet_type_rank(wallet):
     """Return (type_rank, n, m, account) for sort ordering."""
     if not wallet.is_standard():
-        type_rank = 3  # custom / miniscript
+        type_rank = WalletType.CUSTOM  # custom / miniscript
     elif wallet.isMultiSig:
-        type_rank = 2  # multisig
+        type_rank = WalletType.MULTISIG  # multisig
     elif wallet.is_default_wallet():
-        type_rank = 0  # single-sig default wallet
+        type_rank = WalletType.SINGLE_SIG_DEFAULT  # single-sig default wallet
     else:
-        type_rank = 1  # non default singleSig
+        type_rank = WalletType.SINGLE_SIG  # non default singleSig
     n = len(wallet.required_fingerprints) if wallet.isMultiSig else 0
     m = wallet.threshold if wallet.isMultiSig else 0
     return (type_rank, n, m, getattr(wallet, "account", 0))
@@ -57,16 +63,29 @@ class RelatedWalletsForSeedMenu(TitledScreen):
         any_account = any(getattr(w, "account", 0) != 0 for w in wallets)
         any_net     = any(w.net != "mainnet" for w in wallets)
         any_non_singlesig = any(w.isMultiSig for w in wallets)
-        active_slots = ["leading_icon", "name"]
+        active_slots = ["name"]
         if any_non_singlesig:
-            active_slots.append("type_icon")
+            active_slots.insert(0, "type_icon")
             active_slots.append("threshold")
         if any_account:
             active_slots.append("account")
         if any_net:
             active_slots.append("net")
 
-        for wallet in wallets:
+        type = [_wallet_type_rank(w)[0] for w in wallets]
+        only_singlesig = all(t in (WalletType.SINGLE_SIG, WalletType.SINGLE_SIG_DEFAULT) for t in type)
+        if not only_singlesig:
+            section_header(self.body, self.t("COMMON_SINGLESIG"))
+
+
+        for [i, wallet] in enumerate(wallets):
+            if i > 0 and type[i] != type[i-1] and type[i] != WalletType.SINGLE_SIG:  # section header detection based on sorted order
+                if type[i] == WalletType.MULTISIG:
+                    heading = self.t("COMMON_MULTISIG")
+                elif type[i] == WalletType.CUSTOM:
+                    heading = self.t("COMMON_MINISCRIPT")
+                section_header(self.body, heading)
+
             def _make_cb(w):
                 def _cb(e):
                     if e.get_code() == lv.EVENT.CLICKED:
@@ -83,7 +102,6 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                 wallet,
                 self.device_state,
                 slots=active_slots,
-                leading_icon=BTC_ICONS.WALLET_OUTLINE,
                 on_card_click=_make_cb(wallet),
                 width=SCREEN_WIDTH,
                 height=BTN_HEIGHT,

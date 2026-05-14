@@ -117,6 +117,7 @@
     "COMMON_WALLET": "Wallet",
     "COMMON_SINGLESIG": "SingleSig",
     "COMMON_MULTISIG": "MultiSig",
+    "COMMON_MINISCRIPT": "Miniscript",
     "COMMON_KEYBOARD": "Keyboard",
     "COMMON_CREATE": "Create",
     "COMMON_NAME": "Name",

@@ -370,6 +370,10 @@
       "text": "MultiSig",
       "ref_en": "MultiSig"
     },
+    "COMMON_MINISCRIPT": {
+      "text": "Miniscript",
+      "ref_en": "Miniscript"
+    },
     "COMMON_KEYBOARD": {
       "text": "Tastatur",
       "ref_en": "Keyboard"
