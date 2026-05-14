@@ -122,7 +122,14 @@ class ContextBar(SpecterGuiElement):
 
     def refresh(self):
         """Rebuild context bar content after seed / wallet data changes."""
-        if not self.ta.has_state(lv.STATE.FOCUSED):
-            delete_all_children_of(self)
-            self._build()
+        # Guard: don't rebuild while the user is actively editing the name field.
+        # Use keyboard_manager.textarea (auto-cleared on DELETE) rather than self.ta
+        # directly — self.ta can be a stale reference to a deleted LVGL widget when
+        # delete_all_children_of() removed it without _build() refreshing it.
+        ta = getattr(self, "ta", None)
+        if ta is not None and self.gui.keyboard_manager.textarea is ta:
+            return
+        self.ta = None
+        delete_all_children_of(self)
+        self._build()
 
