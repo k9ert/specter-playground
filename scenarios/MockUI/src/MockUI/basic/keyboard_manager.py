@@ -1,5 +1,6 @@
 import lvgl as lv
 from .ui_consts import TEXT_FONT
+from .keyboard_layouts import _full_layout, _alnum_layout
 
 class Layout:
     ALNUM = 0
@@ -117,7 +118,7 @@ class KeyboardManager:
         self.keyboard.add_event_cb(self._cancel, lv.EVENT.CANCEL, None)
 
     def _apply_layout(self, layout_id):
-        builder = self._build_alnum_layout if layout_id == Layout.ALNUM else self._build_full_layout
+        builder = _alnum_layout if layout_id == Layout.ALNUM else _full_layout
         map_lower, map_upper, map_special, ctrl_text, ctrl_special = builder()
 
         self.keyboard.set_map(lv.keyboard.MODE.TEXT_LOWER, map_lower, ctrl_text)
@@ -161,67 +162,3 @@ class KeyboardManager:
 
         if commit_cb:
             commit_cb(new_text)
-
-    @staticmethod
-    def _build_full_layout():
-        ctrl_text = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 3, 1, 1, 1,
-        )
-        map_lower = (
-            "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "\n",
-            "a", "s", "d", "f", "g", "h", "j", "k", "l", "\n",
-            "z", "x", "c", "v", "b", "n", "m", lv.SYMBOL.BACKSPACE, "\n",
-            "ABC", "1#", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        map_upper = (
-            "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "\n",
-            "A", "S", "D", "F", "G", "H", "J", "K", "L", "\n",
-            "Z", "X", "C", "V", "B", "N", "M", lv.SYMBOL.BACKSPACE, "\n",
-            "abc", "1#", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        ctrl_special = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 3, 1, 1, 1,
-        )
-        map_special = (
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "\n",
-            "!", "@", "#", "$", "%", "&", "*", "(", ")", "_", "\n",
-            "-", "+", "=", "?", "/", "[", "]", "{", lv.SYMBOL.BACKSPACE, "\n",
-            "ABC", "abc", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        return map_lower, map_upper, map_special, ctrl_text, ctrl_special
-
-    @staticmethod
-    def _build_alnum_layout():
-        ctrl_text = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 3, 1, 1, 1,
-        )
-        map_lower = (
-            "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "\n",
-            "a", "s", "d", "f", "g", "h", "j", "k", "l", "\n",
-            "z", "x", "c", "v", "b", "n", "m", lv.SYMBOL.BACKSPACE, "\n",
-            "ABC", "1#", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        map_upper = (
-            "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "\n",
-            "A", "S", "D", "F", "G", "H", "J", "K", "L", "\n",
-            "Z", "X", "C", "V", "B", "N", "M", lv.SYMBOL.BACKSPACE, "\n",
-            "abc", "1#", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        ctrl_special = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 2, 1, 1, 1, 1
-        )
-        map_special = (
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "\n",
-            "ABC", "abc", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.BACKSPACE, lv.SYMBOL.OK, "",
-        )
-        return map_lower, map_upper, map_special, ctrl_text, ctrl_special
