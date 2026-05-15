@@ -4,10 +4,6 @@ from ..basic.keyboard_manager import Layout
 from ..basic.widgets import flex_col, flex_row, form_label, form_textarea, Btn, ACCEPTED_CHARS
 from ..basic.symbol_lib import BTC_ICONS
 
-def _sanitize_passphrase(text):
-    return text.strip()
-
-
 class PassphraseMenu(TitledScreen):
     """Form to enter/set the active seed's passphrase.
 
@@ -45,7 +41,7 @@ class PassphraseMenu(TitledScreen):
             self.gui.refresh_ui()
             self.on_navigate(None)
 
-        keyboard_binder = lambda e: self.gui.keyboard_manager.bind(self.pa_ta, Layout.FULL, _on_commit, _sanitize_passphrase)
+        keyboard_binder = lambda e: self.gui.keyboard_manager.bind(self.pa_ta, Layout.FULL, _on_commit, lambda text: text.strip())
         self.pa_ta.add_event_cb(keyboard_binder, lv.EVENT.CLICKED, None)
 
         buttons_row = flex_col(self.body, height=lv.pct(50), pad=SMALL_PAD)

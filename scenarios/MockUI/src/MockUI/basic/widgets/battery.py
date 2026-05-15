@@ -1,5 +1,5 @@
 import lvgl as lv
-from .. import BLACK_HEX, GREEN_HEX, ORANGE_HEX, RED_HEX, WHITE_HEX, BTC_ICON_WIDTH, BTC_ICON_ZOOM
+from ..ui_consts import BLACK_HEX, GREEN_HEX, ORANGE_HEX, RED_HEX, WHITE_HEX, BTC_ICON_WIDTH, BTC_ICON_ZOOM
 from ..symbol_lib import BTC_ICONS
 from . import make_icon, set_visible
 from ..ui_utils import configure_as_bare

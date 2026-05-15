@@ -38,6 +38,6 @@ class Wallet:
         """Check if this is the default "Standard" wallet (which has no descriptor)."""
         return self.descriptor != "fancy script"
 
-    def is_default_wallet(wallet):
+    def is_default_wallet(self):
         """Check if this wallet is the default "Standard" wallet."""
-        return wallet.label == "Default" and wallet.descriptor == "default"
+        return self.label == "Default" and self.descriptor == "default"

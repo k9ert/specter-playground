@@ -21,7 +21,7 @@ from .confirm_modals import confirm_delete_seed, confirm_delete_wallet
 from .ui_consts import (
     BTC_ICON_WIDTH, SMALL_TEXT_FONT, STATUS_BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
     STATUS_BAR_PCT, WHITE_HEX, ORANGE_HEX, BIG_PAD,
-    DROPUP_DIVIDER_OPA, ANIM_MS_VERTICAL, TEXT_FONT, SMALL_TEXT_FONT
+    DROPUP_DIVIDER_OPA, ANIM_MS_VERTICAL, TEXT_FONT
 )
 from .symbol_lib import BTC_ICONS
 from .widgets.containers import flex_col, flex_row
