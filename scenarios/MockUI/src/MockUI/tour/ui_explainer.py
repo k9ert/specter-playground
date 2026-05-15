@@ -73,22 +73,12 @@ class UIExplainer:
             # Manual positioning
             return self.highlighted_element
         else:
-            # Get coordinates from lv.obj
+            # Get absolute screen coordinates from lv.obj
             obj = self.highlighted_element
-            # Get screen coordinates
-            x = obj.get_x()
-            y = obj.get_y()
-            
-            # Walk up parent chain to get absolute screen position
-            parent = obj.get_parent()
-            while parent is not None:
-                x += parent.get_x()
-                y += parent.get_y()
-                parent = parent.get_parent()
-            
+            x = obj.get_x_absolute()
+            y = obj.get_y_absolute()
             width = obj.get_width()
             height = obj.get_height()
-            
             return (x, y, width, height)
     
     def _create_dim_strips(self, cutout):
