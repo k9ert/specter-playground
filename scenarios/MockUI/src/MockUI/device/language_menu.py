@@ -5,7 +5,7 @@ class LanguageMenu(SwitchAddMenu):
     TITLE_KEY = "MENU_LANGUAGE"
 
     def get_menu_items(self, t, state):
-        return super().get_menu_items(
+        return super()._build_switch_items(
             elements=self.i18n.get_available_languages(),
             label_creation_cb=lambda lang_code: self.i18n.get_language_name(lang_code),
             active_element=self.i18n.get_language(),

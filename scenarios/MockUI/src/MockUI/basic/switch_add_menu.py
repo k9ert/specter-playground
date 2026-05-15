@@ -11,7 +11,7 @@ class SwitchAddMenu(GenericMenu):
     Should never be used directly, only via subclasses.
     """
 
-    def get_menu_items(self, elements, label_creation_cb, active_element, activation_cb,
+    def _build_switch_items(self, elements, label_creation_cb, active_element, activation_cb,
                        add_target_behavior=None, add_string=None, show_check=None):
         """Build a flat item list for *elements*.
 
