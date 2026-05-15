@@ -4,7 +4,7 @@ from .basic import MainMenu, LockedMenu, ActionScreen, GenericMenu
 from .basic import SpecterGui
 from .tour import UIExplainer, GuidedTour
 
-from .stubs import UIState, SpecterState, Wallet, Seed
+from .stubs import UIState, DeviceState, Wallet, Seed
 
 from .wallet import (
     WalletMenu,
@@ -40,7 +40,7 @@ __all__ = [
     "MainMenu",
     "WalletMenu",
     "SecuritySettingsMenu",
-    "SpecterState",
+    "DeviceState",
     "Wallet",
     "Seed",
     "ActionScreen",

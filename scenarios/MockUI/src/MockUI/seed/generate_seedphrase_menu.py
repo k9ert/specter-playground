@@ -11,7 +11,7 @@ class GenerateSeedMenu(TitledScreen):
     """Form to generate a new MasterKey (seedphrase).
 
     Creates a Seed object; the default wallet is auto-created by
-    SpecterState.add_seed().
+    DeviceState.add_seed().
 
     menu_id: "generate_seedphrase"
     """

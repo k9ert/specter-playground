@@ -6,7 +6,7 @@ Represents a persistent wallet descriptor — stored in flash, auto-loaded on bo
 
 
 class Wallet:
-    """Wallet descriptor placeholder used by SpecterState.
+    """Wallet descriptor placeholder used by DeviceState.
 
     Attributes:
         name: user-facing display name

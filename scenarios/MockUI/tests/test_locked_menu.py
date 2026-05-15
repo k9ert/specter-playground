@@ -1,4 +1,4 @@
-"""Unit tests for the locked menu's shuffle helper and SpecterState lock/unlock logic.
+"""Unit tests for the locked menu's shuffle helper and DeviceState lock/unlock logic.
 
 All tests run entirely in the host Python environment — no device or LVGL
 runtime required.  The ``_shuffle`` function lives in ``locked_menu`` which
@@ -20,10 +20,10 @@ if _SRC_DIR not in sys.path:
 # Now we can safely import _shuffle (locked_menu's top-level ``import rng``
 # will resolve to src/rng.py which uses os.urandom on the host).
 from MockUI.basic.locked_menu import _shuffle
-from MockUI.stubs.device_state import SpecterState
+from MockUI.stubs.device_state import DeviceState
 
 # A non-trivial PIN used throughout the lock/unlock tests.
-# Must not be None (which would bypass the PIN check in SpecterState.unlock).
+# Must not be None (which would bypass the PIN check in DeviceState.unlock).
 _TEST_PIN = "42"
 
 # Max attempts for randomness checks — probability of all producing natural
@@ -140,11 +140,11 @@ def test_shuffle_varies_with_different_calls():
 
 
 # ---------------------------------------------------------------------------
-# SpecterState: lock / unlock
+# DeviceState: lock / unlock
 # ---------------------------------------------------------------------------
 
 def test_lock_sets_is_locked():
-    state = SpecterState()
+    state = DeviceState()
     assert not state.is_locked, "fresh state should not be locked"
     state.lock()
     assert state.is_locked, "state.lock() must set is_locked=True"

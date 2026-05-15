@@ -23,7 +23,7 @@ else:
     display.init()
 # --- End simulator setup ---
 
-from MockUI import SpecterGui, SpecterState, Wallet
+from MockUI import SpecterGui, DeviceState, Wallet
 from MockUI.stubs import Seed
 
 gc.collect()
@@ -36,7 +36,7 @@ lv.theme_default_init(
     lv.font_montserrat_16,
 )
 
-specter_state = SpecterState()
+specter_state = DeviceState()
 specter_state.has_battery = True
 specter_state.battery_pct = 100
 specter_state.charging = False

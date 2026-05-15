@@ -136,7 +136,7 @@ class LockedMenu(TitledScreen):
         if e.get_code() != lv.EVENT.CLICKED:
             return
         pin = self.pin_buf
-        # attempt unlock; SpecterState.unlock will check PIN
+        # attempt unlock; DeviceState.unlock will check PIN
         unlocked = self.device_state.unlock(pin)
         if unlocked:
             # reset UI history and show main menu

@@ -9,7 +9,7 @@ from .wallet import Wallet
 from .seed import Seed
 
 
-class SpecterState:
+class DeviceState:
     """Mutable application state used by the mock UI.
 
     All attributes are intentionally public and mutable for simplicity.

@@ -191,11 +191,11 @@ class ControlServer:
         return {"ok": False, "error": "Must provide 'text' or 'x'+'y' to identify widget"}
 
     def _cmd_get_state(self):
-        """Return SpecterState and UIState."""
+        """Return DeviceState and UIState."""
         ss = self.nav.specter_state
         us = self.nav.ui_state
 
-        # Serialize SpecterState — use getattr for forwards/backwards compat
+        # Serialize DeviceState — use getattr for forwards/backwards compat
         specter = {
             "seed_loaded": bool(getattr(ss, "loaded_seeds", [])),
             "loaded_seed_count": len(getattr(ss, "loaded_seeds", [])),
@@ -241,7 +241,7 @@ class ControlServer:
         return {"ok": True, "specter": specter, "ui": ui}
 
     def _cmd_set_state(self, cmd):
-        """Set attribute on SpecterState."""
+        """Set attribute on DeviceState."""
         attr = cmd.get("attr")
         value = cmd.get("value")
 

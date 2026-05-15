@@ -6,7 +6,7 @@ Ephemeral — never persisted across power cycles in working memory.
 import urandom
 
 class Seed:
-    """Tiny seed placeholder used by SpecterState.
+    """Tiny seed placeholder used by DeviceState.
 
     Attributes:
         label: user-given display name (e.g., "My Key")
