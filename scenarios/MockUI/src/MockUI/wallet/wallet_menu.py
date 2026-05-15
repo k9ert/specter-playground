@@ -44,18 +44,7 @@ class WalletMenu(GenericMenu):
 
         if not is_default:
             # Custom wallet: trash button in title bar, right-aligned
-            textarea_height = TITLE_ROW_HEIGHT - 10
-            self.delete_btn = Btn(
-                self.title_bar,
-                icon=BTC_ICONS.TRASH,
-                color=RED_HEX,
-                size=(textarea_height, textarea_height),
-            )
-            self.delete_btn.align(lv.ALIGN.RIGHT_MID, -SMALL_PAD, 0)
-
-            def _on_delete(e):
-                if e.get_code() != lv.EVENT.CLICKED:
-                    return
+            def _on_delete():
                 wallet = self.ui_state.active_wallet
 
                 def _do_delete():
@@ -68,4 +57,4 @@ class WalletMenu(GenericMenu):
 
                 confirm_delete_wallet(t, wallet.label, _do_delete)
 
-            self.delete_btn.add_event_cb(_on_delete, lv.EVENT.CLICKED, None)
+            self.add_title_delete_btn(_on_delete)

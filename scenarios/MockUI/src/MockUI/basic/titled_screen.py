@@ -26,12 +26,14 @@ Layout variants (absolute, no flex on root):
 import lvgl as lv
 from .ui_consts import (
     TITLE_ROW_HEIGHT, TITLE_PADDING, SCREEN_HEIGHT, CONTENT_PCT,
-    TITLE_FONT,
+    TITLE_FONT, SMALL_PAD, RED_HEX,
 )
 from .widgets.labels import body_label
 from .widgets.containers import bare_strip
+from .widgets.btn import Btn
 from .specter_gui_base import SpecterGuiElement
 from .ui_utils import configure_as_bare
+from .symbol_lib import BTC_ICONS
 
 
 class TitledScreen(SpecterGuiElement):
@@ -127,6 +129,31 @@ class TitledScreen(SpecterGuiElement):
         else:
             self.body.set_scroll_dir(lv.DIR.NONE)
             self.body.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+
+    def add_title_delete_btn(self, on_click):
+        """Add a right-aligned red TRASH button to the title bar.
+
+        Args:
+            on_click: Zero-argument callable invoked on CLICKED.
+
+        Returns:
+            The created ``Btn`` widget (stored as ``self.delete_btn``).
+        """
+        btn_size = TITLE_ROW_HEIGHT - 10
+        self.delete_btn = Btn(
+            self.title_bar,
+            icon=BTC_ICONS.TRASH,
+            color=RED_HEX,
+            size=(btn_size, btn_size),
+        )
+        self.delete_btn.align(lv.ALIGN.RIGHT_MID, -SMALL_PAD, 0)
+
+        def _handler(e):
+            if e.get_code() == lv.EVENT.CLICKED:
+                on_click()
+
+        self.delete_btn.add_event_cb(_handler, lv.EVENT.CLICKED, None)
+        return self.delete_btn
 
     def on_back(self, e):
         if e.get_code() == lv.EVENT.CLICKED:
