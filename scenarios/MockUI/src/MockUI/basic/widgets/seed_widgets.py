@@ -8,8 +8,10 @@ from ..ui_consts import (
     BTC_ICON_WIDTH, BIG_PAD, STATUS_BTN_HEIGHT, SCREEN_WIDTH,
 )
 from .icon_widgets import make_icon
-from .labels import _make_label, best_font_for_size
+from .labels import make_label, best_font_for_size
 from .containers import card_row
+from .inputs import title_textarea
+from .btn import Btn
 
 # Seed-card slot names (ordered as they appear left-to-right in default layout)
 SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
@@ -34,7 +36,7 @@ def fingerprint_badge(parent, seed, digits=4):
     fp = seed.get_fingerprint()
     if fp[:2].lower() == "0x":
         fp = fp[2:]
-    lbl = _make_label(parent, fp[:digits+1], width=FINGERPRINT_LBL_WIDTH, font=SMALL_TEXT_FONT)
+    lbl = make_label(parent, fp[:digits+1], width=FINGERPRINT_LBL_WIDTH, font=SMALL_TEXT_FONT)
     lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
     return lbl
 
@@ -170,7 +172,6 @@ def build_seed_card(
         elif slot == "name":
             name_font, display_text = best_font_for_size(seed.label, name_w, height)
             if on_name_click is not None:
-                from .inputs import title_textarea
                 parent.ta = title_textarea(row)
                 parent.ta.set_width(name_w)
                 parent.ta.set_style_text_font(name_font, 0)
@@ -182,7 +183,7 @@ def build_seed_card(
                     return _cb
                 parent.ta.add_event_cb(_make_name_cb(parent.ta), lv.EVENT.CLICKED, None)
             else:
-                lbl = _make_label(row, display_text, width=name_w, font=name_font)
+                lbl = make_label(row, display_text, width=name_w, font=name_font)
                 lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         elif slot == "backup_warning":
@@ -204,7 +205,6 @@ def build_seed_card(
 
         elif slot == "delete":
             if on_delete is not None:
-                from .btn import Btn
                 def _del_cb(event=None):
                     if event is not None:
                         event.stop_bubbling = 1

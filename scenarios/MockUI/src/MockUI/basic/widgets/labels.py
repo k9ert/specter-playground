@@ -62,7 +62,7 @@ def set_label_color(lbl, color):
     lbl.set_recolor(True)
 
 
-def _make_label(parent, text, width=None, align=None, font=None, recolor=False, color=None):
+def make_label(parent, text, width=None, align=None, font=None, recolor=False, color=None):
     """Base label factory: create, size, font, align, colour."""
     lbl = lv.label(parent)
     lbl.set_text(text if text is not None else "")
@@ -79,16 +79,16 @@ def _make_label(parent, text, width=None, align=None, font=None, recolor=False, 
 def body_label(parent, text, width=lv.pct(100), align=lv.TEXT_ALIGN.CENTER, font=None, recolor=False, color=None):
     """Wrapping body/message label (CENTER, WRAP).
     """
-    lbl = _make_label(parent, text, width, align, font, recolor, color)
+    lbl = make_label(parent, text, width, align, font, recolor, color)
     lbl.set_long_mode(lv.label.LONG_MODE.WRAP)
     return lbl
 
 
 def section_header(parent, text, recolor=False, color=None):
     """Section divider label for GenericMenu (LEFT-aligned)."""
-    return _make_label(parent, text, lv.pct(BTN_WIDTH), lv.TEXT_ALIGN.LEFT, None, recolor, color)
+    return make_label(parent, text, lv.pct(BTN_WIDTH), lv.TEXT_ALIGN.LEFT, None, recolor, color)
 
 
 def form_label(parent, text, width=lv.pct(30), font=None, recolor=False, color=None):
     """Short left-aligned form field label (30% width by default)."""
-    return _make_label(parent, text, width, lv.TEXT_ALIGN.LEFT, font, recolor, color)
+    return make_label(parent, text, width, lv.TEXT_ALIGN.LEFT, font, recolor, color)

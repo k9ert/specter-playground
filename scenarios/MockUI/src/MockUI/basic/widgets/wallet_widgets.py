@@ -8,6 +8,10 @@ from ..ui_consts import (
     STATUS_BTN_HEIGHT, SMALL_TEXT_FONT,
 )
 from .icon_widgets import make_icon
+from .labels import make_label, best_font_for_size
+from .containers import card_row
+from .inputs import title_textarea
+from .btn import Btn
 
 # Wallet-card slot names (ordered as they appear left-to-right in default layout)
 WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete")
@@ -114,9 +118,6 @@ def build_wallet_card(
     Returns:
         The created row ``lv.obj``.
     """
-    from .labels import _make_label, best_font_for_size
-    from .containers import card_row
-
     if height is None:
         height = _CARD_H
 
@@ -169,7 +170,6 @@ def build_wallet_card(
             name_font, display_text = best_font_for_size(wallet.label, name_w, height)
             editable = on_name_click is not None and not wallet.is_default_wallet()
             if editable:
-                from .inputs import title_textarea
                 parent.ta = title_textarea(row)
                 parent.ta.set_width(name_w)
                 parent.ta.set_style_text_font(name_font, 0)
@@ -181,12 +181,12 @@ def build_wallet_card(
                     return _cb
                 parent.ta.add_event_cb(_make_name_cb(parent.ta), lv.EVENT.CLICKED, None)
             else:
-                lbl = _make_label(row, display_text, width=name_w, font=name_font)
+                lbl = make_label(row, display_text, width=name_w, font=name_font)
                 lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         elif slot == "threshold" and show_threshold:
             n = len(wallet.required_fingerprints)
-            thresh_lbl = _make_label(
+            thresh_lbl = make_label(
                 row,
                 str(wallet.threshold) + "/" + str(n),
                 width=_THRESH_W,
@@ -195,15 +195,14 @@ def build_wallet_card(
             thresh_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         elif slot == "account" and show_account:
-            acc_lbl = _make_label(row, wallet_account_text(wallet), width=_ACC_W, font=SMALL_TEXT_FONT)
+            acc_lbl = make_label(row, wallet_account_text(wallet), width=_ACC_W, font=SMALL_TEXT_FONT)
             acc_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         elif slot == "net" and show_net:
-            net_lbl = _make_label(row, wallet_net_text(wallet), width=_NET_W, font=SMALL_TEXT_FONT)
+            net_lbl = make_label(row, wallet_net_text(wallet), width=_NET_W, font=SMALL_TEXT_FONT)
             net_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
 
         elif slot == "delete" and show_delete:
-            from .btn import Btn
             def _del_cb(event=None):
                 if event is not None:
                     event.stop_bubbling = 1
