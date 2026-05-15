@@ -12,7 +12,8 @@ import lvgl as lv
 from .ui_consts import (
     SCREEN_WIDTH, SCREEN_HEIGHT, CONTENT_PCT, TITLE_ROW_HEIGHT, BATTERY_WIDTH,
 )
-from .specter_gui_base import SpecterGuiElement, configure_as_bare
+from .specter_gui_base import SpecterGuiElement
+from .ui_utils import configure_as_bare
 from .widgets.containers import flex_col
 from .widgets.battery import Battery
 from .context_bar import ContextBar

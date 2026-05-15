@@ -7,7 +7,8 @@ from .ui_consts import (
     TITLE_ROW_HEIGHT,
     SCREEN_WIDTH,
 )
-from .specter_gui_base import SpecterGuiElement, delete_all_children_of, configure_as_bare
+from .specter_gui_base import SpecterGuiElement
+from .ui_utils import delete_all_children_of, configure_as_bare
 from .symbol_lib import BTC_ICONS
 from .widgets.seed_widgets import build_seed_card
 from .widgets.wallet_widgets import build_wallet_card, wallet_net_text

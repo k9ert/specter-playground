@@ -7,7 +7,7 @@ from .widgets.btn import Btn
 from .widgets.containers import flex_col, dialog_card, flex_row
 from .widgets.labels import body_label, section_header, form_label
 from .widgets.icon_widgets import make_icon
-from .specter_gui_base import delete_all_children_of
+from .ui_utils import delete_all_children_of
 
 
 

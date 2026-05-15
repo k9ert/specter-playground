@@ -1,6 +1,6 @@
 import lvgl as lv
 from ..basic.titled_screen import TitledScreen
-from ..basic.specter_gui_base import delete_all_children_of
+from ..basic.ui_utils import delete_all_children_of
 from ..basic.ui_consts import BTN_HEIGHT, BTN_WIDTH, SCREEN_WIDTH
 from ..basic.widgets.btn import Btn
 from ..basic.widgets.labels import section_header

@@ -31,7 +31,8 @@ from .ui_consts import (
 from .symbol_lib import BTC_ICONS
 from .widgets.btn import Btn
 from .widgets.modal_overlay import ModalOverlay
-from .specter_gui_base import SpecterGuiElement, configure_as_bare, set_background_visible
+from .specter_gui_base import SpecterGuiElement
+from .ui_utils import configure_as_bare, set_background_visible
 from .dropup import SeedDropUp, WalletDropUp, DropUpState
 from ..stubs.ui_state import Context
 

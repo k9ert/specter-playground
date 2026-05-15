@@ -30,7 +30,8 @@ from .ui_consts import (
 )
 from .widgets.labels import body_label
 from .widgets.containers import bare_strip
-from .specter_gui_base import SpecterGuiElement, configure_as_bare
+from .specter_gui_base import SpecterGuiElement
+from .ui_utils import configure_as_bare
 
 
 class TitledScreen(SpecterGuiElement):

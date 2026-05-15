@@ -5,7 +5,7 @@ All containers have border, padding, and radius zeroed by default.
 
 import lvgl as lv
 from ..ui_consts import DIALOG_RADIUS, BIG_PAD, WHITE_HEX, DROPUP_DIVIDER_OPA
-from ..specter_gui_base import configure_as_bare
+from ..ui_utils import configure_as_bare
 
 
 def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_ALIGN.START, transparent_bg=True):

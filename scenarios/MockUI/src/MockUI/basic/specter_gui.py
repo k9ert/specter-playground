@@ -9,7 +9,7 @@ from .keyboard_manager import KeyboardManager
 from .animations import slide_x, slide_y, GUIAnimations
 from .navigation_bar import NavigationBar
 from .app_screen import AppScreen
-from .specter_gui_base import configure_as_bare
+from .ui_utils import configure_as_bare
 
 _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
 

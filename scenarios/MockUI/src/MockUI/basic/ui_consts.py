@@ -77,27 +77,3 @@ GREY = const("#606060")
 GREY_HEX = lv.color_hex(0x606060)
 BLACK = const("#000000")
 BLACK_HEX = lv.color_hex(0x000000)
-
-def to_lv_color(color):
-    """Return *color* as an ``lv.color_t``.
-
-    Accepts either an ``lv.color_t`` object or a hex string
-    (``"0xRRGGBB"`` or ``"#RRGGBB"``).
-    """
-    if isinstance(color, str):
-        val = int(color[1:], 16) if color.startswith("#") else int(color, 16)
-        return lv.color_hex(val)
-    return color
-
-
-def to_hex_str(color):
-    """Return *color* as a ``"0xRRGGBB"`` hex string.
-
-    Accepts either an ``lv.color_t`` object or a hex string
-    (``"0xRRGGBB"`` or ``"#RRGGBB"``).
-    """
-    if isinstance(color, str):
-        val = int(color[1:], 16) if color.startswith("#") else int(color, 16)
-        return "0x{:06X}".format(val)
-    c32 = lv.color_to32(color)
-    return "0x{:02X}{:02X}{:02X}".format(c32.ch.red, c32.ch.green, c32.ch.blue)
