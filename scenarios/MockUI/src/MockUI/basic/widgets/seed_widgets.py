@@ -9,9 +9,7 @@ from ..ui_consts import (
 )
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
-from .containers import card_row
-from .inputs import title_textarea
-from .btn import Btn
+from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot
 
 # Width contributions of fixed slots (pixels)
 _ICON_W = BTC_ICON_WIDTH          # any single icon slot
@@ -157,30 +155,15 @@ def build_seed_card(
     name_w = max(10, width - fixed_w)
 
     # ── Build row ────────────────────────────────────────────────────────────
-    row = card_row(parent, height=height, width=width, border=border)
-    if on_card_click is not None:
-        row.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
+    row = build_card_row(parent, height=height, width=width, border=border, on_card_click=on_card_click)
+    ta = None
 
     for slot in slots:
         if slot == "leading_icon":
-            make_icon(row, leading_icon, WHITE_HEX)
+            build_leading_icon_slot(row, leading_icon)
 
         elif slot == "name":
-            name_font, display_text = best_font_for_size(seed.label, name_w, height)
-            if on_name_click is not None:
-                parent.ta = title_textarea(row)
-                parent.ta.set_width(name_w)
-                parent.ta.set_style_text_font(name_font, 0)
-                parent.ta.set_text(display_text)
-                def _make_name_cb(t):
-                    def _cb(e):
-                        if e.get_code() == lv.EVENT.CLICKED:
-                            on_name_click(t)
-                    return _cb
-                parent.ta.add_event_cb(_make_name_cb(parent.ta), lv.EVENT.CLICKED, None)
-            else:
-                lbl = make_label(row, display_text, width=name_w, font=name_font)
-                lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+            ta = build_name_slot(row, seed.label, name_w, height, on_name_click)
 
         elif slot == "backup_warning":
             if not seed.is_backed_up:
@@ -200,13 +183,7 @@ def build_seed_card(
             fingerprint_badge(row, seed, digits=4)
 
         elif slot == "delete":
-            if on_delete is not None:
-                def _del_cb(event=None):
-                    if event is not None:
-                        event.stop_bubbling = 1
-                    on_delete()
-                del_btn = Btn(row, icon=BTC_ICONS.TRASH, size=(_ICON_W, height), callback=_del_cb)
-                del_btn.make_background_transparent()
+            build_delete_slot(row, _ICON_W, height, on_delete)
 
     if event_bubble:
         row.add_flag(lv.obj.FLAG.EVENT_BUBBLE)
