@@ -31,7 +31,7 @@ class ContextBar(SpecterGuiElement):
         grey = inactive; tap to toggle ``passphrase_active``.
     """
 
-    def __init__(self, screen, width=SCREEN_WIDTH, height=TITLE_ROW_HEIGHT):
+    def __init__(self, screen, width=SCREEN_WIDTH, height=TITLE_ROW_HEIGHT, context=None):
         """
         Args:
             screen: The :class:`Screen` instance that owns this bar.
@@ -43,7 +43,9 @@ class ContextBar(SpecterGuiElement):
         self.set_scroll_dir(lv.DIR.NONE)
         self.align(lv.ALIGN.TOP_LEFT, 0, 0)
 
-        self.context_type = self.context
+        if context is None:
+            context = self.context
+        self.bar_context = context
 
         self._build()
 
@@ -51,22 +53,22 @@ class ContextBar(SpecterGuiElement):
 
     def _build(self):
         """Create child widgets for the current context."""
-        ctx = self.context
+        ctx = self.bar_context
         if ctx == Context.SEED:
             self._build_seed()
         elif ctx == Context.WALLET:
             self._build_wallet()
 
     def _build_seed(self):
-        seed = self.ui_state.active_seed
+        seed = self.active_seed
         if not seed:
             return
 
         def _on_name_click(ta):
             def _on_commit(val):
-                if val and self.ui_state.active_seed:
+                if val and self.active_seed:
                     ta.remove_state(lv.STATE.FOCUSED)
-                    self.ui_state.active_seed.label = val
+                    self.active_seed.label = val
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
 
@@ -84,7 +86,7 @@ class ContextBar(SpecterGuiElement):
         self._seed_row.align(lv.ALIGN.LEFT_MID, 0, 0)
 
     def _build_wallet(self):
-        wallet = self.ui_state.active_wallet
+        wallet = self.active_wallet
         if not wallet:
             return
 
@@ -100,9 +102,9 @@ class ContextBar(SpecterGuiElement):
 
         def _on_name_click(ta):
             def _on_commit(val):
-                if val and self.ui_state.active_wallet:
+                if val and self.active_wallet:
                     ta.remove_state(lv.STATE.FOCUSED)
-                    self.ui_state.active_wallet.label = val
+                    self.active_wallet.label = val
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
 
@@ -127,7 +129,7 @@ class ContextBar(SpecterGuiElement):
         # directly — self.ta can be a stale reference to a deleted LVGL widget when
         # delete_all_children_of() removed it without _build() refreshing it.
         ta = getattr(self, "ta", None)
-        if ta is not None and self.gui.keyboard_manager.textarea is ta:
+        if ta is not None and self.keyboard_manager.textarea is ta:
             return
         self.ta = None
         delete_all_children_of(self)
