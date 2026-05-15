@@ -21,6 +21,9 @@ def delete_all_children_of(widget):
     for i in reversed(range(widget.get_child_count())):
         widget.get_child(i).delete()
 
+def set_background_visible(obj, visible):
+    """Helper to set background opacity to fully opaque or fully transparent."""
+    obj.set_style_bg_opa(lv.OPA.COVER if visible else lv.OPA.TRANSP, 0)
 
 def configure_as_bare(obj, width=None, height=None, transparent_bg=True):
     """Zero padding, border, and radius on an existing lv.obj (mutating).
@@ -32,8 +35,7 @@ def configure_as_bare(obj, width=None, height=None, transparent_bg=True):
     obj.set_style_pad_all(0, 0)
     obj.set_style_border_width(0, 0)
     obj.set_style_radius(0, 0)
-    if transparent_bg:
-        obj.set_style_bg_opa(0, 0)
+    set_background_visible(obj, not transparent_bg)
 
 
 class SpecterGuiMixin:

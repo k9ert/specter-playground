@@ -31,7 +31,7 @@ from .ui_consts import (
 from .symbol_lib import BTC_ICONS
 from .widgets.btn import Btn
 from .widgets.modal_overlay import ModalOverlay
-from .specter_gui_base import SpecterGuiElement, configure_as_bare
+from .specter_gui_base import SpecterGuiElement, configure_as_bare, set_background_visible
 from .dropup import SeedDropUp, WalletDropUp, DropUpState
 from ..stubs.ui_state import Context
 
@@ -128,10 +128,13 @@ class NavigationBar(SpecterGuiElement):
         Reads gui.ui_state.current_menu_id directly.
         """
         if self.device_state.is_locked:
-            # If device is locked, nav bar shows no icons and no back button
+            # If device is locked, nav bar shows no icons and no back button and is not transparent
+            set_background_visible(self, True)
             for btn in self.buttons.values():
                 btn.set_visible(False)
         else:
+            set_background_visible(self, False)
+
             # Back button: visible unless we are at the root / home menu
             self.buttons["Back"].set_visible(not self.current_menu == "main")
 

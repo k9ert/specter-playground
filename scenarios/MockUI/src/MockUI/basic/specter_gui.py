@@ -107,6 +107,8 @@ class SpecterGui(lv.obj):
             #END OF DUMMY CODE
             self.refresh_ui()
         lv.timer_create(_tick, GUI_REFRESH_MS, None)
+        
+        self.refresh_ui()
 
     def change_language(self, lang_code):
         """Change the active language."""
@@ -114,6 +116,7 @@ class SpecterGui(lv.obj):
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
+
         self.screen.refresh()
         self.navigation_bar.refresh()
 
