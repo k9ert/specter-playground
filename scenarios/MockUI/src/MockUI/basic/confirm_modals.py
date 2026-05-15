@@ -5,6 +5,16 @@ from .symbol_lib import BTC_ICONS
 from .ui_consts import RED_HEX
 
 
+def _confirm_delete(t, title_text, on_confirm):
+    ActionModal(
+        text=title_text,
+        buttons=[
+            (None,            t("COMMON_CANCEL"), None,    None),
+            (BTC_ICONS.TRASH, t("COMMON_DELETE"), RED_HEX, on_confirm),
+        ],
+    )
+
+
 def confirm_delete_seed(t, label, on_confirm):
     """Show the 'Delete seed?' ActionModal.
 
@@ -13,13 +23,7 @@ def confirm_delete_seed(t, label, on_confirm):
         label:      Seed display name (used in the modal text).
         on_confirm: Zero-argument callable invoked when the user confirms.
     """
-    ActionModal(
-        text=t("MODAL_DELETE_SEED_TEXT") % label,
-        buttons=[
-            (None,            t("COMMON_CANCEL"), None,    None),
-            (BTC_ICONS.TRASH, t("COMMON_DELETE"), RED_HEX, on_confirm),
-        ],
-    )
+    _confirm_delete(t, t("MODAL_DELETE_SEED_TEXT") % label, on_confirm)
 
 
 def confirm_delete_wallet(t, label, on_confirm):
@@ -30,10 +34,4 @@ def confirm_delete_wallet(t, label, on_confirm):
         label:      Wallet display name (used in the modal text).
         on_confirm: Zero-argument callable invoked when the user confirms.
     """
-    ActionModal(
-        text=t("MODAL_DELETE_WALLET_TEXT") % label,
-        buttons=[
-            (None,            t("COMMON_CANCEL"), None,    None),
-            (BTC_ICONS.TRASH, t("COMMON_DELETE"), RED_HEX, on_confirm),
-        ],
-    )
+    _confirm_delete(t, t("MODAL_DELETE_WALLET_TEXT") % label, on_confirm)
