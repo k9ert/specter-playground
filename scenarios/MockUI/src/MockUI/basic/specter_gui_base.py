@@ -19,7 +19,12 @@ import lvgl as lv
 
 
 class SpecterGuiMixin:
-    """Pure-Python base: ``device_state``, ``ui_state``, ``i18n``, ``t``, ``on_navigate`` from ``self.gui``."""
+    """Pure-Python base: ``device_state``, ``ui_state``, ``i18n``, ``t``, ``on_navigate`` from ``self.gui``.
+
+    NOTE: Properties below are intentionally duplicated in ``SpecterGuiElement``.
+    MicroPython does not support multiple inheritance, so each class carries its
+    own copy rather than sharing a single implementation via a common base.
+    """
 
     @property
     def device_state(self):
@@ -65,7 +70,13 @@ class SpecterGuiMixin:
         pass  # optional helper for non-LVGL controllers to trigger a UI refresh after changing state
 
 class SpecterGuiElement(lv.obj):
-    """``lv.obj`` subclass: ``device_state``, ``ui_state``, ``i18n``, ``t``, ``on_navigate`` from ``self.gui``."""
+    """``lv.obj`` subclass: ``device_state``, ``ui_state``, ``i18n``, ``t``, ``on_navigate`` from ``self.gui``.
+
+    NOTE: Properties below are intentionally duplicated from ``SpecterGuiMixin``.
+    MicroPython does not support multiple inheritance, so each class carries its
+    own copy rather than sharing a single implementation via a common base.
+    Do not merge these two classes.
+    """
 
     @property
     def device_state(self):
