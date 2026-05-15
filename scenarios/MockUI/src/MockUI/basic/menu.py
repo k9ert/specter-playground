@@ -17,6 +17,7 @@ class GenericMenu(TitledScreen):
     Subclasses override the three hooks:
         get_title(t, state)      -> str          title shown at the top
         get_menu_items(t, state) -> list         list of MenuItems; will be used to create the actual menu
+        pre_init(t, state)       -> None         called before menu items are built (optional)
         post_init(t, state)      -> None         called after all LVGL widgets are built (optional)
     """
 
@@ -39,6 +40,7 @@ class GenericMenu(TitledScreen):
 
     def fill_body(self):
         menu_items = self.get_menu_items(self.t, self.device_state)
+        self.pre_init(self.t, self.device_state)
         self._build_menu_items(menu_items)
         self.post_init(self.t, self.device_state)
         self._configure_scroll()
@@ -157,6 +159,10 @@ class GenericMenu(TitledScreen):
     def get_menu_items(self, t, state):
         """Return the list of MenuItems."""
         return []
+
+    def pre_init(self, t, state):
+        """Called before menu items are built. Override to insert widgets above the item list."""
+        pass
 
     def post_init(self, t, state):
         """Called after all LVGL widgets are built. Override for post-construction work."""

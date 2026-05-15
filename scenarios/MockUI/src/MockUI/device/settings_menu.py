@@ -1,6 +1,5 @@
 import lvgl as lv
 from ..basic.menu import GenericMenu
-from ..basic.titled_screen import TitledScreen
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
 from ..basic.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX
@@ -11,27 +10,8 @@ from ..basic.widgets.containers import flex_row
 class SettingsMenu(GenericMenu):
     TITLE_KEY = "MENU_MANAGE_SETTINGS"
 
-    def __init__(self, parent):
-        # Call TitledScreen.__init__ directly so we control build order:
-        # interface icon row first, then menu items (no move_to_index needed).
-        TitledScreen.__init__(self, "", parent)
-
-        t = self.i18n.t
-        state = self.device_state
-
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-
-        # 1. Interface icon row at the top
+    def pre_init(self, t, state):
         self._build_iface_row(state)
-
-        # 2. Menu items below
-        menu_items = self.get_menu_items(t, state)
-        self._build_menu_items(menu_items)
-
-        self.post_init(t, state)
-        self._configure_scroll()
 
     def _build_iface_row(self, state):
         row = flex_row(self.body, width=lv.pct(100), height=STATUS_BTN_HEIGHT, main_align=lv.FLEX_ALIGN.CENTER)
