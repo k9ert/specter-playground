@@ -169,54 +169,36 @@ class SpecterGui(lv.obj):
 
     def _build_view(self, screen, menu_id):
         """Instantiate and return the correct view class for *menu_id* into *screen*."""
-        if menu_id == "locked":
-            return LockedMenu(screen)
-        elif menu_id in ("main", "start_intro_tour"):
-            return MainMenu(screen)
-        elif menu_id == "manage_wallet":
-            return WalletMenu(screen)
-        elif menu_id == "view_signers":
-            return ViewSignersScreen(screen)
-        elif menu_id == "manage_security_settings":
-            return SecuritySettingsMenu(screen)
-        elif menu_id == "manage_backups":
-            return BackupsMenu(screen)
-        elif menu_id == "manage_firmware":
-            return FirmwareMenu(screen)
-        elif menu_id == "connect_sw_wallet":
-            return ConnectWalletsMenu(screen)
-        elif menu_id == "add_seed":
-            return AddSeedMenu(screen)
-        elif menu_id == "add_wallet":
-            return AddWalletMenu(screen)
-        elif menu_id == "manage_security_features":
-            return SecurityFeaturesMenu(screen)
-        elif menu_id == "interfaces":
-            return InterfacesMenu(screen)
-        elif menu_id == "manage_seedphrase":
-            return SeedPhraseMenu(screen)
-        elif menu_id == "related_wallets_for_seed":
-            return RelatedWalletsForSeedMenu(screen)
-        elif menu_id == "store_seedphrase":
-            return StoreSeedphraseMenu(screen)
-        elif menu_id == "clear_seedphrase":
-            return ClearSeedphraseMenu(screen)
-        elif menu_id == "generate_seedphrase":
-            return GenerateSeedMenu(screen)
-        elif menu_id == "set_passphrase":
-            return PassphraseMenu(screen)
-        elif menu_id == "create_custom_wallet":
-            return CreateCustomWalletMenu(screen)
-        elif menu_id == "manage_storage":
-            return StorageMenu(screen)
-        elif menu_id == "select_language":
-            return LanguageMenu(screen)
-        elif menu_id == "manage_preferences":
-            return PreferencesMenu(screen)
-        elif menu_id == "manage_settings":
-            return SettingsMenu(screen)
-        else:
-            return ActionScreen(menu_id, screen)
+        _VIEW_MAP = {
+            "locked":                   LockedMenu,
+            "main":                     MainMenu,
+            "start_intro_tour":         MainMenu,
+            "manage_wallet":            WalletMenu,
+            "view_signers":             ViewSignersScreen,
+            "manage_security_settings": SecuritySettingsMenu,
+            "manage_backups":           BackupsMenu,
+            "manage_firmware":          FirmwareMenu,
+            "connect_sw_wallet":        ConnectWalletsMenu,
+            "add_seed":                 AddSeedMenu,
+            "add_wallet":               AddWalletMenu,
+            "manage_security_features": SecurityFeaturesMenu,
+            "interfaces":               InterfacesMenu,
+            "manage_seedphrase":        SeedPhraseMenu,
+            "related_wallets_for_seed": RelatedWalletsForSeedMenu,
+            "store_seedphrase":         StoreSeedphraseMenu,
+            "clear_seedphrase":         ClearSeedphraseMenu,
+            "generate_seedphrase":      GenerateSeedMenu,
+            "set_passphrase":           PassphraseMenu,
+            "create_custom_wallet":     CreateCustomWalletMenu,
+            "manage_storage":           StorageMenu,
+            "select_language":          LanguageMenu,
+            "manage_preferences":       PreferencesMenu,
+            "manage_settings":          SettingsMenu,
+        }
+        cls = _VIEW_MAP.get(menu_id)
+        if cls is not None:
+            return cls(screen)
+        return ActionScreen(menu_id, screen)
 
     def _do_transition(self, anim_type):
         """Animate from the current screen to a freshly-built new screen."""
