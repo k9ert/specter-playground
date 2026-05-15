@@ -5,7 +5,7 @@ import lvgl as lv
 from ..symbol_lib import BTC_ICONS
 from ..ui_consts import (
     WHITE_HEX, GREY_HEX, BTC_ICON_WIDTH, BIG_PAD, SCREEN_WIDTH,
-    STATUS_BTN_HEIGHT, SMALL_TEXT_FONT,
+    STATUS_BTN_HEIGHT, SMALL_TEXT_FONT, CARD_H,
 )
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
@@ -21,9 +21,6 @@ _ICON_W    = BTC_ICON_WIDTH
 _THRESH_W  = 40
 _ACC_W     = 36
 _NET_W     = 42
-
-# Default card height (matches dropup.py _CARD_H)
-_CARD_H = STATUS_BTN_HEIGHT + 2 * BIG_PAD + 2
 
 
 def wallet_signing_color(wallet, device_state):
@@ -100,7 +97,7 @@ def build_wallet_card(
         parent:         LVGL parent object.
         wallet:         Wallet model object.
         device_state:   DeviceState instance (needed for signing-colour calculation).
-        height:         Row height in pixels; defaults to ``_CARD_H``.
+        height:         Row height in pixels; defaults to ``CARD_H``.
         width:          Row width in pixels; defaults to ``SCREEN_WIDTH``.
         slots:          Iterable of slot name strings controlling presence and
                         left-to-right order of child widgets.
@@ -119,7 +116,7 @@ def build_wallet_card(
         The created row ``lv.obj``.
     """
     if height is None:
-        height = _CARD_H
+        height = CARD_H
 
     # ── Input validation ─────────────────────────────────────────────────────
     slots = tuple(slots)

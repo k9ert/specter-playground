@@ -5,7 +5,7 @@ import lvgl as lv
 from ..symbol_lib import BTC_ICONS
 from ..ui_consts import (
     WHITE_HEX, GREY_HEX, ORANGE_HEX, SMALL_TEXT_FONT, FINGERPRINT_LBL_WIDTH,
-    BTC_ICON_WIDTH, BIG_PAD, STATUS_BTN_HEIGHT, SCREEN_WIDTH,
+    BTC_ICON_WIDTH, BIG_PAD, STATUS_BTN_HEIGHT, SCREEN_WIDTH, CARD_H,
 )
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
@@ -13,15 +13,11 @@ from .containers import card_row
 from .inputs import title_textarea
 from .btn import Btn
 
-# Seed-card slot names (ordered as they appear left-to-right in default layout)
-SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
-
 # Width contributions of fixed slots (pixels)
 _ICON_W = BTC_ICON_WIDTH          # any single icon slot
 _FP_W   = _ICON_W + FINGERPRINT_LBL_WIDTH   # relay icon + 4-char label
 
-# Default card dimensions (match dropup.py _CARD_H)
-_CARD_H = STATUS_BTN_HEIGHT + 2 * BIG_PAD + 2
+SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
 
 
 def fingerprint_badge(parent, seed, digits=4):
@@ -108,7 +104,7 @@ def build_seed_card(
     Args:
         parent:            LVGL parent object.
         seed:              Seed model object.
-        height:            Row height in pixels; defaults to ``_CARD_H``.
+        height:            Row height in pixels; defaults to ``CARD_H``.
         width:             Row width in pixels; defaults to ``SCREEN_WIDTH``.
         slots:             Iterable of slot name strings controlling presence and
                            left-to-right order of child widgets.
@@ -131,7 +127,7 @@ def build_seed_card(
         The created row ``lv.obj``.
     """
     if height is None:
-        height = _CARD_H
+        height = CARD_H
 
     # ── Input validation ─────────────────────────────────────────────────────
     slots = tuple(slots)

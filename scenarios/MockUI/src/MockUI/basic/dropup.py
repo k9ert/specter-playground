@@ -20,7 +20,7 @@ from .widgets.action_modal import ActionModal
 from .confirm_modals import confirm_delete_seed, confirm_delete_wallet
 from .ui_consts import (
     BTC_ICON_WIDTH, SMALL_TEXT_FONT, STATUS_BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
-    STATUS_BAR_PCT, WHITE_HEX, ORANGE_HEX, BIG_PAD,
+    STATUS_BAR_PCT, WHITE_HEX, ORANGE_HEX, BIG_PAD, CARD_H,
     DROPUP_DIVIDER_OPA, ANIM_MS_VERTICAL, TEXT_FONT
 )
 from .symbol_lib import BTC_ICONS
@@ -37,7 +37,6 @@ from ..stubs.ui_state import Context
 _NAV_BAR_H = SCREEN_HEIGHT * STATUS_BAR_PCT // 100   # navigation bar height (px)
 _PANEL_MAX_H = SCREEN_HEIGHT - _NAV_BAR_H            # max panel height
 
-_CARD_H = STATUS_BTN_HEIGHT + 2 * BIG_PAD + 2   # height per item card
 _ADD_BTN_H = STATUS_BTN_HEIGHT                     # "Add …" button height
 
 
@@ -192,8 +191,8 @@ class _DropUp(SpecterGuiMixin):
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _compute_panel_h(self):
-        # Exact: pad_row is forced to 0 on the panel, so content = n*_CARD_H + _ADD_BTN_H
-        content_h = len(self._get_items()) * _CARD_H + _ADD_BTN_H
+        # Exact: pad_row is forced to 0 on the panel, so content = n*CARD_H + _ADD_BTN_H
+        content_h = len(self._get_items()) * CARD_H + _ADD_BTN_H
         return min(content_h, _PANEL_MAX_H)
 
     def _add_cb(self, event=None):

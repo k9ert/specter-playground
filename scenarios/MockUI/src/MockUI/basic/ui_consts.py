@@ -26,6 +26,8 @@ SMALL_PAD = const(4)
 PAD = const(8)
 BIG_PAD = const(12)
 
+CARD_H = STATUS_BTN_HEIGHT + 2 * BIG_PAD + 2  # context-bar card height (shared by dropup, seed, wallet)
+
 # --- Status bar / content area layout ---
 STATUS_BAR_PCT = const(8)        # navigation bar (bottom), % of screen height
 CONTENT_PCT = const(92)          # 100 - STATUS_BAR_PCT (no top bar)
