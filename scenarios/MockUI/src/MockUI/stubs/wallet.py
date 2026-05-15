@@ -41,3 +41,25 @@ class Wallet:
     def is_default_wallet(self):
         """Check if this wallet is the default "Standard" wallet."""
         return self.label == "Default" and self.descriptor == "default"
+
+
+class WalletType:
+    SINGLE_SIG_DEFAULT = 0
+    SINGLE_SIG = 1
+    MULTISIG = 2
+    CUSTOM = 3
+
+
+def _wallet_type_rank(wallet):
+    """Return (type_rank, n, m, account) for sort ordering."""
+    if not wallet.is_standard():
+        type_rank = WalletType.CUSTOM  # custom / miniscript
+    elif wallet.isMultiSig:
+        type_rank = WalletType.MULTISIG  # multisig
+    elif wallet.is_default_wallet():
+        type_rank = WalletType.SINGLE_SIG_DEFAULT  # single-sig default wallet
+    else:
+        type_rank = WalletType.SINGLE_SIG  # non default singleSig
+    n = len(wallet.required_fingerprints) if wallet.isMultiSig else 0
+    m = wallet.threshold if wallet.isMultiSig else 0
+    return (type_rank, n, m, getattr(wallet, "account", 0))
