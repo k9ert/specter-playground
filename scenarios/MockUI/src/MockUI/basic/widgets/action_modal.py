@@ -13,11 +13,8 @@ Usage::
         ],
     )
 
-Button tuple (legacy): ``(icon, label, color, callback)``
-    - ``icon``     — an Icon instance, or ``None``
-    - ``label``    — button text string, or ``None`` for icon-only
-    - ``color``    — LVGL color for button background, or ``None`` for default
-    - ``callback`` — zero-argument callable, or ``None``
+Each entry in *buttons* must be a ``MenuItem`` (or any object with ``.icon``,
+``.text``, ``.color``, ``.target`` attributes).
 
 If ``buttons`` is empty a single "Close" button is added automatically.
 """
@@ -27,6 +24,7 @@ from .modal_overlay import ModalOverlay
 from .btn import Btn
 from .containers import dialog_card, flex_row
 from .labels import body_label
+from .menu_item import MenuItem
 from ..ui_consts import DEFAULT_MODAL_BG_OPA, MODAL_WIDTH_PCT, MODAL_HEIGHT_PCT, BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -35,15 +33,14 @@ class ActionModal:
 
     Args:
         text:    Main message displayed in the dialog.
-        buttons: List of ``(icon, label, color, callback)`` tuples.
-                 Each element may be ``None``.  An empty list adds a
+        buttons: List of ``MenuItem`` instances.  An empty list adds a
                  default "Close" button.
         bg_opa:  Backdrop opacity (0-255).  Defaults to DEFAULT_MODAL_BG_OPA.
     """
 
     def __init__(self, text, buttons=None, bg_opa=DEFAULT_MODAL_BG_OPA):
         if buttons is None or len(buttons) == 0:
-            buttons = [(None, "Close", None, None)]
+            buttons = [MenuItem(text="Close")]
 
         self._modal = ModalOverlay(bg_opa=bg_opa)
 
@@ -63,15 +60,10 @@ class ActionModal:
         )
 
         for item in buttons:
-            # Support both (icon, label, color, callback) tuples and objects
-            # with .icon/.text/.color/.target attributes.
-            if isinstance(item, tuple):
-                icon, label, color, callback = item
-            else:
-                icon = getattr(item, 'icon', None)
-                label = getattr(item, 'text', None)
-                color = getattr(item, 'color', None)
-                callback = getattr(item, 'target', None)
+            icon = getattr(item, 'icon', None)
+            label = getattr(item, 'text', None)
+            color = getattr(item, 'color', None)
+            callback = getattr(item, 'target', None)
 
             btn = Btn(
                 btn_row,
