@@ -21,6 +21,13 @@ _CTX_ROOTS_DEVICE    = frozenset(["manage_settings"])
 _CTX_ROOTS_SEED      = frozenset(["manage_seedphrase", "add_seed"])
 _CTX_ROOTS_WALLET    = frozenset(["manage_wallet", "add_wallet"])
 
+# Fast O(1) lookup: menu_id → Context constant (built from the frozensets above)
+_MENU_CONTEXT = {}
+for _id in _CTX_ROOTS_MAIN:   _MENU_CONTEXT[_id] = _MENU_CTX_MAIN
+for _id in _CTX_ROOTS_DEVICE: _MENU_CONTEXT[_id] = _MENU_CTX_DEVICE
+for _id in _CTX_ROOTS_SEED:   _MENU_CONTEXT[_id] = _MENU_CTX_SEED
+for _id in _CTX_ROOTS_WALLET:  _MENU_CONTEXT[_id] = _MENU_CTX_WALLET
+
 class Context:
     MAIN   = _MENU_CTX_MAIN
     DEVICE = _MENU_CTX_DEVICE
@@ -29,15 +36,7 @@ class Context:
 
 
 def _infer_context(menu_id):
-    if menu_id in _CTX_ROOTS_DEVICE:
-        return Context.DEVICE
-    if menu_id in _CTX_ROOTS_SEED:
-        return Context.SEED
-    if menu_id in _CTX_ROOTS_WALLET:
-        return Context.WALLET
-    if menu_id in _CTX_ROOTS_MAIN:
-        return Context.MAIN
-    return None
+    return _MENU_CONTEXT.get(menu_id)
 
 class UIState:
     class Snapshot:
