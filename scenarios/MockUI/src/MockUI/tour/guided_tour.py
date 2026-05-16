@@ -6,6 +6,15 @@ highlighting key interface elements and explaining their purpose.
 
 from .ui_explainer import UIExplainer
 
+# Static tour step definitions: (element_spec, i18n_key, position)
+# element_spec is None, a dotted attribute-path string, or a (x, y, w, h) tuple.
+# Resolved to runtime objects by GuidedTour.resolve_steps() before use.
+INTRO_TOUR_STEPS = [
+    (None,                          "TOUR_INTRO",       "center"),
+    ("navigation_bar",              "TOUR_WALLET_BAR",  "above"),
+    ((435, 143, 28, 28),            "TOUR_HELP_ICON",   "left"),
+]
+
 
 class GuidedTour:
     """Manages the startup guided tour.

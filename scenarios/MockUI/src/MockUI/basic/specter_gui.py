@@ -4,7 +4,7 @@ from .ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZON
 from ..stubs import UIState, SpecterState
 from ..stubs.ui_state import Context
 from ..i18n import I18nManager
-from ..tour import GuidedTour
+from ..tour import GuidedTour, INTRO_TOUR_STEPS
 from .keyboard_manager import KeyboardManager
 from .animations import slide_x, slide_y, GUIAnimations
 from .navigation_bar import NavigationBar
@@ -47,14 +47,6 @@ from ..device import (
 
 
 class SpecterGui(lv.obj):
-    # Static tour step definitions: (element_spec, i18n_key, position)
-    # element_spec is None, a dotted attribute-path string, or a (x, y, w, h) tuple.
-    # Resolved to runtime objects by GuidedTour.resolve_steps() before use.
-    INTRO_TOUR_STEPS = [
-        (None,                          "TOUR_INTRO",       "center"),
-        ("navigation_bar",              "TOUR_WALLET_BAR",  "above"),
-        ((435, 143, 28, 28),            "TOUR_HELP_ICON",   "left"),
-    ]
 
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +83,7 @@ class SpecterGui(lv.obj):
 
         # Start guided tour on first startup (after UI is fully constructed)
         if self.ui_state.is_run_tour_on_startup:
-            GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
+            GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
 
         # Periodic refresh (e.g. to update battery level)
         def _tick(timer):
@@ -147,7 +139,7 @@ class SpecterGui(lv.obj):
 
         if self.ui_state.current_menu_id == "start_intro_tour":
             self.ui_state.current_menu_id = "main"
-            GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
+            GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
 
     def _make_screen(self):
         """Create a new AppScreen for the current ui_state and populate it with a view.
