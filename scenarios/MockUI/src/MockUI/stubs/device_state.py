@@ -184,3 +184,19 @@ class SpecterState:
             self.is_locked = False
             return True
         return False
+
+    # ── Debug helpers ────────────────────────────────────────────────
+    def debug_cycle_battery(self):
+        """Advance the simulated battery level by one step (for testing).
+
+        TODO: DUMMY CODE — replace with actual device battery read logic.
+        """
+        if self.is_charging:
+            self.battery_pct = min(100, self.battery_pct + 10)
+            if self.battery_pct == 100:
+                self.is_charging = False
+        else:
+            self.battery_pct = max(0, self.battery_pct - 10)
+            if self.battery_pct == 0:
+                self.is_charging = True
+

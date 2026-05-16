@@ -95,16 +95,7 @@ class SpecterGui(lv.obj):
 
         # Periodic refresh (e.g. to update battery level)
         def _tick(timer):
-            #TODO: DUMMY CODE TO CYCLE THROUGH BATTERY STATES FOR TESTING PURPOSES — REPLACE WITH ACTUAL DEVICE STATE UPDATE LOGIC
-            if self.device_state.is_charging:
-                self.device_state.battery_pct = min(100, self.device_state.battery_pct + 10)
-                if self.device_state.battery_pct == 100:
-                    self.device_state.is_charging = False
-            else:
-                self.device_state.battery_pct = max(0, self.device_state.battery_pct - 10)
-                if self.device_state.battery_pct == 0:
-                    self.device_state.is_charging = True
-            #END OF DUMMY CODE
+            self.device_state.debug_cycle_battery()
             self.refresh_ui()
         lv.timer_create(_tick, GUI_REFRESH_MS, None)
         
