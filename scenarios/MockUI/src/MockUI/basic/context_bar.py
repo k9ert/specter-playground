@@ -73,7 +73,7 @@ class ContextBar(SpecterGuiElement):
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
 
-        self._seed_row = build_seed_card(
+        self.ta = build_seed_card(
             self,
             seed,
             height=self.get_height(),
@@ -84,7 +84,6 @@ class ContextBar(SpecterGuiElement):
             gui=self.gui,
             border=False,
         )
-        self._seed_row.align(lv.ALIGN.LEFT_MID, 0, 0)
 
     def _build_wallet(self):
         wallet = self.active_wallet
@@ -109,7 +108,7 @@ class ContextBar(SpecterGuiElement):
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
 
-        self._wallet_row = build_wallet_card(
+        self.ta = build_wallet_card(
             self,
             wallet,
             self.device_state,
@@ -120,15 +119,15 @@ class ContextBar(SpecterGuiElement):
             on_name_click=_on_name_click,
             border=False,
         )
-        self._wallet_row.align(lv.ALIGN.LEFT_MID, 0, 0)
     # ── Public API ────────────────────────────────────────────────────────
 
     def refresh(self):
         """Rebuild context bar content after seed / wallet data changes."""
         # Guard: don't rebuild while the user is actively editing the name field.
-        # Use keyboard_manager.textarea (auto-cleared on DELETE) rather than self.ta
-        # directly — self.ta can be a stale reference to a deleted LVGL widget when
-        # delete_all_children_of() removed it without _build() refreshing it.
+        # self.ta is set by _build_seed / _build_wallet from row.ta (the textarea
+        # exposed by the card builder). Use keyboard_manager.textarea for the live
+        # check — it is auto-cleared on DELETE, whereas self.ta could be a stale
+        # reference after delete_all_children_of() removed the widget.
         ta = getattr(self, "ta", None)
         if ta is not None and self.keyboard_manager.textarea is ta:
             return

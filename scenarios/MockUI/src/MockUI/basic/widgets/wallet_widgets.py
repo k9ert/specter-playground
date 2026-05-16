@@ -111,7 +111,8 @@ def build_wallet_card(
                         signatures symmetric with build_seed_card).
 
     Returns:
-        The created row ``lv.obj``.
+        The editable ``lv.textarea`` widget for the name slot, or ``None`` when
+        the name is rendered as a static label.
     """
     if height is None:
         height = CARD_H
@@ -187,4 +188,4 @@ def build_wallet_card(
 
     if event_bubble:
         row.add_flag(lv.obj.FLAG.EVENT_BUBBLE)
-    return row
+    return ta
