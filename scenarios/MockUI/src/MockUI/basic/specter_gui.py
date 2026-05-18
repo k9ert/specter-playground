@@ -178,9 +178,9 @@ class SpecterGui(lv.obj):
             "manage_preferences":       PreferencesMenu,
             "manage_settings":          SettingsMenu,
         }
-        cls = _VIEW_MAP.get(menu_id)
-        if cls is not None:
-            return cls(screen)
+        class_name = _VIEW_MAP.get(menu_id)
+        if class_name is not None:
+            return class_name(screen)
         return ActionScreen(menu_id, screen)
 
     def _do_transition(self, anim_type):
