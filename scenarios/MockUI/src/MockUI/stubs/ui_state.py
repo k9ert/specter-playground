@@ -11,32 +11,36 @@ from ..basic.ui_consts import MAX_HISTORY_DEPTH
 
 CONFIG_FILE = "/flash/ui_state_config.json"
 
-_MENU_CTX_MAIN   = const(0)
-_MENU_CTX_DEVICE = const(1)
-_MENU_CTX_SEED   = const(2)
-_MENU_CTX_WALLET = const(3)
+_MENU_CTX_MAIN       = const(0)
+_MENU_CTX_DEVICE     = const(1)
+_MENU_CTX_ADD_SEED   = const(2)
+_MENU_CTX_SEED       = const(3)
+_MENU_CTX_ADD_WALLET = const(4)
+_MENU_CTX_WALLET     = const(5)
 
 _CTX_ROOTS_MAIN      = frozenset(["main"])
 _CTX_ROOTS_DEVICE    = frozenset(["manage_settings"])
-_CTX_ROOTS_SEED      = frozenset(["manage_seedphrase", "add_seed"])
-_CTX_ROOTS_WALLET    = frozenset(["manage_wallet", "add_wallet"])
+_CTX_ROOTS_ADD_SEED      = frozenset(["add_seed"])
+_CTX_ROOTS_SEED      = frozenset(["manage_seedphrase"])
+_CTX_ROOTS_ADD_WALLET    = frozenset(["add_wallet"])
+_CTX_ROOTS_WALLET    = frozenset(["manage_wallet"])
 
 # Fast O(1) lookup: menu_id → Context constant (built from the frozensets above)
 _MENU_CONTEXT = {}
-for _id in _CTX_ROOTS_MAIN:   _MENU_CONTEXT[_id] = _MENU_CTX_MAIN
-for _id in _CTX_ROOTS_DEVICE: _MENU_CONTEXT[_id] = _MENU_CTX_DEVICE
-for _id in _CTX_ROOTS_SEED:   _MENU_CONTEXT[_id] = _MENU_CTX_SEED
-for _id in _CTX_ROOTS_WALLET:  _MENU_CONTEXT[_id] = _MENU_CTX_WALLET
+for _id in _CTX_ROOTS_MAIN:        _MENU_CONTEXT[_id] = _MENU_CTX_MAIN
+for _id in _CTX_ROOTS_DEVICE:      _MENU_CONTEXT[_id] = _MENU_CTX_DEVICE
+for _id in _CTX_ROOTS_ADD_SEED:    _MENU_CONTEXT[_id] = _MENU_CTX_ADD_SEED
+for _id in _CTX_ROOTS_SEED:        _MENU_CONTEXT[_id] = _MENU_CTX_SEED
+for _id in _CTX_ROOTS_ADD_WALLET:  _MENU_CONTEXT[_id] = _MENU_CTX_ADD_WALLET
+for _id in _CTX_ROOTS_WALLET:      _MENU_CONTEXT[_id] = _MENU_CTX_WALLET
 
 class Context:
     MAIN   = _MENU_CTX_MAIN
     DEVICE = _MENU_CTX_DEVICE
+    ADD_SEED = _MENU_CTX_ADD_SEED
     SEED   = _MENU_CTX_SEED
+    ADD_WALLET = _MENU_CTX_ADD_WALLET
     WALLET = _MENU_CTX_WALLET
-
-
-def _infer_context(menu_id):
-    return _MENU_CONTEXT.get(menu_id)
 
 class UIState:
     class Snapshot:
@@ -80,7 +84,7 @@ class UIState:
             self.history.pop(0)  # drop oldest before appending to stay within cap
 
         from_ctx = self.active_context
-        to_ctx = _infer_context(menu_id) or from_ctx  # default to same context if unknown
+        to_ctx = _MENU_CONTEXT.get(menu_id, from_ctx)  # default to current context if unknown menu_id
         out_anim = self.forward_transition_type(from_ctx, to_ctx)
 
         self.history.append(UIState.Snapshot(
@@ -114,7 +118,7 @@ class UIState:
             return GUIAnimations.horizontal_slide_in
         if to_ctx == Context.DEVICE:
             return GUIAnimations.horizontal_push_in
-        if to_ctx in (Context.SEED, Context.WALLET):
+        if to_ctx in (Context.ADD_SEED, Context.SEED, Context.ADD_WALLET, Context.WALLET):
             return GUIAnimations.vertical_slide_in
         return None  # fallback: unknown → just appear, no animation
 
