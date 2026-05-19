@@ -25,5 +25,5 @@ class ConnectWalletsMenu(GenericMenu):
             if e.get_code() != lv.EVENT.CLICKED:
                 return
             self.ui_state.active_wallet.has_been_exported = True
-            self.gui.navigate_to(None)
+            self.on_navigate(None)
         return _cb
