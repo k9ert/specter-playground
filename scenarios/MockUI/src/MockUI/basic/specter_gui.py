@@ -46,6 +46,34 @@ from ..device import (
 )
 
 
+_VIEW_MAP = {
+    "locked":                   LockedMenu,
+    "main":                     MainMenu,
+    "start_intro_tour":         MainMenu,
+    "manage_wallet":            WalletMenu,
+    "view_signers":             ViewSignersScreen,
+    "manage_security_settings": SecuritySettingsMenu,
+    "manage_backups":           BackupsMenu,
+    "manage_firmware":          FirmwareMenu,
+    "connect_sw_wallet":        ConnectWalletsMenu,
+    "add_seed":                 AddSeedMenu,
+    "add_wallet":               AddWalletMenu,
+    "manage_security_features": SecurityFeaturesMenu,
+    "interfaces":               InterfacesMenu,
+    "manage_seedphrase":        SeedPhraseMenu,
+    "related_wallets_for_seed": RelatedWalletsForSeedMenu,
+    "store_seedphrase":         StoreSeedphraseMenu,
+    "clear_seedphrase":         ClearSeedphraseMenu,
+    "generate_seedphrase":      GenerateSeedMenu,
+    "set_passphrase":           PassphraseMenu,
+    "create_custom_wallet":     CreateCustomWalletMenu,
+    "manage_storage":           StorageMenu,
+    "select_language":          LanguageMenu,
+    "manage_preferences":       PreferencesMenu,
+    "manage_settings":          SettingsMenu,
+}
+
+
 class SpecterGui(lv.obj):
 
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
@@ -152,32 +180,6 @@ class SpecterGui(lv.obj):
 
     def _build_view(self, screen, menu_id):
         """Instantiate and return the correct view class for *menu_id* into *screen*."""
-        _VIEW_MAP = {
-            "locked":                   LockedMenu,
-            "main":                     MainMenu,
-            "start_intro_tour":         MainMenu,
-            "manage_wallet":            WalletMenu,
-            "view_signers":             ViewSignersScreen,
-            "manage_security_settings": SecuritySettingsMenu,
-            "manage_backups":           BackupsMenu,
-            "manage_firmware":          FirmwareMenu,
-            "connect_sw_wallet":        ConnectWalletsMenu,
-            "add_seed":                 AddSeedMenu,
-            "add_wallet":               AddWalletMenu,
-            "manage_security_features": SecurityFeaturesMenu,
-            "interfaces":               InterfacesMenu,
-            "manage_seedphrase":        SeedPhraseMenu,
-            "related_wallets_for_seed": RelatedWalletsForSeedMenu,
-            "store_seedphrase":         StoreSeedphraseMenu,
-            "clear_seedphrase":         ClearSeedphraseMenu,
-            "generate_seedphrase":      GenerateSeedMenu,
-            "set_passphrase":           PassphraseMenu,
-            "create_custom_wallet":     CreateCustomWalletMenu,
-            "manage_storage":           StorageMenu,
-            "select_language":          LanguageMenu,
-            "manage_preferences":       PreferencesMenu,
-            "manage_settings":          SettingsMenu,
-        }
         class_name = _VIEW_MAP.get(menu_id)
         if class_name is not None:
             return class_name(screen)
