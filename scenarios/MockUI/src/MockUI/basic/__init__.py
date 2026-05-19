@@ -13,7 +13,6 @@ from .menu import GenericMenu
 from .main_menu import MainMenu
 from .locked_menu import LockedMenu
 from .action_screen import ActionScreen
-from .switch_add_menu import SwitchAddMenu
 from .specter_gui import SpecterGui
 
 __all__ = [
@@ -29,6 +28,6 @@ __all__ = [
     # classes used outside basic/
     "TitledScreen",
     "MainMenu", "LockedMenu",
-    "ActionScreen", "GenericMenu", "SwitchAddMenu",
+    "ActionScreen", "GenericMenu",
     "SpecterGui",
 ]
