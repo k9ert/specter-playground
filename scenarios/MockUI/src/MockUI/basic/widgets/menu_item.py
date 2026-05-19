@@ -16,7 +16,7 @@ Usage::
     # Create a toggle row (renders with a switch on the right; set_value is called when user toggles)
     MenuItem(BTC_ICONS.QR_CODE, t("HARDWARE_QR_CODE"),
              get_value=lambda: state.QR_enabled(),
-             set_value=lambda v: setattr(state, "_enabledQR", v))
+             set_value=state.set_QR_enabled)
 """
 
 

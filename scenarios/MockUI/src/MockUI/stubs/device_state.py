@@ -84,6 +84,16 @@ class DeviceState:
     def USB_enabled(self):
         return self.hasUSB() and self._enabledUSB
 
+    # ── Interface enable setters ─────────────────────────────────────
+    def set_QR_enabled(self, enabled):
+        self._enabledQR = bool(enabled)
+    def set_USB_enabled(self, enabled):
+        self._enabledUSB = bool(enabled)
+    def set_SD_enabled(self, enabled):
+        self._enabledSD = bool(enabled)
+    def set_SmartCard_enabled(self, enabled):
+        self._enabledSmartCard = bool(enabled)
+
     # ── Seed helpers ─────────────────────────────────────────────────
     def add_seed(self, seed):
         """Load a seed into memory. Returns the default wallet (created if needed)."""
