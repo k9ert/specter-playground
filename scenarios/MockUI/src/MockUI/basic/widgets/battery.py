@@ -5,8 +5,6 @@ from . import make_icon, set_visible
 from ..ui_utils import configure_as_bare
 
 class Battery(lv.obj):
-    VALUE = None
-    CHARGING = None
     LEVELS = [
         (95, BTC_ICONS.BATTERY_FULL_OUTLINE,  WHITE_HEX),
         (75, BTC_ICONS.BATTERY_4_OUTLINE,     GREEN_HEX),
@@ -18,6 +16,8 @@ class Battery(lv.obj):
     def __init__(self, parent, width=BTC_ICON_WIDTH, height=BTC_ICON_WIDTH):
         super().__init__(parent)
         configure_as_bare(self, width=width, height=height, transparent_bg=True)
+        self.value = None      # battery percentage (0-100) or None to hide
+        self.charging = None   # bool or None
         self.level_bg = make_icon(self, BTC_ICONS.BATTERY_EMPTY, WHITE_HEX)
         self.level_bg.align(lv.ALIGN.CENTER, 0, 0)
         self.level = make_icon(self, BTC_ICONS.BATTERY_FULL_OUTLINE, WHITE_HEX)
@@ -28,8 +28,13 @@ class Battery(lv.obj):
         self.charge.align(lv.ALIGN.CENTER, 0, 0)
         self.update()
 
-    def update(self):
-        if self.VALUE is None:
+    def update(self, value=None, charging=None):
+        """Refresh the widget. If *value*/*charging* are provided, update state first."""
+        if value is not None:
+            self.value = value
+        if charging is not None:
+            self.charging = charging
+        if self.value is None:
             set_visible(self.level_bg, False)
             set_visible(self.level, False)
             set_visible(self.charge, False)
@@ -39,9 +44,9 @@ class Battery(lv.obj):
         set_visible(self.level, True)
 
         for v, level_icon, level_color in self.LEVELS:
-            if self.VALUE >= v:
+            if self.value >= v:
         
-                if self.CHARGING:
+                if self.charging:
                     # when charging user has taken appropriate action -> do not highlight
                     # low battery levels too much anymore -> just set levels and 
                     # not background to level color. Make background invisible
@@ -72,7 +77,7 @@ class Battery(lv.obj):
                 #always draw outine in white to have clear border and better visibility on different backgrounds
                 BTC_ICONS.BATTERY_EMPTY_OUTLINE(WHITE_HEX).apply_icon_to(self.level_ol)
                 # Charging state is important to show user has taken appropriate action -> highlight with charging icon
-                set_visible(self.charge, self.CHARGING)
+                set_visible(self.charge, self.charging)
 
                 break
     

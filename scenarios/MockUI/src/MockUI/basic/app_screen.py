@@ -59,9 +59,7 @@ class AppScreen(SpecterGuiElement):
         if gui.device_state.has_battery:
             self.battery = Battery(self, width=BATTERY_WIDTH, height=TITLE_ROW_HEIGHT)
             self.battery.align(lv.ALIGN.TOP_RIGHT, 0, 0)
-            self.battery.VALUE = gui.device_state.battery_pct
-            self.battery.CHARGING = gui.device_state.is_charging
-            self.battery.update()
+            self.battery.update(gui.device_state.battery_pct, gui.device_state.is_charging)
         else:
             self.battery = None
 
@@ -78,9 +76,7 @@ class AppScreen(SpecterGuiElement):
     def refresh_battery(self):
         """Update battery widget from current device_state."""
         if self.battery:
-            self.battery.VALUE = self.gui.device_state.battery_pct
-            self.battery.CHARGING = self.gui.device_state.is_charging
-            self.battery.update()
+            self.battery.update(self.gui.device_state.battery_pct, self.gui.device_state.is_charging)
 
     def refresh_context_bar(self):
         """Refresh context bar content (e.g. after seed/wallet rename)."""
