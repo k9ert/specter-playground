@@ -60,18 +60,28 @@ class ContextBar(SpecterGuiElement):
         elif ctx == Context.WALLET:
             self._build_wallet()
 
+    def _make_name_commit_handler(self, target_attr):
+        """Return an ``on_name_click`` handler that commits edits to ``target_attr``.
+
+        The returned handler binds the keyboard to the name textarea and, on
+        commit, writes the new label back to ``self.<target_attr>`` (e.g.
+        ``active_seed`` or ``active_wallet``) and refreshes the UI.  When the
+        target is ``None`` at commit time the edit is silently dropped.
+        """
+        def _on_name_click(ta):
+            def _on_commit(val):
+                target = getattr(self, target_attr)
+                if val and target:
+                    ta.remove_state(lv.STATE.FOCUSED)
+                    target.label = val
+                    self.gui.refresh_ui()
+            self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
+        return _on_name_click
+
     def _build_seed(self):
         seed = self.active_seed
         if not seed:
             return
-
-        def _on_name_click(ta):
-            def _on_commit(val):
-                if val and self.active_seed:
-                    ta.remove_state(lv.STATE.FOCUSED)
-                    self.active_seed.label = val
-                    self.gui.refresh_ui()
-            self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
 
         self.ta = build_seed_card(
             self,
@@ -80,7 +90,7 @@ class ContextBar(SpecterGuiElement):
             width=self.get_width(),
             slots=("leading_icon", "name", "passphrase", "fingerprint"),
             leading_icon=BTC_ICONS.KEY_OUTLINE,
-            on_name_click=_on_name_click,
+            on_name_click=self._make_name_commit_handler("active_seed"),
             gui=self.gui,
             border=False,
         )
@@ -100,14 +110,6 @@ class ContextBar(SpecterGuiElement):
         if show_net:
             active_slots.append("net")
 
-        def _on_name_click(ta):
-            def _on_commit(val):
-                if val and self.active_wallet:
-                    ta.remove_state(lv.STATE.FOCUSED)
-                    self.active_wallet.label = val
-                    self.gui.refresh_ui()
-            self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
-
         self.ta = build_wallet_card(
             self,
             wallet,
@@ -116,7 +118,7 @@ class ContextBar(SpecterGuiElement):
             width=self.get_width(),
             slots=active_slots,
             leading_icon=BTC_ICONS.WALLET_OUTLINE,
-            on_name_click=_on_name_click,
+            on_name_click=self._make_name_commit_handler("active_wallet"),
             border=False,
         )
     # ── Public API ────────────────────────────────────────────────────────
