@@ -2,7 +2,7 @@ import lvgl as lv
 from .titled_screen import TitledScreen
 from .symbol_lib import BTC_ICONS
 from .ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH, SMALL_PAD
-from .ui_utils import shuffle
+from .ui_utils import configure_flex, shuffle
 from .widgets.btn import Btn
 from .widgets.containers import flex_row
 from .widgets.labels import body_label
@@ -18,10 +18,7 @@ class LockedMenu(TitledScreen):
         t = self.t
 
         self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(
-            lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER
-        )
+        configure_flex(self.body, main=lv.FLEX_ALIGN.CENTER)
 
         # Firmware version – shown as a subtitle directly under the title bar,
         # inside the TITLE_PADDING gap so it doesn't push body content down.

@@ -8,7 +8,7 @@ from .widgets.btn import Btn
 from .widgets.containers import flex_col, dialog_card, flex_row
 from .widgets.labels import body_label, section_header, form_label
 from .widgets.icon_widgets import make_icon
-from .ui_utils import delete_all_children_of
+from .ui_utils import configure_flex, delete_all_children_of
 
 
 
@@ -31,8 +31,7 @@ class GenericMenu(TitledScreen):
             self.title.set_text(title)
 
         self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        configure_flex(self.body)
         self.fill_body()
 
     def refresh(self):

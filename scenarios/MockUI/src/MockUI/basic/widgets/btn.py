@@ -15,7 +15,7 @@ Proxy: all lv.button methods are accessible directly on Btn instances (e.g. btn.
 import lvgl as lv
 from ..symbol_lib import Icon
 from ..ui_consts import TEXT_FONT
-from ..ui_utils import to_lv_color
+from ..ui_utils import configure_flex, to_lv_color
 
 
 class Btn:
@@ -50,10 +50,7 @@ class Btn:
         # If both icon and text: flex row so they sit side by side
         if icon is not None and text is not None:
             self._btn.set_layout(lv.LAYOUT.FLEX)
-            self._btn.set_flex_flow(lv.FLEX_FLOW.ROW)
-            self._btn.set_flex_align(
-                lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER
-            )
+            configure_flex(self._btn, flow=lv.FLEX_FLOW.ROW, main=lv.FLEX_ALIGN.CENTER)
 
         if icon is not None:
             self._ico_img = lv.image(self._btn)

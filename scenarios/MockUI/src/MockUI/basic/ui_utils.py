@@ -33,6 +33,20 @@ def configure_as_bare(obj, width=None, height=None, transparent_bg=True):
     set_background_visible(obj, not transparent_bg)
 
 
+def configure_flex(obj,
+                   flow=lv.FLEX_FLOW.COLUMN,
+                   main=lv.FLEX_ALIGN.START,
+                   cross=lv.FLEX_ALIGN.CENTER,
+                   track=lv.FLEX_ALIGN.CENTER):
+    """Apply a flex layout to *obj* with sensible defaults.
+
+    Defaults match the typical titled-menu body: column flow with
+    START / CENTER / CENTER alignment.
+    """
+    obj.set_flex_flow(flow)
+    obj.set_flex_align(main, cross, track)
+
+
 # ---------------------------------------------------------------------------
 # Colour helpers
 # ---------------------------------------------------------------------------

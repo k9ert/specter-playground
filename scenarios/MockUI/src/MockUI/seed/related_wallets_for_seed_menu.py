@@ -1,6 +1,6 @@
 import lvgl as lv
 from ..basic.titled_screen import TitledScreen
-from ..basic.ui_utils import delete_all_children_of
+from ..basic.ui_utils import configure_flex, delete_all_children_of
 from ..basic.ui_consts import BTN_HEIGHT, BTN_WIDTH, SCREEN_WIDTH
 from ..basic.widgets.btn import Btn
 from ..basic.widgets.labels import section_header
@@ -26,8 +26,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
         super().__init__(title, parent)
 
         self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        configure_flex(self.body)
 
         self._fill()
 

@@ -1,6 +1,7 @@
 
 import lvgl as lv
 from ..basic import GREY_HEX, TitledScreen, BTN_HEIGHT, BTN_WIDTH
+from ..basic.ui_utils import configure_flex
 from ..basic.keyboard_manager import Layout
 from ..basic.widgets import flex_row, form_label, form_textarea, Btn, body_label
 from ..stubs import Seed
@@ -21,8 +22,7 @@ class GenerateSeedMenu(TitledScreen):
         t = self.i18n.t
 
         self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        configure_flex(self.body)
 
         # Key name row
         name_row = flex_row(self.body, height=70, main_align=lv.FLEX_ALIGN.START)

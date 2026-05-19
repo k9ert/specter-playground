@@ -1,5 +1,6 @@
 import lvgl as lv
 from ..basic import TitledScreen, BTN_WIDTH, BTN_HEIGHT, SMALL_PAD
+from ..basic.ui_utils import configure_flex
 from ..basic.keyboard_manager import Layout
 from ..basic.widgets import flex_col, flex_row, form_label, form_textarea, Btn, ACCEPTED_CHARS
 from ..basic.symbol_lib import BTC_ICONS
@@ -15,8 +16,7 @@ class PassphraseMenu(TitledScreen):
         t = self.i18n.t
 
         self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        configure_flex(self.body)
 
         # Row for passphrase input
         pa_row = flex_row(self.body, height=lv.pct(20), main_align=lv.FLEX_ALIGN.START)

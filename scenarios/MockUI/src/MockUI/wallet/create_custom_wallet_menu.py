@@ -2,6 +2,7 @@
 import lvgl as lv
 import urandom
 from ..basic import TitledScreen, BTN_HEIGHT, BTN_WIDTH, SWITCH_HEIGHT, SWITCH_WIDTH, SMALL_PAD
+from ..basic.ui_utils import configure_flex
 from ..basic.keyboard_manager import Layout
 from ..basic.widgets import Btn, form_label, form_textarea, flex_row
 from ..stubs import Wallet
@@ -21,8 +22,7 @@ class CreateCustomWalletMenu(TitledScreen):
         t = self.i18n.t
 
         self.body.set_layout(lv.LAYOUT.FLEX)
-        self.body.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.body.set_flex_align(lv.FLEX_ALIGN.START, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        configure_flex(self.body)
 
         ROW_H = 60
 

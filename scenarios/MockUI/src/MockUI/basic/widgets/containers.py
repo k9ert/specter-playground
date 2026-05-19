@@ -5,7 +5,7 @@ All containers have border, padding, and radius zeroed by default.
 
 import lvgl as lv
 from ..ui_consts import DIALOG_RADIUS, BIG_PAD, WHITE_HEX, DROPUP_DIVIDER_OPA
-from ..ui_utils import configure_as_bare
+from ..ui_utils import configure_as_bare, configure_flex
 
 
 def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_ALIGN.START, transparent_bg=True):
@@ -13,8 +13,7 @@ def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_A
     cont.set_width(width if width is not None else lv.pct(100))
     cont.set_height(height if height is not None else lv.SIZE_CONTENT)
     cont.set_layout(lv.LAYOUT.FLEX)
-    cont.set_flex_flow(flow)
-    cont.set_flex_align(main_align, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+    configure_flex(cont, flow=flow, main=main_align)
     cont.set_style_border_width(0, 0)
     cont.set_style_radius(0, 0)
     cont.set_style_pad_all(pad, 0)
@@ -102,8 +101,5 @@ def dialog_card(overlay, w, h, x, y, pad=BIG_PAD):
     dialog.set_style_pad_all(pad, 0)
     dialog.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
     dialog.set_layout(lv.LAYOUT.FLEX)
-    dialog.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-    dialog.set_flex_align(
-        lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER
-    )
+    configure_flex(dialog, main=lv.FLEX_ALIGN.CENTER)
     return dialog
