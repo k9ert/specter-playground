@@ -1,9 +1,8 @@
-from ..basic import ORANGE_HEX, RED_HEX, WHITE_HEX, GenericMenu, TITLE_ROW_HEIGHT, SMALL_PAD
+from ..basic import ORANGE_HEX, GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets.action_modal import ActionModal
-from ..basic.confirm_modals import confirm_delete_seed
-from ..basic.widgets import Btn, MenuItem
-import lvgl as lv
+from ..basic.confirm_modals import confirm_delete_seed, make_delete_active_handler
+from ..basic.widgets import MenuItem
+
 
 class SeedPhraseMenu(GenericMenu):
     """Manage Seedphrase menu — includes passphrase, storage, and advanced options.
@@ -50,17 +49,5 @@ class SeedPhraseMenu(GenericMenu):
         # The ContextBar (shown automatically in SEED context) handles the
         # editable seed name and fingerprint display.  Here we only add the
         # delete button so the user can remove this seed from the device.
-        def _on_delete():
-            seed = self.ui_state.active_seed
-
-            def _do_delete():
-                self.device_state.remove_seed(seed)
-                self.ui_state.active_seed = None
-                self.gui.ui_state.clear_history()
-                self.gui.ui_state.current_menu_id = "main"
-                self.gui.refresh_ui()
-                self.on_navigate(None)
-
-            confirm_delete_seed(t, seed.label, _do_delete)
-
-        self.add_title_delete_btn(_on_delete)
+        self.add_title_delete_btn(make_delete_active_handler(
+            self, t, confirm_delete_seed, "active_seed", "remove_seed"))

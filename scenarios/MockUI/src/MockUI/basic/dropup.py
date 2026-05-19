@@ -265,9 +265,12 @@ class SeedDropUp(_DropUp):
                     if self.ui_state.active_seed is s:
                         self.ui_state.active_seed = None
                     if not self.device_state.loaded_seeds:
+                        # Last seed gone: close the drop-up and return home;
+                        # on_navigate("main") handles the refresh itself.
                         self.close()
                         self.on_navigate("main")
-                    self.gui.refresh_ui()
+                    else:
+                        self.gui.refresh_ui()
                 confirm_delete_seed(self.t, s.label, _do_delete)
             return _cb
 
@@ -318,6 +321,9 @@ class WalletDropUp(_DropUp):
         def _make_delete_cb(w):
             def _cb():
                 def _do_delete():
+                    # No empty-list path: the default wallet cannot be deleted
+                    # (delete button is only shown when is_default_wallet is False),
+                    # so registered_wallets always has at least the default entry.
                     self.device_state.remove_wallet(w)
                     if self.ui_state.active_wallet is w:
                         self.ui_state.active_wallet = None

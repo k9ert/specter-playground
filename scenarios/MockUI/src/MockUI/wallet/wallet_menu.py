@@ -1,10 +1,7 @@
-from ..basic import RED_HEX, WHITE_HEX, GenericMenu, TITLE_ROW_HEIGHT, SMALL_PAD
+from ..basic import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets.action_modal import ActionModal
-from ..basic.confirm_modals import confirm_delete_wallet
-from ..basic.widgets import Btn, MenuItem
-from ..basic.ui_consts import BTN_HEIGHT, BTN_WIDTH
-import lvgl as lv
+from ..basic.confirm_modals import confirm_delete_wallet, make_delete_active_handler
+from ..basic.widgets import MenuItem
 
 
 class WalletMenu(GenericMenu):
@@ -44,17 +41,5 @@ class WalletMenu(GenericMenu):
 
         if not is_default:
             # Custom wallet: trash button in title bar, right-aligned
-            def _on_delete():
-                wallet = self.ui_state.active_wallet
-
-                def _do_delete():
-                    self.device_state.remove_wallet(wallet)
-                    self.ui_state.active_wallet = None
-                    self.gui.ui_state.clear_history()
-                    self.gui.ui_state.current_menu_id = "main"
-                    self.gui.refresh_ui()
-                    self.on_navigate(None)
-
-                confirm_delete_wallet(t, wallet.label, _do_delete)
-
-            self.add_title_delete_btn(_on_delete)
+            self.add_title_delete_btn(make_delete_active_handler(
+                self, t, confirm_delete_wallet, "active_wallet", "remove_wallet"))
