@@ -4,7 +4,7 @@ from ..basic.widgets import MenuItem
 from ..stubs import Seed
 import lvgl as lv
 
-class ViewSignersScreen(GenericMenu):
+class ViewSignersMenu(GenericMenu):
     """Form to view the active seed's signers.
 
     menu_id: "view_signers"

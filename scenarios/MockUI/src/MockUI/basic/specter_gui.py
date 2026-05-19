@@ -22,7 +22,7 @@ from ..wallet import (
     ConnectWalletsMenu,
     AddWalletMenu,
     CreateCustomWalletMenu,
-    ViewSignersScreen,
+    ViewSignersMenu,
 )
 from ..seed import (
     AddSeedMenu,
@@ -51,7 +51,7 @@ _VIEW_MAP = {
     "main":                     MainMenu,
     "start_intro_tour":         MainMenu,
     "manage_wallet":            WalletMenu,
-    "view_signers":             ViewSignersScreen,
+    "view_signers":             ViewSignersMenu,
     "manage_security_settings": SecuritySettingsMenu,
     "manage_backups":           BackupsMenu,
     "manage_firmware":          FirmwareMenu,
