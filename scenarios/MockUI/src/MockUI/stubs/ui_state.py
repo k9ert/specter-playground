@@ -18,21 +18,15 @@ _MENU_CTX_SEED       = const(3)
 _MENU_CTX_ADD_WALLET = const(4)
 _MENU_CTX_WALLET     = const(5)
 
-_CTX_ROOTS_MAIN      = frozenset(["main"])
-_CTX_ROOTS_DEVICE    = frozenset(["manage_settings"])
-_CTX_ROOTS_ADD_SEED      = frozenset(["add_seed"])
-_CTX_ROOTS_SEED      = frozenset(["manage_seedphrase"])
-_CTX_ROOTS_ADD_WALLET    = frozenset(["add_wallet"])
-_CTX_ROOTS_WALLET    = frozenset(["manage_wallet"])
-
-# Fast O(1) lookup: menu_id → Context constant (built from the frozensets above)
-_MENU_CONTEXT = {}
-for _id in _CTX_ROOTS_MAIN:        _MENU_CONTEXT[_id] = _MENU_CTX_MAIN
-for _id in _CTX_ROOTS_DEVICE:      _MENU_CONTEXT[_id] = _MENU_CTX_DEVICE
-for _id in _CTX_ROOTS_ADD_SEED:    _MENU_CONTEXT[_id] = _MENU_CTX_ADD_SEED
-for _id in _CTX_ROOTS_SEED:        _MENU_CONTEXT[_id] = _MENU_CTX_SEED
-for _id in _CTX_ROOTS_ADD_WALLET:  _MENU_CONTEXT[_id] = _MENU_CTX_ADD_WALLET
-for _id in _CTX_ROOTS_WALLET:      _MENU_CONTEXT[_id] = _MENU_CTX_WALLET
+# Fast O(1) lookup: menu_id → Context constant
+_MENU_CONTEXT = {
+    "main":              _MENU_CTX_MAIN,
+    "manage_settings":   _MENU_CTX_DEVICE,
+    "add_seed":          _MENU_CTX_ADD_SEED,
+    "manage_seedphrase": _MENU_CTX_SEED,
+    "add_wallet":        _MENU_CTX_ADD_WALLET,
+    "manage_wallet":     _MENU_CTX_WALLET,
+}
 
 class Context:
     MAIN   = _MENU_CTX_MAIN
