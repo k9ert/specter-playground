@@ -1,46 +1,12 @@
 import lvgl as lv
-import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
 from .titled_screen import TitledScreen
 from .symbol_lib import BTC_ICONS
 from .ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH, SMALL_PAD
+from .ui_utils import shuffle
 from .widgets.btn import Btn
 from .widgets.containers import flex_row
 from .widgets.labels import body_label
 
-
-def _shuffle(items_or_count):
-    """Shuffle items using the hardware RNG.
-
-    If *items_or_count* is an ``int`` *n*, returns a list of *n* shuffled
-    indices (a permutation of ``range(n)``).
-
-    If *items_or_count* is a ``list``, shuffles it **in place** and returns
-    the list of source indices (a permutation of ``range(len(list))``) so
-    the caller can reconstruct the mapping if needed.  The caller is
-    responsible for making a copy beforehand if the original order must be
-    retained — this avoids a forced allocation on memory-constrained devices.
-    """
-    is_int = isinstance(items_or_count, int)
-    is_list = isinstance(items_or_count, list)
-    if is_int:
-        n = items_or_count
-    elif is_list:
-        items = items_or_count  # mutate in place — caller copies beforehand if needed
-        n = len(items)
-    else:
-        raise TypeError("_shuffle expects int or list, got " + str(type(items_or_count)))
-    
-    idx_pool = list(range(n))
-    result_idx = [0] * n
-    rand_bytes = rng.get_random_bytes(n)
-
-    for i in range(n):
-        result_idx[i] = idx_pool.pop( rand_bytes[i] % len(idx_pool) )
-
-    if is_list:
-        items[:] = [items_or_count[i] for i in result_idx]
-    
-    return result_idx
 
 class LockedMenu(TitledScreen):
     """Simple lock screen that accepts a numeric PIN to unlock the device."""
@@ -70,7 +36,7 @@ class LockedMenu(TitledScreen):
 
         # keypad layout (3x4): digits in randomised order, Del, and OK
         chars = list("0123456789")
-        _shuffle(chars)  # shuffles in place
+        shuffle(chars)  # shuffles in place
 
         keys = [
             [chars[0], chars[1], chars[2]],

@@ -4,6 +4,7 @@ These helpers have no GUI-state dependencies and can be imported by any module
 without risk of circular imports.
 """
 import lvgl as lv
+import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
 
 
 # ---------------------------------------------------------------------------
@@ -59,3 +60,42 @@ def to_hex_str(color):
         return "0x{:06X}".format(val)
     c32 = lv.color_to32(color)
     return "0x{:02X}{:02X}{:02X}".format(c32.ch.red, c32.ch.green, c32.ch.blue)
+
+
+# ---------------------------------------------------------------------------
+# Randomness helpers
+# ---------------------------------------------------------------------------
+
+def shuffle(items_or_count):
+    """Shuffle items using the hardware RNG.
+
+    If *items_or_count* is an ``int`` *n*, returns a list of *n* shuffled
+    indices (a permutation of ``range(n)``).
+
+    If *items_or_count* is a ``list``, shuffles it **in place** and returns
+    the list of source indices (a permutation of ``range(len(list))``) so
+    the caller can reconstruct the mapping if needed.  The caller is
+    responsible for making a copy beforehand if the original order must be
+    retained — this avoids a forced allocation on memory-constrained devices.
+    """
+    is_int = isinstance(items_or_count, int)
+    is_list = isinstance(items_or_count, list)
+    if is_int:
+        n = items_or_count
+    elif is_list:
+        items = items_or_count  # mutate in place — caller copies beforehand if needed
+        n = len(items)
+    else:
+        raise TypeError("shuffle expects int or list, got " + str(type(items_or_count)))
+
+    idx_pool = list(range(n))
+    result_idx = [0] * n
+    rand_bytes = rng.get_random_bytes(n)
+
+    for i in range(n):
+        result_idx[i] = idx_pool.pop( rand_bytes[i] % len(idx_pool) )
+
+    if is_list:
+        items[:] = [items_or_count[i] for i in result_idx]
+
+    return result_idx
