@@ -58,6 +58,10 @@ class DropUpState:
 class _DropUp(SpecterGuiMixin):
     """Abstract base drop-up overlays."""
 
+    # Subclass row-click behaviour, as a 5-tuple:
+    #   (active_context, active_attr, setter_method, nav_target, nav_kwarg)
+    _ROW_BEHAVIOR = None
+
     def __init__(self, gui):
         self.gui = gui
         self._panel = None    # lv.obj panel widget when open
@@ -200,11 +204,34 @@ class _DropUp(SpecterGuiMixin):
         self.close()
         self._navigate_add()
 
+    def _make_row_cb(self, item):
+        """Row click handler: close, then switch active item or navigate.
+
+        If the drop-up's context is already active (e.g. a seed is loaded while
+        the seed drop-up is open), clicking a row switches to that item in place.
+        Otherwise navigate to the manage screen for that item.
+        """
+        ctx, attr, setter, target, kwarg = self._ROW_BEHAVIOR
+        def _cb(e):
+            if e.get_code() != lv.EVENT.CLICKED:
+                return
+            self.close()
+            if (self.ui_state.active_context == ctx
+                    and getattr(self.ui_state, attr) is not None):
+                getattr(self.ui_state, setter)(item)
+                self.gui.refresh_ui()
+            else:
+                self.on_navigate(target, **{kwarg: item})
+        return _cb
+
 
 # ── Seed Drop-Up ──────────────────────────────────────────────────────────────
 
 class SeedDropUp(_DropUp):
     """Drop-up overlay listing all loaded seeds with passphrase + edit buttons."""
+
+    _ROW_BEHAVIOR = (Context.SEED, "active_seed", "set_active_seed",
+                     "manage_seedphrase", "target_seed")
 
     def _get_items(self):
         return self.device_state.loaded_seeds
@@ -216,17 +243,6 @@ class SeedDropUp(_DropUp):
         self.on_navigate("add_seed", target_seed=None)
 
     def _build_card(self, parent, seed):
-        def _make_row_cb(s):
-            def _cb(e):
-                if e.get_code() == lv.EVENT.CLICKED:
-                    self.close()
-                    if self.ui_state.active_context == Context.SEED and self.ui_state.active_seed is not None:
-                        self.ui_state.set_active_seed(s)
-                        self.gui.refresh_ui()
-                    else:
-                        self.on_navigate("manage_seedphrase", target_seed=s)
-            return _cb
-
         def _make_warn_cb(s):
             def _cb():
                 t = self.t
@@ -259,7 +275,7 @@ class SeedDropUp(_DropUp):
             parent,
             seed,
             slots=("name", "backup_warning", "passphrase", "fingerprint", "delete"),
-            on_card_click=_make_row_cb(seed),
+            on_card_click=self._make_row_cb(seed),
             on_backup_warning=_make_warn_cb(seed),
             on_delete=_make_delete_cb(seed),
             gui=self.gui,
@@ -271,6 +287,9 @@ class SeedDropUp(_DropUp):
 
 class WalletDropUp(_DropUp):
     """Drop-up overlay listing all registered wallets with type + edit buttons."""
+
+    _ROW_BEHAVIOR = (Context.WALLET, "active_wallet", "set_active_wallet",
+                     "manage_wallet", "target_wallet")
 
     def _get_items(self):
         return self.device_state.registered_wallets
@@ -296,17 +315,6 @@ class WalletDropUp(_DropUp):
         if not wallet.is_default_wallet():
             active_slots.append("delete")
 
-        def _make_row_cb(w):
-            def _cb(e):
-                if e.get_code() == lv.EVENT.CLICKED:
-                    self.close()
-                    if self.ui_state.active_context == Context.WALLET and self.ui_state.active_wallet is not None:
-                        self.ui_state.set_active_wallet(w)
-                        self.gui.refresh_ui()
-                    else:  
-                        self.on_navigate("manage_wallet", target_wallet=w)
-            return _cb
-
         def _make_delete_cb(w):
             def _cb():
                 def _do_delete():
@@ -322,6 +330,6 @@ class WalletDropUp(_DropUp):
             wallet,
             state,
             slots=active_slots,
-            on_card_click=_make_row_cb(wallet),
+            on_card_click=self._make_row_cb(wallet),
             on_delete=_make_delete_cb(wallet) if not wallet.is_default_wallet() else None,
         )
