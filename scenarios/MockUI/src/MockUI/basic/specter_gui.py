@@ -186,19 +186,18 @@ class SpecterGui(lv.obj):
         return ActionScreen(menu_id, screen)
 
     def _do_transition(self, anim_type):
-        """Animate from the current screen to a freshly-built new screen."""
+        """Animate from the current screen to a freshly-built new screen.
+
+        Dispatches to one of two cases:
+          • Case 3 (within SEED/WALLET context, context bar stays): animate
+            only the view widget horizontally inside ``screen.content``.
+          • Cases 1/2 (between contexts, or context without bar): animate the
+            entire Screen unit (bar + battery + content move together).
+        """
         self._animating = True
 
-        old_screen = self.screen
-        old_view = self.screen.view
-
-        # Determine transition case.
-        # Cases 1/2 (between contexts, or context without bar): animate the
-        #   entire Screen unit (bar + battery + content move together).        
-        # Case 3 (within SEED/WALLET context, bar stays): animate only the view
-        #   widget horizontally inside screen.content.
         ctx = self.ui_state.active_context  # already updated by navigate_to
-        ctx_has_bar = old_screen.context_bar is not None
+        ctx_has_bar = self.screen.context_bar is not None
         is_horizontal = anim_type in (
             GUIAnimations.horizontal_slide_in,
             GUIAnimations.horizontal_slide_out,
@@ -212,106 +211,114 @@ class SpecterGui(lv.obj):
         )
 
         if within_ctx_with_bar:
-            # ── Case 3: slide only the view inside the existing screen ────────
-            content = old_screen.content
-            content_h = content.get_height()
-            content.set_layout(lv.LAYOUT.NONE)
-            old_view.set_pos(0, 0)
-            old_view.set_size(SCREEN_WIDTH, content_h)
-
-            # Build new view into the same screen (added to content as 2nd child)
-            new_view = self._build_view(old_screen, self.ui_state.current_menu_id)
-            old_screen.view = new_view
-            new_view.set_size(SCREEN_WIDTH, content_h)
-
-            anims = []
-            W = SCREEN_WIDTH
-
-            def _cleanup_case3():
-                self._animating = False
-                self._anim_refs = None
-                old_view.delete()
-                content.set_layout(lv.LAYOUT.FLEX)
-                content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-                self.refresh_ui()
-
-            if anim_type == GUIAnimations.horizontal_slide_in:
-                new_view.set_x(W)
-                anims.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
-                                    on_done_cb=lambda a: _cleanup_case3()))
-            elif anim_type == GUIAnimations.horizontal_slide_out:
-                new_view.set_x(0)
-                old_view.move_foreground()
-                anims.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
-                                    on_done_cb=lambda a: _cleanup_case3()))
-
-            for a in anims:
-                a.start()
-            self._anim_refs = anims
-
+            self._transition_within_context(anim_type)
         else:
-            # ── Cases 1/2: slide the entire Screen unit ───────────────────────
-            new_screen = self._make_screen()
-            self.screen = new_screen
+            self._transition_full_screen(anim_type)
 
-            # temporary clip container: same size as the content zone 
-            # (480×_CONTENT_H).
-            # Both screens are reparented into it so LVGL's default parent-clip
-            # prevents them from ever painting over the navigation bar below.
-            anim_clip = lv.obj(self)
-            configure_as_bare(anim_clip, width=SCREEN_WIDTH, height=_CONTENT_H,
-                               transparent_bg=True)
-            anim_clip.set_pos(0, 0)
-            anim_clip.set_layout(lv.LAYOUT.NONE)
-            anim_clip.set_scroll_dir(lv.DIR.NONE)
+    def _transition_within_context(self, anim_type):
+        """Case 3: slide only the view widget inside the existing screen.content."""
+        old_screen = self.screen
+        old_view = old_screen.view
+        content = old_screen.content
+        content_h = content.get_height()
+        content.set_layout(lv.LAYOUT.NONE)
+        old_view.set_pos(0, 0)
+        old_view.set_size(SCREEN_WIDTH, content_h)
 
-            # Reparent both screens; their coords were (0,0) relative to
-            # SpecterGui which is identical to (0,0) inside anim_clip.
-            old_screen.set_parent(anim_clip)
-            old_screen.set_pos(0, 0)
-            new_screen.set_parent(anim_clip)
+        # Build new view into the same screen (added to content as 2nd child)
+        new_view = self._build_view(old_screen, self.ui_state.current_menu_id)
+        old_screen.view = new_view
+        new_view.set_size(SCREEN_WIDTH, content_h)
+
+        anims = []
+        W = SCREEN_WIDTH
+
+        def _cleanup_case3():
+            self._animating = False
+            self._anim_refs = None
+            old_view.delete()
+            content.set_layout(lv.LAYOUT.FLEX)
+            content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
+            self.refresh_ui()
+
+        if anim_type == GUIAnimations.horizontal_slide_in:
+            new_view.set_x(W)
+            anims.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_case3()))
+        elif anim_type == GUIAnimations.horizontal_slide_out:
+            new_view.set_x(0)
+            old_view.move_foreground()
+            anims.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_case3()))
+
+        for a in anims:
+            a.start()
+        self._anim_refs = anims
+
+    def _transition_full_screen(self, anim_type):
+        """Cases 1/2: slide the entire Screen unit (bar + content) via a clip container."""
+        old_screen = self.screen
+        new_screen = self._make_screen()
+        self.screen = new_screen
+
+        # temporary clip container: same size as the content zone
+        # (480×_CONTENT_H).
+        # Both screens are reparented into it so LVGL's default parent-clip
+        # prevents them from ever painting over the navigation bar below.
+        anim_clip = lv.obj(self)
+        configure_as_bare(anim_clip, width=SCREEN_WIDTH, height=_CONTENT_H,
+                           transparent_bg=True)
+        anim_clip.set_pos(0, 0)
+        anim_clip.set_layout(lv.LAYOUT.NONE)
+        anim_clip.set_scroll_dir(lv.DIR.NONE)
+
+        # Reparent both screens; their coords were (0,0) relative to
+        # SpecterGui which is identical to (0,0) inside anim_clip.
+        old_screen.set_parent(anim_clip)
+        old_screen.set_pos(0, 0)
+        new_screen.set_parent(anim_clip)
+        new_screen.set_pos(0, 0)
+
+        # Navigation bar must remain above the clip container.
+        self.navigation_bar.move_foreground()
+
+        def _cleanup_whole():
+            self._animating = False
+            self._anim_refs = None
+            # Reparent new_screen back to SpecterGui before deleting the
+            # clip (which would otherwise take new_screen with it).
+            new_screen.set_parent(self)
             new_screen.set_pos(0, 0)
-
-            # Navigation bar must remain above the clip container.
+            anim_clip.delete()   # also deletes old_screen
             self.navigation_bar.move_foreground()
+            self.refresh_ui()
 
-            def _cleanup_whole():
-                self._animating = False
-                self._anim_refs = None
-                # Reparent new_screen back to SpecterGui before deleting the
-                # clip (which would otherwise take new_screen with it).
-                new_screen.set_parent(self)
-                new_screen.set_pos(0, 0)
-                anim_clip.delete()   # also deletes old_screen
-                self.navigation_bar.move_foreground()
-                self.refresh_ui()
+        anims = []
+        W = SCREEN_WIDTH
 
-            anims = []
-            W = SCREEN_WIDTH
+        if anim_type == GUIAnimations.horizontal_slide_in:
+            anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.horizontal_slide_out:
+            old_screen.move_foreground()   # old on top within anim_clip
+            anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.horizontal_push_in:
+            anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
+            anims.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.horizontal_push_out:
+            anims.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
+            anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.vertical_slide_in:
+            anims.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.vertical_slide_out:
+            old_screen.move_foreground()   # old on top within anim_clip
+            anims.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
 
-            if anim_type == GUIAnimations.horizontal_slide_in:
-                anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
-                                    on_done_cb=lambda a: _cleanup_whole()))
-            elif anim_type == GUIAnimations.horizontal_slide_out:
-                old_screen.move_foreground()   # old on top within anim_clip
-                anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
-                                    on_done_cb=lambda a: _cleanup_whole()))
-            elif anim_type == GUIAnimations.horizontal_push_in:
-                anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
-                anims.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
-                                    on_done_cb=lambda a: _cleanup_whole()))
-            elif anim_type == GUIAnimations.horizontal_push_out:
-                anims.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
-                anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
-                                    on_done_cb=lambda a: _cleanup_whole()))
-            elif anim_type == GUIAnimations.vertical_slide_in:
-                anims.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
-                                    on_done_cb=lambda a: _cleanup_whole()))
-            elif anim_type == GUIAnimations.vertical_slide_out:
-                old_screen.move_foreground()   # old on top within anim_clip
-                anims.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
-                                    on_done_cb=lambda a: _cleanup_whole()))
-
-            for a in anims:
-                a.start()
-            self._anim_refs = anims
+        for a in anims:
+            a.start()
+        self._anim_refs = anims
