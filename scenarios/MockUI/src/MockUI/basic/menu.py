@@ -3,6 +3,7 @@ from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WIDTH_PCT,
 from .titled_screen import TitledScreen
 from .symbol_lib import Icon, BTC_ICONS
 from .widgets.modal_overlay import ModalOverlay
+from .widgets.action_modal import ActionModal
 from .widgets.btn import Btn
 from .widgets.containers import flex_col, dialog_card, flex_row
 from .widgets.labels import body_label, section_header, form_label
@@ -194,25 +195,7 @@ class GenericMenu(TitledScreen):
         """Create callback for help button - shows a modal overlay with help text."""
         def callback(e):
             if e.get_code() == lv.EVENT.CLICKED:
-                help_text = self.t(help_key)
-
-                modal = ModalOverlay(bg_opa=DEFAULT_MODAL_BG_OPA)
-                # --- dialog card ---
-                dw = SCREEN_WIDTH * MODAL_WIDTH_PCT // 100
-                dh = SCREEN_HEIGHT * MODAL_HEIGHT_PCT // 100
-                dx = (SCREEN_WIDTH - dw) // 2
-                dy = (SCREEN_HEIGHT - dh) // 2
-                dialog = dialog_card(modal.overlay, dw, dh, dx, dy)
-
-                body_label(dialog, title_text)
-                body_label(dialog, help_text)
-
-                close_btn = Btn(
-                    dialog,
-                    text=self.t("MODAL_CLOSE_BTN"),
-                    callback=lambda ev: modal.close() if ev.get_code() == lv.EVENT.CLICKED else None,
-                )
-
+                ActionModal(text=title_text + "\n" + self.t(help_key))
                 # stop the underlying button from firing too
                 e.stop_bubbling = 1
         return callback
