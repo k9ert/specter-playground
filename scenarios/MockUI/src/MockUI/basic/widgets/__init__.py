@@ -6,8 +6,6 @@ from .icon_widgets import make_icon, set_visible
 from .labels import body_label, section_header, form_label, set_label_color
 from .inputs import title_textarea, form_textarea, ACCEPTED_CHARS
 from .menu_item import MenuItem
-from .seed_widgets import fingerprint_badge, passphrase_toggle
-from .wallet_widgets import add_wallet_type_icon, wallet_signing_color
 from .battery import Battery
 
 __all__ = [
@@ -18,7 +16,5 @@ __all__ = [
     "body_label", "section_header", "form_label",
     "title_textarea", "form_textarea", "ACCEPTED_CHARS",
     "MenuItem",
-    "fingerprint_badge", "passphrase_toggle",
-    "add_wallet_type_icon", "wallet_signing_color",
     "Battery",
 ]
