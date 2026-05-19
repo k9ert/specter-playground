@@ -5,11 +5,11 @@ import lvgl as lv
 from ..symbol_lib import BTC_ICONS
 from ..ui_consts import (
     WHITE_HEX, GREY_HEX, ORANGE_HEX, SMALL_TEXT_FONT, FINGERPRINT_LBL_WIDTH,
-    BTC_ICON_WIDTH, BIG_PAD, STATUS_BTN_HEIGHT, SCREEN_WIDTH, CARD_H,
+    BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, SCREEN_WIDTH, CARD_H,
 )
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
-from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot
+from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot, compute_name_width
 
 # Width contributions of fixed slots (pixels)
 _ICON_W = BTC_ICON_WIDTH          # any single icon slot
@@ -141,19 +141,14 @@ def build_seed_card(
         assert gui is not None, "'passphrase' slot requires gui= argument when seed has a passphrase"
 
     # ── Width budget for the name slot ───────────────────────────────────────
-    fixed_w = 2 * BIG_PAD   # row left+right padding
-    for slot in slots:
-        if slot == "leading_icon":
-            fixed_w += _ICON_W
-        elif slot == "backup_warning" and not seed.is_backed_up:
-            fixed_w += _ICON_W
-        elif slot == "passphrase" and seed.passphrase is not None:
-            fixed_w += _ICON_W
-        elif slot == "fingerprint":
-            fixed_w += _FP_W
-        elif slot == "delete" and on_delete is not None:
-            fixed_w += _ICON_W
-    name_w = max(10, width - fixed_w)
+    slot_costs = {
+        "leading_icon":   _ICON_W,
+        "backup_warning": _ICON_W if not seed.is_backed_up else 0,
+        "passphrase":     _ICON_W if seed.passphrase is not None else 0,
+        "fingerprint":    _FP_W,
+        "delete":         _ICON_W if on_delete is not None else 0,
+    }
+    name_w = compute_name_width(width, slots, slot_costs)
 
     # ── Build row ────────────────────────────────────────────────────────────
     row = build_card_row(parent, height=height, width=width, border=border, on_card_click=on_card_click)

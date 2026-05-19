@@ -4,12 +4,12 @@
 import lvgl as lv
 from ..symbol_lib import BTC_ICONS
 from ..ui_consts import (
-    WHITE_HEX, GREY_HEX, BTC_ICON_WIDTH, BIG_PAD, SCREEN_WIDTH,
+    WHITE_HEX, GREY_HEX, BTC_ICON_WIDTH, SCREEN_WIDTH,
     STATUS_BTN_HEIGHT, SMALL_TEXT_FONT, CARD_H,
 )
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
-from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot
+from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot, compute_name_width
 
 # Wallet-card slot names (ordered as they appear left-to-right in default layout)
 WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete")
@@ -133,22 +133,16 @@ def build_wallet_card(
     show_net       = "net" in slots and wallet_net_text(wallet) not in (None, "main")
     show_delete    = "delete" in slots and on_delete is not None
 
-    # ── Width budget for the name slot ────────────────────────────────────────
-    fixed_w = 2 * BIG_PAD
-    for slot in slots:
-        if slot == "leading_icon":
-            fixed_w += _ICON_W
-        elif slot == "type_icon":
-            fixed_w += _ICON_W
-        elif slot == "threshold" and show_threshold:
-            fixed_w += _THRESH_W
-        elif slot == "account" and show_account:
-            fixed_w += _ACC_W
-        elif slot == "net" and show_net:
-            fixed_w += _NET_W
-        elif slot == "delete" and show_delete:
-            fixed_w += _ICON_W
-    name_w = max(10, width - fixed_w)
+    # ── Width budget for the name slot ─────────────────────────────────────
+    slot_costs = {
+        "leading_icon": _ICON_W,
+        "type_icon":    _ICON_W,
+        "threshold":    _THRESH_W if show_threshold else 0,
+        "account":      _ACC_W   if show_account   else 0,
+        "net":          _NET_W   if show_net       else 0,
+        "delete":       _ICON_W  if show_delete    else 0,
+    }
+    name_w = compute_name_width(width, slots, slot_costs)
 
     # ── Build row ─────────────────────────────────────────────────────────────
     row = build_card_row(parent, height=height, width=width, border=border, on_card_click=on_card_click)

@@ -11,7 +11,28 @@ from .labels import make_label, best_font_for_size
 from .inputs import title_textarea
 from .btn import Btn
 from ..symbol_lib import BTC_ICONS
-from ..ui_consts import WHITE_HEX
+from ..ui_consts import WHITE_HEX, BIG_PAD
+
+
+def compute_name_width(width, slots, slot_costs, min_width=10):
+    """Compute the width budget for a card row's name slot.
+
+    The card layout reserves a fixed left/right padding plus a per-slot
+    width contribution for each non-name slot.  Callers provide
+    ``slot_costs`` as a mapping of slot name → pixel width contributed
+    by that slot (zero or missing entries are skipped).
+
+    Args:
+        width:      Total row width.
+        slots:      Iterable of slot names present on the row.
+        slot_costs: ``{slot: pixel_width}`` mapping for non-name slots.
+        min_width:  Lower bound on the returned width.
+
+    Returns:
+        Pixel width to allocate to the name slot.
+    """
+    fixed_w = 2 * BIG_PAD + sum(slot_costs.get(slot, 0) for slot in slots)
+    return max(min_width, width - fixed_w)
 
 
 def build_card_row(parent, height, width, border, on_card_click):
