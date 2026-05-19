@@ -1,5 +1,6 @@
 import lvgl as lv
 from .menu import GenericMenu
+from ..seed.add_seed_menu import make_add_seed_items
 from .symbol_lib import BTC_ICONS
 from .ui_consts import GREEN_HEX, RED_HEX, WHITE_HEX, ORANGE_HEX
 from .widgets import MenuItem
@@ -18,46 +19,23 @@ class MainMenu(GenericMenu):
         
     def _items_no_seed(self, t, state):
         """State: No Seed loaded yet — focus on key loading."""
-        menu_items = []
         slots_available = 7
         slots_used = 2 + int(state.SmartCard_hasSeed()) + int(state.SD_hasSeed()) + int(state.Flash_hasSeed() + int(state.QR_enabled()))
         slots_remaining = slots_available - slots_used
 
         Seed_detected = (state.SmartCard_hasSeed() or state.SD_hasSeed() or state.Flash_hasSeed())
 
-        menu_items.append(MenuItem(text=t("ADD_SEED_GENERATE_SECTION")))
-
-        # Generate New Key
-        gen_size = 1.0+slots_remaining/slots_used if not Seed_detected else 1
-        menu_items.append(MenuItem(BTC_ICONS.DICE, t("ADD_SEED_GENERATE_SEED"), "generate_seedphrase", size=gen_size, is_submenu=True))
-
-        menu_items.append(MenuItem(text=t("ADD_SEED_IMPORT_SECTION")))
-
-        # SmartCard (highlighted exclusively when detected with key)
-        if state.SmartCard_hasSeed():
-            sc_size = 1.0 + slots_remaining
-            menu_items.append(MenuItem(BTC_ICONS.SMARTCARD, t("HARDWARE_SMARTCARD"), "import_from_smartcard", size=sc_size))
-
-        # Scan QR
-        qr_size = 1.0+slots_remaining/slots_used if not Seed_detected else 1
-        if state.QR_enabled():
-            menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("HARDWARE_QR_CODE"), "import_from_qr", size=qr_size))
-
-        # Keyboard
-        kb_size = 1.0+slots_remaining/slots_used if not Seed_detected else 1
-        menu_items.append(MenuItem(BTC_ICONS.KEYBOARD, t("COMMON_KEYBOARD"), "import_from_keyboard", size=kb_size))
-
-        # SD Card (only if key data detected)
-        if state.SD_hasSeed():
-            sd_size = 1.0 + slots_remaining if not state.SmartCard_hasSeed() else 1
-            menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), "import_from_sd", size=sd_size))
-
-        # Flash (only if key data in flash)
-        if state.Flash_hasSeed():
-            flash_size = 1.0 + slots_remaining if not (state.SmartCard_hasSeed() or state.SD_hasSeed()) else 1
-            menu_items.append(MenuItem(BTC_ICONS.FILE, t("HARDWARE_INTERNAL_FLASH"), "import_from_flash", size=flash_size))
-
-        return menu_items
+        # Size each row based on remaining slots / detected seeds.
+        scaled = 1.0 + slots_remaining / slots_used if not Seed_detected else 1
+        gen_size = scaled
+        sizes = {
+            "smartcard": 1.0 + slots_remaining,
+            "qr": scaled,
+            "keyboard": scaled,
+            "sd": 1.0 + slots_remaining if not state.SmartCard_hasSeed() else 1,
+            "flash": 1.0 + slots_remaining if not (state.SmartCard_hasSeed() or state.SD_hasSeed()) else 1,
+        }
+        return make_add_seed_items(t, state, sizes=sizes, generate_size=gen_size)
 
     def _items_with_seed(self, t, state):
         """State: Seed loaded — normal operating mode."""

@@ -9,10 +9,10 @@ from .ui_consts import (
     ORANGE_HEX, RED_HEX, WHITE_HEX, GREY_HEX,
 )
 from .titled_screen import TitledScreen
+from .menu import GenericMenu
 from .main_menu import MainMenu
 from .locked_menu import LockedMenu
 from .action_screen import ActionScreen
-from .menu import GenericMenu
 from .switch_add_menu import SwitchAddMenu
 from .specter_gui import SpecterGui
 

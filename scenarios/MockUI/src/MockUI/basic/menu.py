@@ -11,7 +11,6 @@ from .widgets.icon_widgets import make_icon
 from .ui_utils import configure_flex, delete_all_children_of
 
 
-
 class GenericMenu(TitledScreen):
     """Reusable menu builder — template method pattern.
 
