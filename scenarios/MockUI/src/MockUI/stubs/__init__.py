@@ -1,6 +1,5 @@
 from .ui_state import UIState
-from .device_state import SpecterState
+from .device_state import DeviceState
 from .wallet import Wallet
-from .battery import Battery    
-
-__all__ = ["UIState", "SpecterState", "Wallet", "Battery"]
+from .seed import Seed
+__all__ = ["UIState", "DeviceState", "Wallet", "Seed"]

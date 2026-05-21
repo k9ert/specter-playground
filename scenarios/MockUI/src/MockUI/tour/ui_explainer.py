@@ -8,11 +8,12 @@ import lvgl as lv
 from ..basic.ui_consts import (
     EXPLAINER_WIDTH_PCT,
     EXPLAINER_HEIGHT_PCT,
-    EXPLAINER_OVERLAY_OPA,
+    DEFAULT_MODAL_BG_OPA,
     BLACK_HEX,
 )
 from ..basic.symbol_lib import BTC_ICONS
-from ..basic.modal_overlay import ModalOverlay
+from ..basic.widgets.modal_overlay import ModalOverlay
+from ..basic.widgets import Btn, flex_row, flex_col, body_label, dialog_card
 
 
 class UIExplainer:
@@ -72,22 +73,12 @@ class UIExplainer:
             # Manual positioning
             return self.highlighted_element
         else:
-            # Get coordinates from lv.obj
+            # Get absolute screen coordinates from lv.obj
             obj = self.highlighted_element
-            # Get screen coordinates
-            x = obj.get_x()
-            y = obj.get_y()
-            
-            # Walk up parent chain to get absolute screen position
-            parent = obj.get_parent()
-            while parent is not None:
-                x += parent.get_x()
-                y += parent.get_y()
-                parent = parent.get_parent()
-            
+            x = obj.get_x_absolute()
+            y = obj.get_y_absolute()
             width = obj.get_width()
             height = obj.get_height()
-            
             return (x, y, width, height)
     
     def _create_dim_strips(self, cutout):
@@ -116,7 +107,7 @@ class UIExplainer:
             strip.set_pos(x, y)
             strip.set_size(w, h)
             strip.set_style_bg_color(BLACK_HEX, 0)
-            strip.set_style_bg_opa(EXPLAINER_OVERLAY_OPA, 0)
+            strip.set_style_bg_opa(DEFAULT_MODAL_BG_OPA, 0)
             strip.set_style_border_width(0, 0)
             strip.set_style_pad_all(0, 0)
             strip.set_style_radius(0, 0)
@@ -153,43 +144,20 @@ class UIExplainer:
             box_height: Height of the text box
         """
         # Create text box container
-        self._text_box = lv.obj(self._overlay)
-        self._text_box.set_size(box_width, box_height)
-        self._text_box.set_pos(box_x, box_y)
-        self._text_box.set_style_pad_all(10, 0)
-        self._text_box.set_style_radius(8, 0)
-        self._text_box.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
-        
-        # Use flex layout for vertical arrangement
-        self._text_box.set_layout(lv.LAYOUT.FLEX)
-        self._text_box.set_flex_flow(lv.FLEX_FLOW.COLUMN)
+        self._text_box = dialog_card(self._overlay, box_width, box_height, box_x, box_y, pad=10)
         self._text_box.set_flex_align(lv.FLEX_ALIGN.SPACE_BETWEEN, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
         
         # Create text label (with flex grow to take available space)
-        text_container = lv.obj(self._text_box)
-        text_container.set_width(lv.pct(100))
+        text_container = flex_col(self._text_box, width=lv.pct(100))
         text_container.set_flex_grow(1)
         text_container.set_style_pad_all(5, 0)
-        text_container.set_style_border_width(0, 0)
         text_container.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
         
-        text_label = lv.label(text_container)
-        text_label.set_text(self.text)
-        text_label.set_width(lv.pct(95))
-        text_label.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-        text_label.set_style_text_font(lv.font_montserrat_22, 0)
-        text_label.set_long_mode(lv.label.LONG_MODE.WRAP)
+        text_label = body_label(text_container, self.text)
         text_label.center()
         
         # Create navigation button container
-        nav_container = lv.obj(self._text_box)
-        nav_container.set_width(lv.pct(100))
-        nav_container.set_height(60)
-        nav_container.set_layout(lv.LAYOUT.FLEX)
-        nav_container.set_flex_flow(lv.FLEX_FLOW.ROW)
-        nav_container.set_flex_align(lv.FLEX_ALIGN.SPACE_EVENLY, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
-        nav_container.set_style_pad_all(0, 0)
-        nav_container.set_style_border_width(0, 0)
+        nav_container = flex_row(self._text_box, height=60, pad=0)
         nav_container.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
         
         # Get position info from tour
@@ -197,47 +165,22 @@ class UIExplainer:
         is_last = self.tour.is_last()
         
         # Previous button (or invisible placeholder on first screen)
-        prev_btn = lv.button(nav_container)
-        prev_btn.set_size(60, 50)
-        if not is_first:
-            prev_icon = lv.image(prev_btn)
-            BTC_ICONS.CARET_LEFT.add_to_parent(prev_icon)
-            prev_icon.center()
-            prev_btn.add_event_cb(self._on_prev_clicked, lv.EVENT.CLICKED, None)
-        else:
-            prev_btn.set_style_bg_opa(lv.OPA.TRANSP, 0)
-            prev_btn.set_style_shadow_width(0, 0)
-            prev_btn.set_style_border_width(0, 0)
-            prev_btn.remove_flag(lv.obj.FLAG.CLICKABLE)
+        PrevBtn = Btn(nav_container, icon=BTC_ICONS.CARET_LEFT, size=(60, 50),
+            callback=self._on_prev_clicked)
+        PrevBtn.set_visible(not is_first)
         
         # Skip/Complete button (always present)
-        skip_btn = lv.button(nav_container)
         if is_last:
-            skip_btn.set_size(60, 50)
-            skip_icon = lv.image(skip_btn)
-            BTC_ICONS.CHECK.add_to_parent(skip_icon)
-            skip_icon.center()
+            Btn(nav_container, icon=BTC_ICONS.CHECK, size=(60, 50),
+                callback=self._on_skip_clicked)
         else:
-            skip_btn.set_size(160, 50)
-            skip_label = lv.label(skip_btn)
-            skip_label.set_text(self.tour.nav.i18n.t("TOUR_SKIP_BTN"))
-            skip_label.set_style_text_font(lv.font_montserrat_22, 0)
-            skip_label.center()
-        skip_btn.add_event_cb(self._on_skip_clicked, lv.EVENT.CLICKED, None)
+            Btn(nav_container, text=self.tour.nav.i18n.t("TOUR_SKIP_BTN"),
+                size=(160, 50), callback=self._on_skip_clicked)
         
         # Next button (or invisible placeholder on last screen)
-        next_btn = lv.button(nav_container)
-        next_btn.set_size(60, 50)
-        if not is_last:
-            next_icon = lv.image(next_btn)
-            BTC_ICONS.CARET_RIGHT.add_to_parent(next_icon)
-            next_icon.center()
-            next_btn.add_event_cb(self._on_next_clicked, lv.EVENT.CLICKED, None)
-        else:
-            next_btn.set_style_bg_opa(lv.OPA.TRANSP, 0)
-            next_btn.set_style_shadow_width(0, 0)
-            next_btn.set_style_border_width(0, 0)
-            next_btn.remove_flag(lv.obj.FLAG.CLICKABLE)
+        NextBtn = Btn(nav_container, icon=BTC_ICONS.CARET_RIGHT, size=(60, 50),
+            callback=self._on_next_clicked)
+        NextBtn.set_visible(not is_last)
     
     def _calculate_text_box_position(self, cutout):
         """Calculate text box dimensions and position based on text_position setting and cutout.

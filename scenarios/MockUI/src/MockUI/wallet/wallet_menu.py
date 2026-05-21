@@ -1,7 +1,7 @@
-from ..basic import RED_HEX, WHITE_HEX, GenericMenu, RED, ORANGE, TITLE_ROW_HEIGHT
+from ..basic import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
-from ..basic.keyboard_manager import Layout
-import lvgl as lv
+from ..basic.confirm_modals import confirm_delete_wallet, make_delete_active_handler
+from ..basic.widgets import MenuItem
 
 
 class WalletMenu(GenericMenu):
@@ -12,68 +12,34 @@ class WalletMenu(GenericMenu):
     def get_menu_items(self, t, state):
         menu_items = []
 
-        menu_items.append((None, t("WALLET_MENU_EXPLORE"), None, None, None, None))
-        menu_items.append((BTC_ICONS.MENU, t("WALLET_MENU_VIEW_ADDRESSES"), "view_addresses", None, None, None))
-        if (state and not state.active_wallet is None and state.active_wallet.isMultiSig):
-            menu_items.append((BTC_ICONS.ADDRESS_BOOK, t("WALLET_MENU_VIEW_SIGNERS"), "view_signers", None, None, None))
-
-        menu_items.append((None, t("WALLET_MENU_MANAGE"), None, None, None, None))
-        if (state and not state.active_wallet is None and not state.active_wallet.isMultiSig):
-            #Probably not needed as a fixed setting -> derivation path can be chosen in address explorer or when exporting public keys
-            #menu_items.append((None, "Manage Derivation Path", "derivation_path", None, None, None))
-            menu_items.append((BTC_ICONS.MNEMONIC, t("MENU_MANAGE_SEEDPHRASE"), "manage_seedphrase", None, None, None))
-            menu_items.append((BTC_ICONS.PASSWORD, t("MENU_SET_PASSPHRASE"), "set_passphrase", None, None, None))
-        elif (state and not state.active_wallet is None and state.active_wallet.isMultiSig):
-            menu_items.append((BTC_ICONS.CONSOLE, t("WALLET_MENU_MANAGE_DESCRIPTOR"), "manage_wallet_descriptor", None, None, None))
-        menu_items.append((BTC_ICONS.BITCOIN, t("WALLET_MENU_CHANGE_NETWORK"), "change_network", None, None, None))
+        menu_items += [
+            MenuItem(text=t("WALLET_MENU_EXPLORE")),
+            MenuItem(BTC_ICONS.MENU, t("WALLET_MENU_VIEW_ADDRESSES"), "view_addresses"),
+            MenuItem(BTC_ICONS.ADDRESS_BOOK, t("WALLET_MENU_VIEW_SIGNERS"), "view_signers", is_submenu=True),
+        ]
 
         menu_items += [
-            (None, t("WALLET_MENU_CONNECT_EXPORT"), None, None, None, None),
-            (BTC_ICONS.LINK, t("MENU_CONNECT_SW_WALLET"), "connect_sw_wallet", None, None, None),
-            (BTC_ICONS.EXPORT, t("WALLET_MENU_EXPORT_DATA"), "export_wallet", None, None, None)
+            MenuItem(text=t("WALLET_MENU_MANAGE")),
+            MenuItem(BTC_ICONS.CONSOLE, t("WALLET_MENU_MANAGE_DESCRIPTOR"), "manage_wallet_descriptor"),
+            MenuItem(BTC_ICONS.BITCOIN, t("WALLET_MENU_CHANGE_NETWORK"), "change_network"),
+        ]
+
+        menu_items += [
+            MenuItem(text=t("WALLET_MENU_CONNECT_EXPORT")),
+            MenuItem(BTC_ICONS.LINK, t("MENU_CONNECT_SW_WALLET"), "connect_sw_wallet"),
+            MenuItem(BTC_ICONS.EXPORT, t("WALLET_MENU_EXPORT_DATA"), "export_wallet"),
         ]
 
         return menu_items
 
     def post_init(self, t, state):
-        # Remove the default title label and replace with editable text area + edit button
-        self.title.delete()
+        # The ContextBar (shown automatically in WALLET context) handles the
+        # editable wallet name and type icon.  Here we only add the delete
+        # button (custom wallets) and the account row.
 
-        # Text area for wallet name (editable) – lives in title_bar, centred
-        self.name_textarea = lv.textarea(self.title_bar)
-        self.name_textarea.set_width(270)
-        self.name_textarea.set_height(TITLE_ROW_HEIGHT)
-        self.name_textarea.set_style_text_font(lv.font_montserrat_28, 0)
-        self.name_textarea.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-        # Thicker white border so it's visually clear this field is editable
-        self.name_textarea.set_style_border_width(2, lv.PART.MAIN)
-        self.name_textarea.set_style_border_color(WHITE_HEX, lv.PART.MAIN)
-        self.name_textarea.align(lv.ALIGN.CENTER, 0, 0)
-        self.name_textarea.set_accepted_chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~ ")  # No newlines
+        is_default = self.ui_state.active_wallet.is_default_wallet()
 
-        # Set initial text from active wallet
-        wallet_name = ""
-        if state and state.active_wallet:
-            wallet_name = state.active_wallet.name
-        self.name_textarea.set_text(wallet_name)
-
-        # Red trash button – square, matching textarea height, to the right of textarea
-        textarea_height = self.name_textarea.get_height()
-        self.delete_btn = lv.button(self.title_bar)
-        self.delete_btn.set_size(textarea_height, textarea_height)
-        self.delete_btn.set_style_bg_color(RED_HEX, lv.PART.MAIN)
-        self.delete_ico = lv.image(self.delete_btn)
-        BTC_ICONS.TRASH.add_to_parent(self.delete_ico)
-        self.delete_ico.center()
-        self.delete_btn.align_to(self.name_textarea, lv.ALIGN.OUT_RIGHT_MID, 6, 0)
-
-        def _on_commit(new_name):
-            if self.state and self.state.active_wallet:
-                self.state.active_wallet.name = new_name
-                self.gui.refresh_ui()
-
-        keyboard_binder = lambda e: self.gui.keyboard_manager.bind(self.name_textarea, Layout.FULL, _on_commit)
-        self.name_textarea.add_event_cb(keyboard_binder, lv.EVENT.CLICKED, None)
-
-        # Trash button navigates to delete confirmation
-        self.delete_btn.add_event_cb(self.make_callback("delete_wallet"), lv.EVENT.CLICKED, None)
+        if not is_default:
+            # Custom wallet: trash button in title bar, right-aligned
+            self.add_title_delete_btn(make_delete_active_handler(
+                self, t, confirm_delete_wallet, "active_wallet", "remove_wallet"))

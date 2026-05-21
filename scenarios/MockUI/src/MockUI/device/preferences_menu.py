@@ -1,6 +1,6 @@
 from ..basic import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
-import lvgl as lv
+from ..basic.widgets import MenuItem
 
 
 class PreferencesMenu(GenericMenu):
@@ -10,7 +10,10 @@ class PreferencesMenu(GenericMenu):
 
     def get_menu_items(self, t, state):
         return [
-            (BTC_ICONS.PHOTO, t("DEVICE_MENU_DISPLAY"), "display_settings", None, None, None),
-            (BTC_ICONS.BELL, t("DEVICE_MENU_SOUNDS"), "sound_settings", None, None, None),
-            (BTC_ICONS.REFRESH, t("DEVICE_MENU_RESTART_TOUR"), "start_intro_tour", None, None, None),
+            MenuItem(BTC_ICONS.MAGIC_WAND, t("DEVICE_MENU_ANIMATIONS"), 
+                     get_value=lambda: self.ui_state.are_animations_enabled,
+                     set_value=lambda v: setattr(self.ui_state, "are_animations_enabled", v)),
+            MenuItem(BTC_ICONS.PHOTO, t("DEVICE_MENU_DISPLAY"), "display_settings"),
+            MenuItem(BTC_ICONS.BELL, t("DEVICE_MENU_SOUNDS"), "sound_settings"),
+            MenuItem(BTC_ICONS.REFRESH, t("DEVICE_MENU_RESTART_TOUR"), "start_intro_tour"),
         ]

@@ -27,3 +27,6 @@ lang_*.bin
 # Simulator runtime state files (generated at runtime, not for version control)
 **/ui_state_config.json
 
+
+# AI planning documents (ephemeral)
+history/

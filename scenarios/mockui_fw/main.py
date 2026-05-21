@@ -23,7 +23,8 @@ else:
     display.init()
 # --- End simulator setup ---
 
-from MockUI import SpecterGui, SpecterState
+from MockUI import SpecterGui, DeviceState, Wallet
+from MockUI.stubs import Seed
 
 gc.collect()
 
@@ -35,24 +36,45 @@ lv.theme_default_init(
     lv.font_montserrat_16,
 )
 
-specter_state = SpecterState()
+specter_state = DeviceState()
 specter_state.has_battery = True
 specter_state.battery_pct = 100
+specter_state.charging = False
 
-specter_state.hasQR = True
-specter_state.enabledQR = True
+specter_state._hasQR = True
+specter_state._enabledQR = True
 
-specter_state.hasSD = True
-specter_state.enabledSD = False
-specter_state.detectedSD = True
+specter_state._hasSD = True
+specter_state._enabledSD = False
+specter_state._detectedSD = True
+specter_state._SD_hasSeed = True
 
-specter_state.hasSmartCard = True
-specter_state.enabledSmartCard = True
-specter_state.detectedSmartCard = True
+specter_state._hasSmartCard = True
+specter_state._enabledSmartCard = True
+specter_state._detectedSmartCard = True
+specter_state._SmartCard_hasSeed = True
 
-specter_state.seed_loaded = False
-specter_state.active_passphrase = ""
+specter_state._Flash_hasSeed = True
+
 specter_state.pin = "21"
+
+# ── Test data: one seed with passphrase + one wallet ─────────────────────────
+_test_seed = Seed(
+    label="My Key",
+    fingerprint="a1b2c3d4",
+    passphrase="correct horse",
+)
+_test_seed.passphrase_active = True
+_test_seed.is_backed_up = False
+#specter_state.add_seed(_test_seed)
+
+_test_wallet = Wallet(
+    label="Hot Wallet",
+    required_fingerprints=["a1b2c3d4"],
+    threshold=1,
+)
+#specter_state.register_wallet(_test_wallet)
+#specter_state.set_active_wallet(_test_wallet)
 
 gc.collect()
 

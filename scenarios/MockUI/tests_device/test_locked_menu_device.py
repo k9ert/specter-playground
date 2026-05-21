@@ -199,7 +199,7 @@ def _setup_locked_menu_test():
     # Guarantee unlocked state in case a previous run left the device locked.
     disco_run(
         "repl", "exec",
-        "specter_state.is_locked = False; scr.show_menu(None); print('OK')",
+        "specter_state.is_locked = False; scr.navigate_to(None); print('OK')",
     )
     _set_device_pin("42")  # set a known PIN for the tests
     time.sleep(1.0)

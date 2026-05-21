@@ -1,6 +1,6 @@
 from ..basic import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
-import lvgl as lv
+from ..basic.widgets import MenuItem
 
 
 class FirmwareMenu(GenericMenu):
@@ -12,16 +12,16 @@ class FirmwareMenu(GenericMenu):
         fw_version = state.fw_version
 
         menu_items = [
-            (None, t("FIRMWARE_MENU_CURRENT_VERSION") + str(fw_version) + t("FIRMWARE_MENU_UPDATE_VIA"), None, None, None, None),
+            MenuItem(text=t("FIRMWARE_MENU_CURRENT_VERSION") + str(fw_version) + t("FIRMWARE_MENU_UPDATE_VIA")),
         ]
 
-        if state and getattr(state, 'hasSD', False) and getattr(state, 'enabledSD', False) and getattr(state, 'detectedSD', False):
-            menu_items.append((BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), "update_fw_sd", None, None, None))
+        if state.SD_detected():
+            menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), "update_fw_sd"))
 
-        if state and getattr(state, 'hasUSB', False) and getattr(state, 'enabledUSB', False):
-            menu_items.append((BTC_ICONS.USB, t("HARDWARE_USB"), "update_fw_usb", None, None, None))
+        if state.USB_enabled():
+            menu_items.append(MenuItem(BTC_ICONS.USB, t("HARDWARE_USB"), "update_fw_usb"))
 
-        if state and getattr(state, 'hasQR', False) and getattr(state, 'enabledQR', False):
-            menu_items.append((BTC_ICONS.QR_CODE, t("HARDWARE_QR_CODE"), "update_fw_qr", None, None, None))
+        if state.QR_enabled():
+            menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("HARDWARE_QR_CODE"), "update_fw_qr"))
 
         return menu_items

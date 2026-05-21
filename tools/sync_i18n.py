@@ -65,11 +65,13 @@ class I18nSynchronizer:
         languages_dir: str,
         source_dir: str,
         log_dir: str,
+        languages_to_sync: List[str] = None,
         dry_run: bool = False,
     ):
         self.languages_dir = Path(languages_dir)
         self.source_dir = Path(source_dir)
         self.log_dir = Path(log_dir)
+        self.languages_to_sync = languages_to_sync
         self.dry_run = dry_run
 
         self.english_file = self.languages_dir / "specter_ui_en.json"
@@ -98,6 +100,8 @@ class I18nSynchronizer:
             # instead of calling t("KEY") directly — scan for that pattern too.
             re.compile(r'TITLE_KEY\s*=\s*' + _dq),
             re.compile(r"TITLE_KEY\s*=\s*" + _sq),
+            re.compile(r'"(HELP_[A-Z0-9_]+)"'),  # for help texts, HELP_ keys are passed as argument and resolved later
+            re.compile(r'"(TOUR_[A-Z0-9_]+)"'),  # for tour texts, TOUR_ keys are passed as argument and resolved later
         ]
 
         # Tracks which per-file log files have already been initialised
@@ -418,17 +422,22 @@ class I18nSynchronizer:
 
     def sync_all_language_files(self):
         """Synchronize all non-English language files against the English master."""
+        
         self.log_master("=== Synchronizing language files ===")
 
         english_translations = self.load_english_translations()
         language_files = self.get_language_files()
 
+        sync_all = not self.languages_to_sync
         if not language_files:
             self.log_master("No language files found to synchronize")
             return
 
         for file_path in language_files:
-            self.sync_language_file(file_path, english_translations)
+            lang_code = extract_language_code_from_filename(file_path.name)
+            if sync_all or (lang_code in self.languages_to_sync):
+                self.log_master(f"=== Language file: {lang_code.upper()} ===")
+                self.sync_language_file(file_path, english_translations)
 
     # ------------------------------------------------------------------
     # Log output
@@ -464,12 +473,17 @@ class I18nSynchronizer:
         self.log_master(f"  Languages directory : {self.languages_dir}")
         self.log_master(f"  Source directory    : {self.source_dir}")
         self.log_master(f"  Log directory       : {self.log_dir}")
+        self.log_master(f"  Languages to sync   : {', '.join(self.languages_to_sync) if self.languages_to_sync else 'All'}")
         self.log_master(f"  Dry run             : {self.dry_run}")
         self.log_master("")
 
+
+        sync_all = not self.languages_to_sync
         try:
-            self.sync_english_master()
-            self.sync_all_language_files()
+            if sync_all or ("en" in self.languages_to_sync):
+                self.sync_english_master()
+            if sync_all or any(lang != "en" for lang in self.languages_to_sync):
+                self.sync_all_language_files()
             self.log_master("")
             self.log_master("i18n synchronization completed successfully!")
             self._finalize_logs()
@@ -493,6 +507,14 @@ def main():
         "--dry-run",
         action="store_true",
         help="Show what would be changed without making actual changes",
+    )
+    parser.add_argument(
+        "--only-lang",
+        default=None,
+        type=str,
+        help=(
+            "Which language file to synchronize (e.g., 'de' for specter_ui_de.json); comma separated — if not set, all language files are synchronized"
+        ),
     )
     parser.add_argument(
         "--source-dir",
@@ -526,6 +548,9 @@ def main():
     source_dir = args.source_dir or str(default_source_dir)
     log_dir = args.log_dir or str(default_log_dir)
 
+    languages_to_sync = args.only_lang.split(",") if args.only_lang else None
+
+
     # Validate inputs
     if not Path(languages_dir).exists():
         print(f"Error: languages directory does not exist: {languages_dir}")
@@ -543,7 +568,14 @@ def main():
     # Ensure log directory exists
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
-    synchronizer = I18nSynchronizer(languages_dir, source_dir, log_dir, args.dry_run)
+    # Ensure languages are given as language codes
+    if languages_to_sync:
+        for lang in languages_to_sync:
+            if not re.match(r"^[a-zA-Z]{2}$", lang):
+                print(f"Error: Invalid language code '{lang}' in --only-lang. Expected format: 'en', 'de', etc. (or uppercase 'EN', 'DE', etc.)")
+                sys.exit(1)
+
+    synchronizer = I18nSynchronizer(languages_dir, source_dir, log_dir, languages_to_sync, args.dry_run)
     synchronizer.run()
 
 

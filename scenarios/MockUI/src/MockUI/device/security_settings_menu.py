@@ -1,7 +1,7 @@
-from ..basic import RED_HEX, ORANGE, GenericMenu
+from ..basic import RED_HEX, ORANGE_HEX, GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
+from ..basic.widgets import MenuItem
 import lvgl as lv
-
 
 class SecuritySettingsMenu(GenericMenu):
     """Security hub: security features, firmware, backups, danger zone."""
@@ -10,19 +10,20 @@ class SecuritySettingsMenu(GenericMenu):
 
     def get_menu_items(self, t, state):
         menu_items = [
-            (BTC_ICONS.SHIELD, t("MENU_MANAGE_SECURITY"), "manage_security_features", None, None, None),
-            (BTC_ICONS.FLIP_HORIZONTAL, t("MENU_ENABLE_DISABLE_INTERFACES"), "interfaces", None, None, None),
+            MenuItem(BTC_ICONS.LOCK, t("SECURITY_MENU_LOCK_DEVICE"), "locked"),
+            MenuItem(BTC_ICONS.SHIELD, t("MENU_MANAGE_SECURITY"), "manage_security_features", is_submenu=True),
+            MenuItem(BTC_ICONS.FLIP_HORIZONTAL, t("MENU_ENABLE_DISABLE_INTERFACES"), "interfaces", is_submenu=True),
         ]
 
-        if state and ((state.hasQR and state.enabledQR) or (state.hasSD and state.enabledSD and state.detectedSD) or (state.hasUSB and state.enabledUSB)):
-            menu_items.append((BTC_ICONS.CODE, t("MENU_MANAGE_FIRMWARE"), "manage_firmware", None, None, None))
+        if state.SD_detected() or state.USB_enabled() or state.QR_enabled():
+            menu_items.append(MenuItem(BTC_ICONS.CODE, t("MENU_MANAGE_FIRMWARE"), "manage_firmware", is_submenu=True))
 
-        if state and state.hasSD and state.enabledSD and state.detectedSD:
-            menu_items.append((BTC_ICONS.COPY, t("MENU_MANAGE_BACKUPS"), "manage_backups", None, None, None))
+        if state.SD_detected():
+            menu_items.append(MenuItem(BTC_ICONS.COPY, t("MENU_MANAGE_BACKUPS"), "manage_backups", is_submenu=True))
 
         menu_items += [
-            (None, ORANGE + " " + lv.SYMBOL.WARNING + " " + t("DEVICE_MENU_DANGERZONE") + "#", None, None, None, None),
-            (BTC_ICONS.ALERT_CIRCLE, t("DEVICE_MENU_WIPE"), "wipe_device", RED_HEX, None, "HELP_DEVICE_MENU_WIPE")
+            MenuItem(BTC_ICONS.SIREN, text=t("DEVICE_MENU_DANGERZONE"), font_color=ORANGE_HEX),
+            MenuItem(BTC_ICONS.ALERT_CIRCLE, t("DEVICE_MENU_WIPE"), "wipe_device", color=RED_HEX, help_key="HELP_DEVICE_MENU_WIPE"),
         ]
 
         return menu_items

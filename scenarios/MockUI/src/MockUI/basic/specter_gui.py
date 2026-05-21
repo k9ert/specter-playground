@@ -1,22 +1,37 @@
 import lvgl as lv
 
-from ..stubs import UIState, SpecterState
-from .device_bar import DeviceBar
-from .wallet_bar import WalletBar
+from .ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS
+from ..stubs import UIState, DeviceState
+from ..stubs.ui_state import Context
+from ..i18n import I18nManager
+from ..tour import GuidedTour, INTRO_TOUR_STEPS
+from .keyboard_manager import KeyboardManager
+from .animations import slide_x, slide_y, GUIAnimations
+from .navigation_bar import NavigationBar
+from .app_screen import AppScreen
+from .ui_utils import configure_as_bare
+
+_CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
+
+
 from .action_screen import ActionScreen
 from .main_menu import MainMenu
 from .locked_menu import LockedMenu
-from .ui_consts import STATUS_BAR_PCT, CONTENT_PCT
 from ..wallet import (
     WalletMenu,
     ConnectWalletsMenu,
-    ChangeWalletMenu,
     AddWalletMenu,
+    CreateCustomWalletMenu,
+    ViewSignersMenu,
+)
+from ..seed import (
+    AddSeedMenu,
     SeedPhraseMenu,
     StoreSeedphraseMenu,
     ClearSeedphraseMenu,
     GenerateSeedMenu,
     PassphraseMenu,
+    RelatedWalletsForSeedMenu,
 )
 from ..device import (
     SecuritySettingsMenu,
@@ -29,179 +44,281 @@ from ..device import (
     SettingsMenu,
     PreferencesMenu,
 )
-from ..i18n import I18nManager
-from ..tour import GuidedTour
-from .keyboard_manager import KeyboardManager
+
+
+_VIEW_MAP = {
+    "locked":                   LockedMenu,
+    "main":                     MainMenu,
+    "start_intro_tour":         MainMenu,
+    "manage_wallet":            WalletMenu,
+    "view_signers":             ViewSignersMenu,
+    "manage_security_settings": SecuritySettingsMenu,
+    "manage_backups":           BackupsMenu,
+    "manage_firmware":          FirmwareMenu,
+    "connect_sw_wallet":        ConnectWalletsMenu,
+    "add_seed":                 AddSeedMenu,
+    "add_wallet":               AddWalletMenu,
+    "manage_security_features": SecurityFeaturesMenu,
+    "interfaces":               InterfacesMenu,
+    "manage_seedphrase":        SeedPhraseMenu,
+    "related_wallets_for_seed": RelatedWalletsForSeedMenu,
+    "store_seedphrase":         StoreSeedphraseMenu,
+    "clear_seedphrase":         ClearSeedphraseMenu,
+    "generate_seedphrase":      GenerateSeedMenu,
+    "set_passphrase":           PassphraseMenu,
+    "create_custom_wallet":     CreateCustomWalletMenu,
+    "manage_storage":           StorageMenu,
+    "select_language":          LanguageMenu,
+    "manage_preferences":       PreferencesMenu,
+    "manage_settings":          SettingsMenu,
+}
 
 
 class SpecterGui(lv.obj):
-    # Static tour step definitions: (element_spec, i18n_key, position)
-    # element_spec is None, a dotted attribute-path string, or a (x, y, w, h) tuple.
-    # Resolved to runtime objects by GuidedTour.resolve_steps() before use.
-    INTRO_TOUR_STEPS = [
-        (None,                          "TOUR_INTRO",       "center"),
-        ("device_bar.lock_btn",         "TOUR_LOCK",        "below"),
-        ("device_bar.center_container", "TOUR_INTERFACES",  "below"),
-        ("device_bar.batt_icon",        "TOUR_BATTERY",     "below"),
-        ("device_bar.power_btn",        "TOUR_POWER",       "below"),
-        ("wallet_bar",                  "TOUR_WALLET_BAR",  "above"),
-        ((435, 143, 28, 28),            "TOUR_HELP_ICON",   "left"),
-    ]
 
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_scroll_dir(lv.DIR.NONE)
 
-        self.on_navigate = self.show_menu
-        
+        self.on_navigate = self.navigate_to
+
         # Initialize i18n manager
         self.i18n = I18nManager()
 
         if specter_state:
-            self.specter_state = specter_state
+            self.device_state = specter_state
         else:
-            self.specter_state = SpecterState()
+            self.device_state = DeviceState()
 
-        # optional UIState instance used to track menu history
         if ui_state:
             self.ui_state = ui_state
         else:
             self.ui_state = UIState()
 
-        self.current_screen = None
         self.keyboard_manager = KeyboardManager(self)
+        self._animating = False   # True while a slide animation is running
+        self._anim_refs = None    # holds Python callbacks + anim objects alive
 
-        # Create device bar at top (STATUS_BAR_PCT%), wallet bar at bottom (STATUS_BAR_PCT%), content in middle (CONTENT_PCT%)
-        self.device_bar = DeviceBar(self, height_pct=STATUS_BAR_PCT)
-        self.device_bar.align(lv.ALIGN.TOP_MID, 0, 0)
+        # Active screen (screen.view holds the active TitledScreen widget)
+        self.screen = None
 
-        # Wallet bar at bottom
-        self.wallet_bar = WalletBar(self, height_pct=STATUS_BAR_PCT)
-        self.wallet_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
+        # Build the initial screen for the current ui_state menu
+        self.screen = self._make_screen()
 
-        # Content area in middle (scrollable)
-        self.content = lv.obj(self)
-        self.content.set_width(lv.pct(100))
-        self.content.set_height(lv.pct(CONTENT_PCT))
-        self.content.set_layout(lv.LAYOUT.FLEX)
-        self.content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-        self.content.set_style_pad_all(0, 0)
-        self.content.set_style_radius(0, 0)
-        self.content.set_style_border_width(0, 0)
-        self.content.align_to(self.device_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 0)
-        # TitledScreen always fills content 100% so no scrolling is needed here
-        self.content.set_scroll_dir(lv.DIR.NONE)
+        # Navigation bar at bottom — always present, owned by SpecterGui
+        self.navigation_bar = NavigationBar(self)
+        self.navigation_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
 
-        # initially show the main menu
-        self.show_menu(None)
-        
         # Start guided tour on first startup (after UI is fully constructed)
-        if self.ui_state.run_tour_on_startup:
-            GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
+        if self.ui_state.is_run_tour_on_startup:
+            GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
 
-        # periodic refresh of both bars every 30 seconds
+        # Periodic refresh (e.g. to update battery level)
         def _tick(timer):
+            self.device_state.debug_cycle_battery()
             self.refresh_ui()
-
-        lv.timer_create(_tick, 30_000, None)
+        lv.timer_create(_tick, GUI_REFRESH_MS, None)
+        
+        self.refresh_ui()
 
     def change_language(self, lang_code):
-        """
-        Change the active language.
-        
-        Args:
-            lang_code: ISO 639-1 language code (e.g., 'en', 'de')
-        """
-        # Switch language in i18n manager
+        """Change the active language."""
         self.i18n.set_language(lang_code)
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
-        self.device_bar.refresh(self.specter_state)
-        self.wallet_bar.refresh(self.specter_state)
 
-    def show_menu(self, target_menu_id=None):
-        
-        # Delete current screen (free memory)
-        if self.current_screen:
-            self.current_screen.delete()
+        self.screen.refresh()
+        self.navigation_bar.refresh()
 
-        # Update UIState navigation history
-        if target_menu_id is None:
-            # navigating up/back: pop previous menu from history
-            self.ui_state.pop_menu()
-        elif target_menu_id == "start_intro_tour":
-            # special action: clear history and set current directly, no push
-            self.ui_state.clear_history()
-            self.ui_state.current_menu_id = target_menu_id
-        else:
-            # navigating down into a new menu
-            self.ui_state.push_menu(target_menu_id)
-
-        # If the device is locked, always show the locked screen
-        if self.specter_state.is_locked:
-            # ensure the ui history is cleared when locking
-            self.ui_state.clear_history()
-            self.ui_state.current_menu_id = "locked"
-            self.current_screen = LockedMenu(self)
-            self.refresh_ui()
+    def navigate_to(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
+        # Drop all input while animating
+        if self._animating:
             return
 
-        # Create new screen (micropython doesn't support match/case)
-        current = self.ui_state.current_menu_id
-        if current in ("main", "start_intro_tour"):
-            self.current_screen = MainMenu(self)
-        elif current == "manage_wallet":
-            self.current_screen = WalletMenu(self)
-        elif current == "manage_security_settings":
-            self.current_screen = SecuritySettingsMenu(self)
-        elif current == "manage_backups":
-            self.current_screen = BackupsMenu(self)
-        elif current == "manage_firmware":
-            self.current_screen = FirmwareMenu(self)
-        elif current == "connect_sw_wallet":
-            self.current_screen = ConnectWalletsMenu(self)
-        elif current == "change_wallet":
-            self.current_screen = ChangeWalletMenu(self)
-        elif current == "add_wallet":
-            self.current_screen = AddWalletMenu(self)
-        elif current == "manage_security_features":
-            self.current_screen = SecurityFeaturesMenu(self)
-        elif current == "interfaces":
-            self.current_screen = InterfacesMenu(self)
-        elif current == "manage_seedphrase":
-            self.current_screen = SeedPhraseMenu(self)
-        elif current == "store_seedphrase":
-            self.current_screen = StoreSeedphraseMenu(self)
-        elif current == "clear_seedphrase":
-            self.current_screen = ClearSeedphraseMenu(self)
-        elif current == "generate_seedphrase":
-            self.current_screen = GenerateSeedMenu(self)
-        elif current == "set_passphrase":
-            self.current_screen = PassphraseMenu(self)
-        elif current == "manage_storage":
-            self.current_screen = StorageMenu(self)
-        elif current == "select_language":
-            self.current_screen = LanguageMenu(self)
-        elif current == "manage_preferences":
-            self.current_screen = PreferencesMenu(self)
-        elif current == "manage_settings":
-            self.current_screen = SettingsMenu(self)
+        if target_menu_id == "locked":
+            self.device_state.lock()
+        if self.device_state.is_locked:
+            target_menu_id = "locked"
+
+        going_back = target_menu_id in [None, "back"]
+
+        # Update UIState navigation history
+        if going_back:
+            anim = self.ui_state.pop_menu()
+        elif target_menu_id in ["start_intro_tour", "main", "locked"]:
+            anim = self.ui_state.clear_history()
+            self.ui_state.current_menu_id = target_menu_id
         else:
-            # For all other actions, show a generic action screen
-            title = (target_menu_id or "").replace("_", " ")
-            title = title[0].upper() + title[1:] if title else ""
-            self.current_screen = ActionScreen(title, self)
+            anim = self.ui_state.push_menu(target_menu_id)
 
-        # refresh the UI
-        self.refresh_ui()
+        if target_seed != "unset":
+            self.ui_state.set_active_seed(target_seed)
+        if target_wallet != "unset":
+            self.ui_state.set_active_wallet(target_wallet)
 
-        # If this was a start_intro_tour action, launch the tour overlay now.
-        # Reset current_menu_id to "main" BEFORE starting the tour so that
-        # "start_intro_tour" is never left in the history stack.  Without this,
-        # navigating away from the main menu (e.g. into WalletMenu) pushes
-        # "start_intro_tour" onto history, and popping back triggers the tour
-        # again even if the user already skipped it.
+        if anim is not None and self.ui_state.are_animations_enabled:
+            self._do_transition(anim)
+        else:
+            if self.screen:
+                self.screen.delete()
+            self.screen = self._make_screen()
+            self.refresh_ui()
+
         if self.ui_state.current_menu_id == "start_intro_tour":
             self.ui_state.current_menu_id = "main"
-            GuidedTour(self, GuidedTour.resolve_steps(self.INTRO_TOUR_STEPS, self)).start()
+            GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
+
+    def _make_screen(self):
+        """Create a new AppScreen for the current ui_state and populate it with a view.
+
+        Returns the new AppScreen.  Does NOT delete any old screen.
+        """
+        screen = AppScreen(self)
+        screen.view = self._build_view(screen, self.ui_state.current_menu_id)
+        return screen
+
+    def _build_view(self, screen, menu_id):
+        """Instantiate and return the correct view class for *menu_id* into *screen*."""
+        class_name = _VIEW_MAP.get(menu_id)
+        if class_name is not None:
+            return class_name(screen)
+        return ActionScreen(menu_id, screen)
+
+    def _do_transition(self, anim_type):
+        """Animate from the current screen to a freshly-built new screen.
+
+        Dispatches to one of two cases:
+          • Case 3 (within SEED/WALLET context, context bar stays): animate
+            only the view widget horizontally inside ``screen.content``.
+          • Cases 1/2 (between contexts, or context without bar): animate the
+            entire Screen unit (bar + battery + content move together).
+        """
+        self._animating = True
+
+        ctx = self.ui_state.active_context  # already updated by navigate_to
+        ctx_has_bar = self.screen.context_bar is not None
+        is_horizontal = anim_type in (
+            GUIAnimations.horizontal_slide_in,
+            GUIAnimations.horizontal_slide_out,
+            GUIAnimations.horizontal_push_in,
+            GUIAnimations.horizontal_push_out,
+        )
+        within_ctx_with_bar = (
+            ctx_has_bar
+            and is_horizontal
+            and (ctx == Context.SEED or ctx == Context.WALLET)
+        )
+
+        if within_ctx_with_bar:
+            self._transition_within_context(anim_type)
+        else:
+            self._transition_full_screen(anim_type)
+
+    def _transition_within_context(self, anim_type):
+        """Case 3: slide only the view widget inside the existing screen.content."""
+        old_screen = self.screen
+        old_view = old_screen.view
+        content = old_screen.content
+        content_h = content.get_height()
+        content.set_layout(lv.LAYOUT.NONE)
+        old_view.set_pos(0, 0)
+        old_view.set_size(SCREEN_WIDTH, content_h)
+
+        # Build new view into the same screen (added to content as 2nd child)
+        new_view = self._build_view(old_screen, self.ui_state.current_menu_id)
+        old_screen.view = new_view
+        new_view.set_size(SCREEN_WIDTH, content_h)
+
+        anims = []
+        W = SCREEN_WIDTH
+
+        def _cleanup_case3():
+            self._animating = False
+            self._anim_refs = None
+            old_view.delete()
+            content.set_layout(lv.LAYOUT.FLEX)
+            content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
+            self.refresh_ui()
+
+        if anim_type == GUIAnimations.horizontal_slide_in:
+            new_view.set_x(W)
+            anims.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_case3()))
+        elif anim_type == GUIAnimations.horizontal_slide_out:
+            new_view.set_x(0)
+            old_view.move_foreground()
+            anims.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_case3()))
+
+        for a in anims:
+            a.start()
+        self._anim_refs = anims
+
+    def _transition_full_screen(self, anim_type):
+        """Cases 1/2: slide the entire Screen unit (bar + content) via a clip container."""
+        old_screen = self.screen
+        new_screen = self._make_screen()
+        self.screen = new_screen
+
+        # temporary clip container: same size as the content zone
+        # (480×_CONTENT_H).
+        # Both screens are reparented into it so LVGL's default parent-clip
+        # prevents them from ever painting over the navigation bar below.
+        anim_clip = lv.obj(self)
+        configure_as_bare(anim_clip, width=SCREEN_WIDTH, height=_CONTENT_H,
+                           transparent_bg=True)
+        anim_clip.set_pos(0, 0)
+        anim_clip.set_layout(lv.LAYOUT.NONE)
+        anim_clip.set_scroll_dir(lv.DIR.NONE)
+
+        # Reparent both screens; their coords were (0,0) relative to
+        # SpecterGui which is identical to (0,0) inside anim_clip.
+        old_screen.set_parent(anim_clip)
+        old_screen.set_pos(0, 0)
+        new_screen.set_parent(anim_clip)
+        new_screen.set_pos(0, 0)
+
+        # Navigation bar must remain above the clip container.
+        self.navigation_bar.move_foreground()
+
+        def _cleanup_whole():
+            self._animating = False
+            self._anim_refs = None
+            # Reparent new_screen back to SpecterGui before deleting the
+            # clip (which would otherwise take new_screen with it).
+            new_screen.set_parent(self)
+            new_screen.set_pos(0, 0)
+            anim_clip.delete()   # also deletes old_screen
+            self.navigation_bar.move_foreground()
+            self.refresh_ui()
+
+        anims = []
+        W = SCREEN_WIDTH
+
+        if anim_type == GUIAnimations.horizontal_slide_in:
+            anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.horizontal_slide_out:
+            old_screen.move_foreground()   # old on top within anim_clip
+            anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.horizontal_push_in:
+            anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
+            anims.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.horizontal_push_out:
+            anims.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
+            anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.vertical_slide_in:
+            anims.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+        elif anim_type == GUIAnimations.vertical_slide_out:
+            old_screen.move_foreground()   # old on top within anim_clip
+            anims.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
+                                on_done_cb=lambda a: _cleanup_whole()))
+
+        for a in anims:
+            a.start()
+        self._anim_refs = anims

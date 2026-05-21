@@ -1,96 +1,159 @@
-"""Base class for all full-screen views (menus, action screens, etc.).
+"""Base class for all views (menus, action screens, etc.) that have a title.
 
-Provides a fixed-height title bar at the top (containing an optional back
-button and a centred title label) and a body area below it that fills the
-remaining space.  Subclasses place their specific content inside self.body.
+Provides an optional fixed-height title bar at the top (containing a centred title
+label) and a body area below that fills the remaining space.
 
-Layout (absolute, no flex on root):
+Layout variants (absolute, no flex on root):
+
+  Default (show_title=True):
     ┌────────────────────────────────────────┐
     │  title_bar  (TITLE_ROW_HEIGHT px)      │
-    │  [back_btn]    [title_lbl (centred)]   │
     ├────────────────────────────────────────┤
     │  (TITLE_PADDING gap)                   │
     ├────────────────────────────────────────┤
     │  body  (fills remaining height)        │
     └────────────────────────────────────────┘
+
+  show_title=False:
+    ┌────────────────────────────────────────┐
+    │  (transparent spacer TITLE_ROW_HEIGHT) │
+    ├────────────────────────────────────────┤
+    │  body  (fills remaining height)        │
+    └────────────────────────────────────────┘
+
 """
 
 import lvgl as lv
-from .ui_consts import BACK_BTN_HEIGHT, BACK_BTN_WIDTH, TITLE_ROW_HEIGHT, TITLE_PADDING
+from .ui_consts import (
+    TITLE_ROW_HEIGHT, TITLE_PADDING, SCREEN_HEIGHT, CONTENT_PCT,
+    TITLE_FONT, SMALL_PAD, RED_HEX,
+)
+from .widgets.labels import body_label
+from .widgets.containers import bare_strip
+from .widgets.btn import Btn
+from .specter_gui_base import SpecterGuiElement
+from .ui_utils import configure_as_bare
 from .symbol_lib import BTC_ICONS
 
 
-class TitledScreen(lv.obj):
-    """Base class for all full-screen views.
+class TitledScreen(SpecterGuiElement):
+    """Base class for all views that have a title.
 
     Attributes available to subclasses:
-        self.gui        – the SpecterGui that owns this screen
-        self.state      – gui.specter_state shorthand
-        self.i18n       – gui.i18n shorthand
-        self.on_navigate – navigation callback from gui.on_navigate
-        self.title_bar  – lv.obj strip at the top, TITLE_ROW_HEIGHT tall
-        self.title_lbl  – lv.label centred inside title_bar  (alias: self.title)
-        self.back_btn   – lv.button in title_bar (only when navigation history exists)
-        self.body       – lv.obj below the title bar; put content here
+        self.gui          - the SpecterGui that owns this screen
+        self.device_state - gui.device_state shorthand
+        self.ui_state     - gui.ui_state shorthand
+        self.i18n         - gui.i18n shorthand
+        self.on_navigate  - navigation callback from gui.on_navigate
+        self.title_bar    - lv.obj strip containing the title label,
+                            or None when show_title=False
+        self.title        - lv.label centred inside title_bar,
+                            or None when show_title=False
+        self.body         - lv.obj below the title bar; put content here
+
+    Subclasses must guard before accessing self.title / self.title_bar
+    self.title and self.title_bar might be None
     """
 
-    def __init__(self, title, parent):
+    def __init__(self, title, parent, *, show_title=True):
+        # If parent is the GUI itself, anchor to its content area so we don't
+        # cover the navigation bar at the bottom.
         lv_parent = getattr(parent, "content", parent)
         super().__init__(lv_parent)
 
-        self.gui = parent
-        self.state = getattr(parent, "specter_state", None)
-        self.i18n = getattr(parent, "i18n", None)
-        self.on_navigate = getattr(parent, "on_navigate", None)
+        # Convenience shortcut — must be set before any property access.
+        # When parent is a Screen, resolve gui from Screen.gui (→ SpecterGui).
+        self.gui = getattr(parent, "gui", parent)
 
-        # Root: fill parent completely, no decoration
-        self.set_width(lv.pct(100))
-        self.set_height(lv.pct(100))
-        self.set_style_pad_all(0, 0)
-        self.set_style_border_width(0, 0)
-        self.set_style_radius(0, 0)
+        # Root: fill parent completely, no decoration.
+        configure_as_bare(self, width=lv.pct(100), height=lv.pct(100), transparent_bg=False)
         self.set_scroll_dir(lv.DIR.NONE)
 
-        # ── Title bar ────────────────────────────────────────────────────────
-        self.title_bar = lv.obj(self)
-        self.title_bar.set_width(lv.pct(100))
-        self.title_bar.set_height(TITLE_ROW_HEIGHT)
-        self.title_bar.set_style_pad_all(0, 0)
-        self.title_bar.set_style_border_width(0, 0)
-        self.title_bar.set_style_radius(0, 0)
-        self.title_bar.align(lv.ALIGN.TOP_MID, 0, 0)
+        y_body = 0  # accumulated y-offset for the body widget
 
-        # Back button – only shown when there is navigation history
-        if parent.ui_state and parent.ui_state.history and len(parent.ui_state.history) > 0:
-            self.back_btn = lv.button(self.title_bar)
-            self.back_btn.set_size(BACK_BTN_HEIGHT, BACK_BTN_WIDTH)
-            self.back_btn.align(lv.ALIGN.LEFT_MID, 8, 0)
-            self.back_ico = lv.image(self.back_btn)
-            BTC_ICONS.CARET_LEFT.add_to_parent(self.back_ico)
-            self.back_ico.center()
-            self.back_btn.add_event_cb(lambda e: self.on_back(e), lv.EVENT.CLICKED, None)
+        # ── 1. Title bar ──────────────────────────────────────────────────────
+        self.title_bar = None
+        self.title = None
+        if show_title:
+            self.title_bar = bare_strip(self, TITLE_ROW_HEIGHT, 0, False)
+            self.title = body_label(self.title_bar, title, font=TITLE_FONT)
+            self.title.align(lv.ALIGN.CENTER, 0, 0)
+            y_body = TITLE_ROW_HEIGHT + TITLE_PADDING
+        else:
+            # No title strip — place an invisible spacer so the battery widget
+            # (floating above content at y=0) doesn't overlap body content.
+            self.spacer = bare_strip(self, TITLE_ROW_HEIGHT, 0, False)
+            y_body = TITLE_ROW_HEIGHT
 
-        # Title label – centred in the title bar
-        self.title_lbl = lv.label(self.title_bar)
-        self.title_lbl.set_text(title)
-        self.title_lbl.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-        self.title_lbl.set_style_text_font(lv.font_montserrat_28, 0)
-        self.title_lbl.align(lv.ALIGN.CENTER, 0, 0)
-        # Backward-compat alias (WalletMenu and tests reference self.title)
-        self.title = self.title_lbl
-
-        # ── Body ─────────────────────────────────────────────────────────────
-        # Sits below the title bar.  Height = 100% of root so LVGL clips
-        # anything that falls below the parent edge – no pixel arithmetic needed.
-        self.body = lv.obj(self)
-        self.body.set_width(lv.pct(100))
-        self.body.set_height(lv.pct(100))
-        self.body.set_style_pad_all(0, 0)
-        self.body.set_style_border_width(0, 0)
-        self.body.set_style_radius(0, 0)
-        self.body.align(lv.ALIGN.TOP_MID, 0, TITLE_ROW_HEIGHT + TITLE_PADDING)
-        # Disable all scrolling on body; subclasses can re-enable with set_scroll_dir if needed
+        # ── 2. Body ───────────────────────────────────────────────────────────
+        content_h = SCREEN_HEIGHT * CONTENT_PCT // 100
+        self.body = bare_strip(self, content_h - y_body, y_body)
+        # Disable scrolling on body; subclasses can re-enable via set_scroll_dir.
         self.body.set_scroll_dir(lv.DIR.NONE)
+
+    def refresh(self):
+        """Refresh dynamic content (override in subclasses as needed)."""
+
+    def _configure_scroll(self):
+        """Enable vertical scrolling only when content overflows the visible body.
+
+        Forces a layout pass first so child positions are accurate, then scans
+        all children to find the actual content extent. This way post_init
+        additions are automatically included and no manual height tracking is
+        needed. Also zeroes pad_bottom to prevent the theme's default 13 px
+        bottom padding from creating a phantom over-drag zone.
+        """
+        self.body.update_layout()
+        content_h = 0
+        for i in range(self.body.get_child_count()):
+            child = self.body.get_child(i)
+            bottom = child.get_y() + child.get_height()
+            if bottom > content_h:
+                content_h = bottom
+        # Store so callers can read the real content height.
+        self._items_content_h = content_h
+        available_h = (self.body.get_height()
+                       - self.body.get_style_pad_top(0)
+                       - self.body.get_style_pad_bottom(0))
+        if content_h > available_h:
+            self.body.set_scroll_dir(lv.DIR.VER)
+            self.body.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
+            self.body.remove_flag(lv.obj.FLAG.SCROLL_ELASTIC)
+            self.body.remove_flag(lv.obj.FLAG.SCROLL_MOMENTUM)
+            # Zero pad_bottom so LVGL's scroll_bottom formula
+            # (last_child_bottom + pad_bottom - body_bottom) gives the exact
+            # overflow. Then force a second layout pass so LVGL recalculates
+            # scroll_bottom with the updated padding value.
+            self.body.set_style_pad_bottom(0, 0)
+            self.body.update_layout()
+        else:
+            self.body.set_scroll_dir(lv.DIR.NONE)
+            self.body.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+
+    def add_title_delete_btn(self, on_click):
+        """Add a right-aligned red TRASH button to the title bar.
+
+        Args:
+            on_click: Zero-argument callable invoked on CLICKED.
+
+        Returns:
+            The created ``Btn`` widget (stored as ``self.delete_btn``).
+        """
+        btn_size = TITLE_ROW_HEIGHT - 10
+        self.delete_btn = Btn(
+            self.title_bar,
+            icon=BTC_ICONS.TRASH,
+            color=RED_HEX,
+            size=(btn_size, btn_size),
+        )
+        self.delete_btn.align(lv.ALIGN.RIGHT_MID, -SMALL_PAD, 0)
+
+        def _handler(e):
+            if e.get_code() == lv.EVENT.CLICKED:
+                on_click()
+
+        self.delete_btn.add_event_cb(_handler, lv.EVENT.CLICKED, None)
+        return self.delete_btn
 
     def on_back(self, e):
         if e.get_code() == lv.EVENT.CLICKED:

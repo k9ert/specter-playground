@@ -1,7 +1,7 @@
-"""Unit tests for the locked menu's shuffle helper and SpecterState lock/unlock logic.
+"""Unit tests for the locked menu's shuffle helper and DeviceState lock/unlock logic.
 
 All tests run entirely in the host Python environment — no device or LVGL
-runtime required.  The ``_shuffle`` function lives in ``locked_menu`` which
+runtime required.  The ``shuffle`` function lives in ``locked_menu`` which
 imports ``rng`` (from ``src/rng.py``).  We add ``src/`` to ``sys.path``
 before importing so that ``rng`` resolves without hardware.
 """
@@ -17,13 +17,13 @@ _SRC_DIR = os.path.abspath(
 if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
-# Now we can safely import _shuffle (locked_menu's top-level ``import rng``
+# Now we can safely import shuffle (locked_menu's top-level ``import rng``
 # will resolve to src/rng.py which uses os.urandom on the host).
-from MockUI.basic.locked_menu import _shuffle
-from MockUI.stubs.device_state import SpecterState
+from MockUI.basic.ui_utils import shuffle
+from MockUI.stubs.device_state import DeviceState
 
 # A non-trivial PIN used throughout the lock/unlock tests.
-# Must not be None (which would bypass the PIN check in SpecterState.unlock).
+# Must not be None (which would bypass the PIN check in DeviceState.unlock).
 _TEST_PIN = "42"
 
 # Max attempts for randomness checks — probability of all producing natural
@@ -32,18 +32,18 @@ _MAX_SHUFFLE_RETRIES = 3
 
 
 # ---------------------------------------------------------------------------
-# _shuffle: scalar input
+# shuffle: scalar input
 # ---------------------------------------------------------------------------
 
 
 def test_shuffle_scalar_10_digits_covers_all():
-    """_shuffle(10) must be a permutation of 0..9 and must differ from natural
+    """shuffle(10) must be a permutation of 0..9 and must differ from natural
     order in at least one of _MAX_SHUFFLE_RETRIES attempts.
 
     Probability that all _MAX_SHUFFLE_RETRIES produce the identity permutation ≈ (1/10!)^_MAX_SHUFFLE_RETRIES
     """
     natural = list(range(10))
-    results = [_shuffle(10) for _ in range(_MAX_SHUFFLE_RETRIES)]
+    results = [shuffle(10) for _ in range(_MAX_SHUFFLE_RETRIES)]
     for result in results:
         assert sorted(result) == natural, (
             f"not a permutation of range(10): {result}"
@@ -54,11 +54,11 @@ def test_shuffle_scalar_10_digits_covers_all():
 
 
 # ---------------------------------------------------------------------------
-# _shuffle: list input
+# shuffle: list input
 # ---------------------------------------------------------------------------
 
 def test_shuffle_list_returns_permutation_of_items():
-    """_shuffle(list) shuffles in place, result is a permutation of original,
+    """shuffle(list) shuffles in place, result is a permutation of original,
     and at least one of _MAX_SHUFFLE_RETRIES attempts must actually change the order.
 
     Probability that all _MAX_SHUFFLE_RETRIES leave 6 items unchanged ≈ (1/6!)^_MAX_SHUFFLE_RETRIES.
@@ -67,7 +67,7 @@ def test_shuffle_list_returns_permutation_of_items():
     changed = False
     for _ in range(_MAX_SHUFFLE_RETRIES):
         items = natural[:]
-        _shuffle(items)
+        shuffle(items)
         assert sorted(items) == sorted(natural), (
             f"shuffled items are not a permutation: {items}"
         )
@@ -83,7 +83,7 @@ def test_shuffle_list_indices_consistent():
     """items[i] after shuffle must equal snapshot[indices[i]] for all i."""
     items = list("0123456789")
     snapshot = items[:]
-    indices = _shuffle(items)
+    indices = shuffle(items)
     reconstructed = [snapshot[i] for i in indices]
     assert reconstructed == items, (
         f"indices inconsistent with in-place shuffle.\n"
@@ -93,38 +93,38 @@ def test_shuffle_list_indices_consistent():
 
 
 def test_shuffle_list_mutates_in_place():
-    """_shuffle must modify the list in place (not return a new one)."""
+    """shuffle must modify the list in place (not return a new one)."""
     original = list("0123456789")
     same_ref = original
-    _shuffle(original)
-    assert original is same_ref, "_shuffle must operate on the same list object"
+    shuffle(original)
+    assert original is same_ref, "shuffle must operate on the same list object"
 
 
 def test_shuffle_list_indices_are_permutation():
     """Returned indices must be a permutation of range(len(input))."""
     items = ["x", "y", "z"]
-    indices = _shuffle(items)
+    indices = shuffle(items)
     assert sorted(indices) == list(range(len(items))), (
         f"indices are not a permutation of range({len(items)}): {indices}"
     )
 
 
 # ---------------------------------------------------------------------------
-# _shuffle: wrong type
+# shuffle: wrong type
 # ---------------------------------------------------------------------------
 
 def test_shuffle_wrong_type_raises():
-    """_shuffle with a non-int, non-list argument must raise TypeError."""
+    """shuffle with a non-int, non-list argument must raise TypeError."""
     with pytest.raises(TypeError):
-        _shuffle(3.14)
+        shuffle(3.14)
     with pytest.raises(TypeError):
-        _shuffle("hello")
+        shuffle("hello")
     with pytest.raises(TypeError):
-        _shuffle((1, 2, 3))
+        shuffle((1, 2, 3))
 
 
 # ---------------------------------------------------------------------------
-# _shuffle: randomness
+# shuffle: randomness
 # ---------------------------------------------------------------------------
 
 def test_shuffle_varies_with_different_calls():
@@ -133,18 +133,18 @@ def test_shuffle_varies_with_different_calls():
     Probability of all 20 results being identical ≈ (1/10!)^19 ≈ 10^-133.
     Test failure would indicate a fundamentally broken RNG.
     """
-    results = [tuple(_shuffle(10)) for _ in range(20)]
+    results = [tuple(shuffle(10)) for _ in range(20)]
     assert len(set(results)) > 1, (
         "All 20 shuffles produced the same permutation — RNG appears broken."
     )
 
 
 # ---------------------------------------------------------------------------
-# SpecterState: lock / unlock
+# DeviceState: lock / unlock
 # ---------------------------------------------------------------------------
 
 def test_lock_sets_is_locked():
-    state = SpecterState()
+    state = DeviceState()
     assert not state.is_locked, "fresh state should not be locked"
     state.lock()
     assert state.is_locked, "state.lock() must set is_locked=True"

@@ -123,6 +123,16 @@ def click_cmd(text):
     click.echo(f"-> {r['ui']['current_menu_id']} (history: {r['ui']['history']})")
 
 
+@cli.command('tap')
+@click.argument('x', type=int)
+@click.argument('y', type=int)
+def tap_cmd(x, y):
+    """Tap at screen coordinates (x y)."""
+    result = send({'action': 'click', 'x': x, 'y': y})
+    import json
+    click.echo(json.dumps(result))
+
+
 @cli.command()
 def labels():
     """List visible text labels."""
@@ -149,6 +159,16 @@ def set_cmd(attr, value):
 def tree():
     """Dump full widget tree as JSON."""
     click.echo(json.dumps(send({'action': 'widget_tree'}), indent=2))
+
+
+@cli.command('dropup')
+@click.argument('which', default='seed')
+@click.argument('op', default='toggle')
+def dropup_cmd(which, op):
+    """Toggle/open/close a drop-up panel (which: seed|wallet, op: toggle|open|close)."""
+    result = send({'action': 'dropup', 'which': which, 'op': op})
+    import json
+    click.echo(json.dumps(result))
 
 
 @cli.command()

@@ -13,7 +13,7 @@ Why layer_top?
 
 Usage::
 
-    modal = ModalOverlay(bg_opa=180)          # semi-transparent dark backdrop
+    modal = ModalOverlay(bg_opa=180)           # semi-transparent dark backdrop
     modal = ModalOverlay(bg_opa=lv.OPA.TRANSP) # transparent (add dim strips yourself)
 
     # build your content as children of modal.overlay
@@ -25,43 +25,37 @@ Usage::
 """
 
 import lvgl as lv
-
+from ..ui_consts import DEFAULT_MODAL_BG_OPA, BLACK, SCREEN_WIDTH, SCREEN_HEIGHT
+from ..ui_utils import to_lv_color
 
 class ModalOverlay:
-    """Full-screen container parented to ``layer_top``.
+    """Container parented to ``layer_top``.
 
     Args:
-        bg_opa: Background opacity for the backdrop (0-255 or ``lv.OPA.*``
-                constant).  Use ``lv.OPA.TRANSP`` (0) when you want to add
-                your own dim strips, or a value like 180 for a simple
-                semi-transparent dark backdrop.
-        bg_color: Background colour as a hex int (default: 0x000000).
+        bg_opa:   Background opacity (0-255 or ``lv.OPA.*`` constant).
+                  Use ``lv.OPA.TRANSP`` when adding your own dim strips.
+        bg_color: Background colour as a hex int (default: BLACK_HEX).
+        width:    Overlay width in px. Defaults to SCREEN_WIDTH.
+        height:   Overlay height in px. Defaults to SCREEN_HEIGHT.
+        x, y:     Overlay position. Defaults to (0, 0).
     """
 
-    def __init__(self, bg_opa=lv.OPA.TRANSP, bg_color=0x000000):
+    def __init__(self, bg_opa=DEFAULT_MODAL_BG_OPA, bg_color=BLACK,
+                 width=SCREEN_WIDTH, height=SCREEN_HEIGHT, x=0, y=0):
         disp = lv.display_get_default()
-        self._sw = disp.get_horizontal_resolution()
-        self._sh = disp.get_vertical_resolution()
+
+        assert(width<=SCREEN_WIDTH and height<=SCREEN_HEIGHT), "ModalOverlay cannot exceed screen dimensions"
+        assert(x+width<=SCREEN_WIDTH and y+height<=SCREEN_HEIGHT), "ModalOverlay position out of bounds"
 
         self.overlay = lv.obj(disp.get_layer_top())
-        self.overlay.set_size(self._sw, self._sh)
-        self.overlay.set_pos(0, 0)
-        self.overlay.set_style_bg_color(lv.color_hex(bg_color), 0)
+        self.overlay.set_size(width, height)
+        self.overlay.set_pos(x, y)
+        self.overlay.set_style_bg_color(to_lv_color(bg_color), 0)
         self.overlay.set_style_bg_opa(bg_opa, 0)
         self.overlay.set_style_border_width(0, 0)
         self.overlay.set_style_radius(0, 0)
         self.overlay.set_style_pad_all(0, 0)
-        # set_scrollbar_mode is used instead of remove_flag(SCROLLABLE) because
-        # it works across all LVGL MicroPython binding variants we've encountered.
         self.overlay.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
-
-    @property
-    def screen_width(self):
-        return self._sw
-
-    @property
-    def screen_height(self):
-        return self._sh
 
     def close(self):
         """Delete the overlay and all its children."""

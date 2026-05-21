@@ -1,5 +1,6 @@
 import lvgl as lv
-
+from .ui_consts import TEXT_FONT
+from .keyboard_layouts import _full_layout, _alnum_layout
 
 class Layout:
     ALNUM = 0
@@ -9,8 +10,8 @@ class Layout:
 class KeyboardManager:
     """Shared on-screen keyboard controller for MockUI screens."""
 
-    def __init__(self, nav_controller):
-        self.gui = nav_controller
+    def __init__(self, gui):
+        self.gui = gui
 
         self.keyboard = None
         self._reset_internals()
@@ -69,6 +70,7 @@ class KeyboardManager:
 
         self.keyboard.remove_flag(lv.obj.FLAG.HIDDEN)
         self.keyboard.set_textarea(textarea)
+        self.keyboard.move_foreground()  # must render above everything else
 
         #Do this last to mark binding is complete
         self.textarea = textarea
@@ -111,12 +113,12 @@ class KeyboardManager:
 
         self.keyboard = lv.keyboard(self.gui)
         self.keyboard.add_flag(lv.obj.FLAG.HIDDEN)
-        self.keyboard.set_style_text_font(lv.font_montserrat_22, lv.PART.ITEMS)
+        self.keyboard.set_style_text_font(TEXT_FONT, lv.PART.ITEMS)
         self.keyboard.add_event_cb(self._commit, lv.EVENT.READY, None)
         self.keyboard.add_event_cb(self._cancel, lv.EVENT.CANCEL, None)
 
     def _apply_layout(self, layout_id):
-        builder = self._build_alnum_layout if layout_id == Layout.ALNUM else self._build_full_layout
+        builder = _alnum_layout if layout_id == Layout.ALNUM else _full_layout
         map_lower, map_upper, map_special, ctrl_text, ctrl_special = builder()
 
         self.keyboard.set_map(lv.keyboard.MODE.TEXT_LOWER, map_lower, ctrl_text)
@@ -160,69 +162,3 @@ class KeyboardManager:
 
         if commit_cb:
             commit_cb(new_text)
-
-    @staticmethod
-    def _build_full_layout():
-        ctrl_text = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 3, 1, 1, 1,
-        )
-        map_lower = (
-            "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "\n",
-            "a", "s", "d", "f", "g", "h", "j", "k", "l", "\n",
-            "z", "x", "c", "v", "b", "n", "m", lv.SYMBOL.BACKSPACE, "\n",
-            "ABC", "1#", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        map_upper = (
-            "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "\n",
-            "A", "S", "D", "F", "G", "H", "J", "K", "L", "\n",
-            "Z", "X", "C", "V", "B", "N", "M", lv.SYMBOL.BACKSPACE, "\n",
-            "abc", "1#", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        ctrl_special = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 3, 1, 1, 1,
-        )
-        map_special = (
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "\n",
-            "!", "@", "#", "$", "%", "&", "*", "(", ")", "_", "\n",
-            "-", "+", "=", "?", "/", "[", "]", "{", lv.SYMBOL.BACKSPACE, "\n",
-            "ABC", "abc", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        return map_lower, map_upper, map_special, ctrl_text, ctrl_special
-
-    @staticmethod
-    def _build_alnum_layout():
-        ctrl_text = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 3, 1, 1, 1,
-        )
-        map_lower = (
-            "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "\n",
-            "a", "s", "d", "f", "g", "h", "j", "k", "l", "\n",
-            "z", "x", "c", "v", "b", "n", "m", lv.SYMBOL.BACKSPACE, "\n",
-            "ABC", "123", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        map_upper = (
-            "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "\n",
-            "A", "S", "D", "F", "G", "H", "J", "K", "L", "\n",
-            "Z", "X", "C", "V", "B", "N", "M", lv.SYMBOL.BACKSPACE, "\n",
-            "abc", "123", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        ctrl_special = (
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1,
-            1, 3, 1, 1, 1,
-        )
-        map_special = (
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "\n",
-            "_", "-", lv.SYMBOL.BACKSPACE, lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, "\n",
-            "ABC", " ", lv.SYMBOL.LEFT, lv.SYMBOL.RIGHT, lv.SYMBOL.OK, "",
-        )
-        return map_lower, map_upper, map_special, ctrl_text, ctrl_special

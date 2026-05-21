@@ -10,9 +10,17 @@
       "text": "Was möchtest du tun?",
       "ref_en": "What do you want to do?"
     },
-    "MAIN_MENU_PROCESS_INPUT": {
-      "text": "Eingabe verarbeiten",
-      "ref_en": "Process input"
+    "MAIN_MENU_BACKUP_SECTION": {
+      "text": "Daten sichern",
+      "ref_en": "Save data"
+    },
+    "MAIN_MENU_BACKUP_SEED": {
+      "text": "Seedphrase sichern",
+      "ref_en": "Backup Seedphrase"
+    },
+    "HELP_BACKUP_SEED": {
+      "text": "Du hast mindestens einen Seed geladen, der nicht gesichert ist. Wenn du das Gerät ausschaltest, ohne ein Backup zu erstellen, könnten die Coins dieses Seeds dauerhaft verloren gehen.",
+      "ref_en": "You have at least one seed loaded that is not backed up. Turning off the device without backing up may result in permanent loss of funds for that seed."
     },
     "MAIN_MENU_SCAN_QR": {
       "text": "QR-Code scannen",
@@ -22,34 +30,41 @@
       "text": "Verwende die Kamera um einen QR-Code zu scannen. Dies kann verwendet werden um Transaktionen zu empfangen, Wallet-Deskriptoren zu importieren oder PSBTs (Partially Signed Bitcoin Transactions) zum Signieren zu verarbeiten.",
       "ref_en": "Use the camera to scan a QR code. This can be used to receive transactions, import wallet descriptors, or process PSBTs (Partially Signed Bitcoin Transactions) for signing."
     },
-    "MAIN_MENU_LOAD_SD": {
-      "text": "Datei von SD laden",
-      "ref_en": "Load File from SD"
+    "MAIN_MENU_LOAD_FROM_SD": {
+      "text": "von SD-Karte laden",
+      "ref_en": "Load from SD-Card"
+    },
+    "MAIN_MENU_PROCESS_INPUT": {
+      "text": "Eingabe verarbeiten",
+      "ref_en": "Process input"
     },
     "MAIN_MENU_SIGN_MESSAGE": {
       "text": "Nachricht signieren",
       "ref_en": "Sign Message"
     },
-    "MAIN_MENU_IMPORT_SMARTCARD": {
-      "text": "Seed von SmartCard importieren",
-      "ref_en": "Import Seed From SmartCard"
+    "MAIN_MENU_SEED_AND_WALLET": {
+      "text": "Seed & Wallet",
+      "ref_en": "Seed & Wallet"
     },
-    "MAIN_MENU_CHOOSE_WALLET": {
-      "text": "Wallet auswählen",
-      "ref_en": "Wallet"
+    "MAIN_MENU_MANAGE_SEED_WALLET": {
+      "text": "Seed / Wallet verwalten",
+      "ref_en": "Manage Seed / Wallet"
     },
-    "MAIN_MENU_CHANGE_ADD_WALLET": {
-      "text": "Wallet wechseln/hinzufügen",
-      "ref_en": "Change/Add Wallet"
+    "MAIN_MENU_CONNECT_SECTION": {
+      "text": "Verbinden",
+      "ref_en": "Connect"
     },
-    "MAIN_MENU_MANAGE_SETTINGS": {
-      "text": "Gerät",
-      "ref_en": "Device"
+    "MAIN_MENU_CONNECT_COMPANION": {
+      "text": "Companion App verbinden",
+      "ref_en": "Connect Companion App"
     },
-    
-    "WALLET_MENU_LABEL": {
-      "text": "Wallet: ",
-      "ref_en": "Wallet: "
+    "WALLET_BAR_NO_SEED": {
+      "text": "Kein Seed",
+      "ref_en": "No Seed"
+    },
+    "WALLET_BAR_NO_WALLET": {
+      "text": "Keine Wallet",
+      "ref_en": "No Wallet"
     },
     "WALLET_MENU_EXPLORE": {
       "text": "Erkunden",
@@ -69,15 +84,11 @@
     },
     "WALLET_MENU_MANAGE_DESCRIPTOR": {
       "text": "Descriptor verwalten",
-      "ref_en": "Manage Descriptor"
+      "ref_en": "View/Edit Descriptor"
     },
     "WALLET_MENU_CHANGE_NETWORK": {
       "text": "Netzwerk wechseln",
       "ref_en": "Change Network"
-    },
-    "WALLET_MENU_DELETE_WALLET": {
-      "text": "Wallet löschen",
-      "ref_en": "Delete Wallet"
     },
     "WALLET_MENU_CONNECT_EXPORT": {
       "text": "Verbinden/Exportieren",
@@ -87,33 +98,74 @@
       "text": "Daten exportieren",
       "ref_en": "Export Data"
     },
-    
-    "ADD_WALLET_NEW_SEEDPHRASE": {
-      "text": "Neue Seedphrase",
-      "ref_en": "New Seedphrase"
-    },
     "ADD_WALLET_IMPORT_FROM": {
       "text": "Seedphrase importieren von",
-      "ref_en": "Import Seedphrase from"
+      "ref_en": "Import from"
     },
-    "ADD_WALLET_KEYBOARD": {
-      "text": "Tastatur",
-      "ref_en": "Keyboard"
+    "ADD_WALLET_CUSTOMIZE": {
+      "text": "Anpassen",
+      "ref_en": "Customize"
     },
-    
-    "GENERATE_SEED_WALLET_NAME": {
-      "text": "Wallet-Name:",
-      "ref_en": "Wallet name:"
+    "ADD_WALLET_CREATE_CUSTOM": {
+      "text": "Eigenen Descriptor erstellen",
+      "ref_en": "Create Custom Descriptor"
     },
-    "GENERATE_SEED_XPUB": {
-      "text": "xPub: ",
-      "ref_en": "xPub: "
+    "ADD_WALLET_THRESHOLD": {
+      "text": "Quorum:",
+      "ref_en": "Threshold: "
     },
-    "GENERATE_SEED_CREATE": {
-      "text": "Erstellen",
-      "ref_en": "Create"
+    "ADD_WALLET_SIGNERS": {
+      "text": "Signierer:",
+      "ref_en": "Signers: "
     },
-    
+    "ADD_WALLET_CUSTOM": {
+      "text": "Eigenes",
+      "ref_en": "Custom"
+    },
+    "ADD_SWITCH_WALLET_MENU_WALLETS_FOR_SEED": {
+      "text": "Wallets für aktiven Seed",
+      "ref_en": "Wallets for active seed"
+    },
+    "ADD_SWITCH_WALLET_MENU_OTHER_WALLETS": {
+      "text": "Andere Wallets",
+      "ref_en": "Other wallets"
+    },
+    "ADD_SWITCH_SEED_MENU_SEEDS_FOR_WALLET": {
+      "text": "Seeds für aktive Wallet",
+      "ref_en": "Seeds for active wallet"
+    },
+    "ADD_SWITCH_SEED_MENU_OTHER_SEEDS": {
+      "text": "Andere Seeds",
+      "ref_en": "Other seeds"
+    },
+    "GENERATE_SEED_FINGERPRINT": {
+      "text": "Fingerprint:",
+      "ref_en": "Fingerprint: "
+    },
+    "GENERATE_SEED_INFO": {
+      "text": "Eine neue 24-Wort-Seed wird generiert. Du kannst sie nach der Erstellung sichern.",
+      "ref_en": "A new 24-word seed will be generated. You can back it up after creation."
+    },
+    "ADD_SEED_GENERATE_SECTION": {
+      "text": "Erzeuge",
+      "ref_en": "Generate"
+    },
+    "ADD_SEED_GENERATE_SEED": {
+      "text": "Neue Seed",
+      "ref_en": "New Seed"
+    },
+    "ADD_SEED_IMPORT_SECTION": {
+      "text": "Importieren bestehende Seed von",
+      "ref_en": "Import existing Seed from"
+    },
+    "MANAGE_SW_SEED_SECTION_TITLE": {
+      "text": "Seed",
+      "ref_en": "Seed"
+    },
+    "MANAGE_SW_WALLET_SECTION_TITLE": {
+      "text": "Wallet",
+      "ref_en": "Wallet"
+    },
     "PASSPHRASE_MENU_LABEL": {
       "text": "Passphrase:",
       "ref_en": "Passphrase:"
@@ -122,14 +174,13 @@
       "text": "Löschen",
       "ref_en": "Clear"
     },
-    
     "SEEDPHRASE_MENU_SHOW": {
       "text": "Seedphrase anzeigen",
-      "ref_en": "Show Seedphrase"
+      "ref_en": "Show Seed"
     },
-    "SEEDPHRASE_MENU_STORAGE": {
-      "text": "Speicher",
-      "ref_en": "Storage"
+    "SEEDPHRASE_MENU_BACKUP": {
+      "text": "Backup",
+      "ref_en": "Backup"
     },
     "SEEDPHRASE_MENU_STORE_TO": {
       "text": "Speichern auf",
@@ -151,7 +202,14 @@
       "text": "Neue via BIP-85 ableiten",
       "ref_en": "Derive new via BIP-85"
     },
-    
+    "SEEDPHRASE_MENU_EXPLORE": {
+      "text": "Erkunden",
+      "ref_en": "Explore"
+    },
+    "SEEDPHRASE_MENU_RELATED_WALLETS": {
+      "text": "Zugeh\u00f6rige Wallets",
+      "ref_en": "Related Wallets"
+    },
     "CONNECT_WALLETS_SPARROW": {
       "text": "Sparrow",
       "ref_en": "Sparrow"
@@ -168,7 +226,10 @@
       "text": "Andere...",
       "ref_en": "Other..."
     },
-    
+    "DEVICE_MENU_ANIMATIONS": {
+      "text": "Animationen",
+      "ref_en": "Animations"
+    },
     "DEVICE_MENU_DISPLAY": {
       "text": "Display konfigurieren",
       "ref_en": "Manage Display"
@@ -176,10 +237,6 @@
     "DEVICE_MENU_SOUNDS": {
       "text": "Töne konfigurieren",
       "ref_en": "Manage Sounds"
-    },
-    "DEVICE_MENU_ADVANCED": {
-      "text": "Erweiterte Funktionen",
-      "ref_en": "Advanced Features"
     },
     "DEVICE_MENU_DANGERZONE": {
       "text": "Gefahrenzone",
@@ -191,13 +248,12 @@
     },
     "HELP_DEVICE_MENU_WIPE": {
       "text": "WARNUNG: Dies löscht ALLE Daten auf dem Gerät permanent, einschließlich deiner Seedphrase, Wallet-Konfigurationen und Einstellungen.\nDiese Aktion kann nicht rückgängig gemacht werden.\nStelle sicher, dass du ein Backup deiner Seedphrase hast bevor du fortfährst!",
-      "ref_en": "WARNING: This will permanently erase ALL data on the device including your seedphrase, wallet configurations, and settings.\nThis action cannot be undone.\nMake sure you have a backup of your seedphrase before proceeding!"
+      "ref_en": "WARNING: This will permanently erase ALL data on the device including your seed, wallet configurations, and settings.\nThis action cannot be undone.\nMake sure you have a backup of your seed before proceeding!"
     },
     "DEVICE_MENU_RESTART_TOUR": {
       "text": "Tour neu starten",
       "ref_en": "Restart Tour"
     },
-    
     "FIRMWARE_MENU_CURRENT_VERSION": {
       "text": "Aktuelle Version ",
       "ref_en": "Current version "
@@ -206,7 +262,6 @@
       "text": ". Aktualisieren via",
       "ref_en": ". Update via"
     },
-    
     "BACKUPS_MENU_BACKUP_TO_SD": {
       "text": "Backup auf SD-Karte",
       "ref_en": "Backup to SD Card"
@@ -219,7 +274,14 @@
       "text": "Von SD-Karte entfernen",
       "ref_en": "Remove from SD Card"
     },
-    
+    "BACKUPS_MENU_NO_SD_DETECTED": {
+      "text": "Keine SD-Karte erkannt",
+      "ref_en": "No SD Card detected"
+    },
+    "SECURITY_MENU_LOCK_DEVICE": {
+      "text": "Gerät sperren",
+      "ref_en": "Lock Device"
+    },
     "SECURITY_MENU_CHANGE_PIN": {
       "text": "PIN ändern",
       "ref_en": "Change PIN"
@@ -244,7 +306,6 @@
       "text": "Zwangs-PIN-Aktion festlegen",
       "ref_en": "Set duress PIN action"
     },
-    
     "STORAGE_MENU_INTERNAL_FLASH": {
       "text": "Internen Speicher verwalten",
       "ref_en": "Manage internal flash"
@@ -257,25 +318,18 @@
       "text": "SD-Karte verwalten",
       "ref_en": "Manage SD Card"
     },
-
-    "MENU_LOAD_NEW_LANGUAGE": {
-      "text": "Neue Sprache laden",
-      "ref_en": "Load New Language"
-    },
-    
     "LOCKED_MENU_TITLE": {
       "text": "Gerät gesperrt",
       "ref_en": "Device Locked"
     },
     "LOCKED_MENU_FW_VERSION": {
       "text": "Firmware-Version: ",
-      "ref_en": "Firmware version: "
+      "ref_en": "Firmware Version: "
     },
     "LOCKED_MENU_ENTER_PIN": {
       "text": "PIN eingeben zum Entsperren:",
       "ref_en": "Enter PIN to unlock:"
     },
-    
     "ACTION_SCREEN_PREFIX": {
       "text": "Aktion: ",
       "ref_en": "Action: "
@@ -288,7 +342,22 @@
       "text": "Schließen",
       "ref_en": "Close"
     },
-    
+    "MODAL_DELETE_WALLET_TEXT": {
+      "text": "Wallet \"%s\" löschen?\nDies kann nicht rückgängig gemacht werden.",
+      "ref_en": "Delete wallet \"%s\"?\nThis cannot be undone."
+    },
+    "MODAL_DELETE_SEED_TEXT": {
+      "text": "Seed \"%s\" löschen?\nDer Schlüssel wird aus dem Speicher entfernt.",
+      "ref_en": "Delete seed \"%s\"?\nThis will remove the key from memory."
+    },
+    "MODAL_BACKUP_WARNING_TEXT": {
+      "text": "Diese Seed-Phrase wurde noch nicht gesichert.\n\nOhne Backup könnten bei Geräteverlust Ihre Coins verloren gehen.\n\nHaben Sie Ihre Seed-Phrase bereits gesichert?",
+      "ref_en": "This seed has not been backed up yet.\n\nIf you lose this device without a backup, your funds may be lost.\n\nHave you already backed up your seed phrase?"
+    },
+    "MODAL_BACKUP_CONFIRMED_BTN": {
+      "text": "Gesichert!",
+      "ref_en": "Backed up!"
+    },
     "COMMON_WALLET": {
       "text": "Wallet",
       "ref_en": "Wallet"
@@ -301,29 +370,65 @@
       "text": "MultiSig",
       "ref_en": "MultiSig"
     },
-    "COMMON_MAINNET": {
-      "text": "MainNet",
-      "ref_en": "mainnet"
+    "COMMON_MINISCRIPT": {
+      "text": "Miniscript",
+      "ref_en": "Miniscript"
     },
-    "COMMON_TESTNET": {
-      "text": "TestNet",
-      "ref_en": "testnet"
+    "COMMON_KEYBOARD": {
+      "text": "Tastatur",
+      "ref_en": "Keyboard"
+    },
+    "COMMON_CREATE": {
+      "text": "Erstellen",
+      "ref_en": "Create"
+    },
+    "COMMON_NAME": {
+      "text": "Name",
+      "ref_en": "Name"
+    },
+    "COMMON_OK": {
+      "text": "OK",
+      "ref_en": "OK"
+    },
+    "COMMON_CANCEL": {
+      "text": "Abbrechen",
+      "ref_en": "Cancel"
+    },
+    "COMMON_DELETE": {
+      "text": "Löschen",
+      "ref_en": "Delete"
     },
     "MENU_MANAGE_WALLET": {
       "text": "Wallet verwalten",
       "ref_en": "Manage Wallet"
     },
-    "MENU_MANAGE_SEEDPHRASE": {
-      "text": "Seedphrase verwalten",
-      "ref_en": "Manage Seedphrase"
+    "MENU_MANAGE_SEED": {
+      "text": "Seed verwalten",
+      "ref_en": "Manage Seed"
     },
     "MENU_SET_PASSPHRASE": {
       "text": "Passphrase eingeben/setzen",
-      "ref_en": "Enter/Set Passphrase"
+      "ref_en": "Set Passphrase"
     },
+    "MENU_CHANGE_CLEAR_PASSPHRASE": {
+      "text": "Passphrase ändern / löschen",
+      "ref_en": "Change / Clear Passphrase"
+    },    
     "MENU_CONNECT_SW_WALLET": {
-      "text": "SW-Wallet verbinden",
-      "ref_en": "Connect SW Wallet"
+      "text": "Companion App verbinden",
+      "ref_en": "Connect Companion App"
+    },
+    "MENU_SWITCH_ADD_SEED": {
+      "text": "Seed wechseln / hinzufügen",
+      "ref_en": "Switch / Add Seed"
+    },
+    "MENU_SWITCH_ADD_WALLET": {
+      "text": "Wallet wechseln / hinzufügen",
+      "ref_en": "Switch / Add Wallet"
+    },
+    "MENU_ADD_SEED": {
+      "text": "Seed hinzufügen",
+      "ref_en": "Add Seed"
     },
     "MENU_ADD_WALLET": {
       "text": "Wallet hinzufügen",
@@ -355,11 +460,7 @@
     },
     "MENU_GENERATE_SEEDPHRASE": {
       "text": "Seedphrase generieren",
-      "ref_en": "Generate Seedphrase"
-    },
-    "MENU_MANAGE_DEVICE": {
-      "text": "Gerät verwalten",
-      "ref_en": "Manage Device"
+      "ref_en": "Generate Seed"
     },
     "MENU_MANAGE_SETTINGS": {
       "text": "Einstellungen",
@@ -372,6 +473,10 @@
     "MENU_LANGUAGE": {
       "text": "Sprache auswählen",
       "ref_en": "Select Language"
+    },
+    "MENU_LOAD_NEW_LANGUAGE": {
+      "text": "Neue Sprache laden",
+      "ref_en": "Load New Language"
     },
     "HARDWARE_SMARTCARD": {
       "text": "SmartCard",

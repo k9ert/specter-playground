@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 # Import state classes (micropython/lvgl already mocked by scenarios/conftest.py)
-from MockUI.stubs.device_state import SpecterState
+from MockUI.stubs.device_state import DeviceState
 from MockUI.stubs.ui_state import UIState
 from MockUI.stubs.wallet import Wallet
 
@@ -34,8 +34,8 @@ _DE_JSON = _I18N_LANGUAGES_DIR / "specter_ui_de.json"
 
 @pytest.fixture
 def specter_state():
-    """Fresh SpecterState instance."""
-    return SpecterState()
+    """Fresh DeviceState instance."""
+    return DeviceState()
 
 
 @pytest.fixture
