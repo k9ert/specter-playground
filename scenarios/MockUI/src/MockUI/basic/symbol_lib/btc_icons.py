@@ -1,4 +1,4 @@
-"""Bitcoin icon library aggregator — 175 icons at 42×42 px.
+"""Bitcoin icon library aggregator — 177 icons at 42×42 px.
 
 AUTO-GENERATED — do not edit directly.
 Regenerate with:
@@ -100,6 +100,8 @@ from .icons.home_outline import HOME_OUTLINE
 # from .icons.invoice import INVOICE
 # from .icons.iou import IOU
 from .icons.key import KEY
+from .icons.key_multi_back import KEY_MULTI_BACK
+from .icons.key_multi_front import KEY_MULTI_FRONT
 from .icons.key_outline import KEY_OUTLINE
 from .icons.keyboard import KEYBOARD
 from .icons.lightning import LIGHTNING
@@ -173,7 +175,7 @@ from .icons.smartcard import SMARTCARD
 # from .icons.transfer import TRANSFER
 from .icons.trash import TRASH
 # from .icons.tree_structure import TREE_STRUCTURE
-from .icons.two_keys import TWO_KEYS
+# from .icons.two_keys import TWO_KEYS
 # from .icons.unlock import UNLOCK
 # from .icons.unmixed import UNMIXED
 from .icons.usb import USB
@@ -286,6 +288,8 @@ class BTC_ICONS:
 #     INVOICE = INVOICE
 #     IOU = IOU
     KEY = KEY
+    KEY_MULTI_BACK = KEY_MULTI_BACK
+    KEY_MULTI_FRONT = KEY_MULTI_FRONT
     KEY_OUTLINE = KEY_OUTLINE
     KEYBOARD = KEYBOARD
     LIGHTNING = LIGHTNING
@@ -359,7 +363,7 @@ class BTC_ICONS:
 #     TRANSFER = TRANSFER
     TRASH = TRASH
 #     TREE_STRUCTURE = TREE_STRUCTURE
-    TWO_KEYS = TWO_KEYS
+#     TWO_KEYS = TWO_KEYS
 #     UNLOCK = UNLOCK
 #     UNMIXED = UNMIXED
     USB = USB
