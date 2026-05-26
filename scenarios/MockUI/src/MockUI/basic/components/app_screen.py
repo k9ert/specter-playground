@@ -12,12 +12,12 @@ import lvgl as lv
 from ..utils.ui_consts import (
     SCREEN_WIDTH, SCREEN_HEIGHT, CONTENT_PCT, TITLE_ROW_HEIGHT, BATTERY_WIDTH,
 )
-from .specter_gui_base import SpecterGuiElement
+from ..templates.specter_gui_base import SpecterGuiElement
 from ..utils.ui_utils import configure_as_bare
 from ..widgets.containers import flex_col
 from ..widgets.battery import Battery
 from ..components.context_bar import ContextBar
-from ...stubs.ui_state import Context
+from ..ui_state import Context
 
 _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
 CONTEXT_BAR_WIDTH = SCREEN_WIDTH - BATTERY_WIDTH

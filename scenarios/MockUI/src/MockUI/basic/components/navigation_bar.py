@@ -34,7 +34,7 @@ from ..widgets.modal_overlay import ModalOverlay
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..utils.ui_utils import configure_as_bare, set_background_visible
 from .dropup import SeedDropUp, WalletDropUp, DropUpState
-from ...stubs.ui_state import Context
+from ..ui_state import Context
 
 class NavigationBar(SpecterGuiElement):
     """Permanent bottom navigation bar with 5 fixed-position icon buttons."""

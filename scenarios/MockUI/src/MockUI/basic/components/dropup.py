@@ -31,7 +31,7 @@ from ..widgets.seed_widgets import build_seed_card
 from ..widgets.wallet_widgets import build_wallet_card, wallet_net_text
 from ..utils.animations import slide_y
 from ..templates.specter_gui_base import SpecterGuiMixin
-from ...stubs.ui_state import Context
+from ..ui_state import Context
 
 
 # ── Layout constants ──────────────────────────────────────────────────────────

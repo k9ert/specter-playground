@@ -1,8 +1,8 @@
 import lvgl as lv
 
 from .utils.ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS
-from ..stubs import UIState, DeviceState
-from ..stubs.ui_state import Context
+from ..stubs import DeviceState
+from .ui_state import UIState, Context
 from .i18n import I18nManager
 from .tour import GuidedTour, INTRO_TOUR_STEPS
 from .utils.keyboard_manager import KeyboardManager

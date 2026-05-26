@@ -13,7 +13,7 @@ from ..symbol_lib import BTC_ICONS
 from ..widgets.seed_widgets import build_seed_card
 from ..widgets.wallet_widgets import build_wallet_card, wallet_net_text
 from ..utils.keyboard_manager import Layout
-from ...stubs.ui_state import Context
+from ..ui_state import Context
 
 
 class ContextBar(SpecterGuiElement):
