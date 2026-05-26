@@ -7,6 +7,7 @@ from ..ui_consts import (
     WHITE_HEX, GREY_HEX, BTC_ICON_WIDTH, SCREEN_WIDTH,
     STATUS_BTN_HEIGHT, SMALL_TEXT_FONT, CARD_H,
 )
+from ..ui_utils import configure_as_bare
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
 from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot, compute_name_width
@@ -46,19 +47,55 @@ def wallet_account_text(wallet):
     return "#" + str(wallet.account)
 
 
+class MultisigKeyIcon(lv.obj):
+    """Composite multisig type icon: two overlapping keys with independent colours.
+
+    Rendered as two ``lv.image`` layers inside a transparent ``BTC_ICON_WIDTH``
+    square container — the same approach as ``Battery``.
+
+    Colour semantics
+    ----------------
+    lower/front key  - white when ≥ 1 related key is loaded, grey otherwise
+                       (wallet is related to the loaded keys)
+    upper/back  key  - white when ≥ quorum (wallet.threshold) keys loaded, grey otherwise
+                       (device can fully sign without further keys)
+    """
+
+    def __init__(self, parent, wallet, device_state):
+        super().__init__(parent)
+        configure_as_bare(self, width=BTC_ICON_WIDTH, height=BTC_ICON_WIDTH, transparent_bg=True)
+        # Upper/background key — rendered first, appears behind
+        self.key_back = make_icon(self, BTC_ICONS.KEY_MULTI_BACK, WHITE_HEX)
+        self.key_back.align(lv.ALIGN.CENTER, 0, 0)
+        # Lower/foreground key — rendered second, appears in front
+        self.key_front = make_icon(self, BTC_ICONS.KEY_MULTI_FRONT, WHITE_HEX)
+        self.key_front.align(lv.ALIGN.CENTER, 0, 0)
+        self.update(wallet, device_state)
+
+    def update(self, wallet, device_state):
+        """Recolour both key layers based on current signing readiness."""
+        matched, _ = device_state.signing_match_count(wallet)
+        threshold = getattr(wallet, 'threshold', 1) or 1
+        back_color = WHITE_HEX if matched >= threshold else GREY_HEX
+        front_color  = WHITE_HEX if matched >= 1         else GREY_HEX
+        BTC_ICONS.KEY_MULTI_BACK(back_color).apply_icon_to(self.key_back)
+        BTC_ICONS.KEY_MULTI_FRONT(front_color).apply_icon_to(self.key_front)
+
+
 def add_wallet_type_icon(parent, wallet, device_state):
     """Append a wallet type icon to *parent* with colour indicating signing readiness.
 
-    Returns the ``lv.image`` widget.
+    Returns the widget (``lv.image`` for single-sig/non-standard,
+    ``MultisigKeyIcon`` container for multisig).
     """
     if not wallet.is_standard():
-        icon = BTC_ICONS.CONSOLE
+        color = wallet_signing_color(wallet, device_state)
+        return make_icon(parent, BTC_ICONS.CONSOLE, color)
     elif wallet.isMultiSig:
-        icon = BTC_ICONS.TWO_KEYS
+        return MultisigKeyIcon(parent, wallet, device_state)
     else:
-        icon = BTC_ICONS.KEY
-    color = wallet_signing_color(wallet, device_state)
-    return make_icon(parent, icon, color)
+        color = wallet_signing_color(wallet, device_state)
+        return make_icon(parent, BTC_ICONS.KEY, color)
 
 
 def build_wallet_card(
