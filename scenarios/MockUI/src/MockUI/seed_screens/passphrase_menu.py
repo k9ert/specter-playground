@@ -1,7 +1,7 @@
 import lvgl as lv
 from ..basic import TitledScreen, BTN_WIDTH, BTN_HEIGHT, SMALL_PAD
-from ..basic.ui_utils import configure_flex
-from ..basic.keyboard_manager import Layout
+from ..basic.utils.ui_utils import configure_flex
+from ..basic.utils.keyboard_manager import Layout
 from ..basic.widgets import flex_col, flex_row, form_label, form_textarea, Btn, ACCEPTED_CHARS
 from ..basic.symbol_lib import BTC_ICONS
 

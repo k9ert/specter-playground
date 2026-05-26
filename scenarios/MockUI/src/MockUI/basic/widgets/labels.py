@@ -1,8 +1,8 @@
 """Label helpers — lv.label wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..ui_consts import BTN_WIDTH, TEXT_FONT
-from ..ui_utils import to_lv_color
+from ..utils.ui_consts import BTN_WIDTH, TEXT_FONT
+from ..utils.ui_utils import to_lv_color
 
 # ── Font selection helpers ────────────────────────────────────────────────────
 

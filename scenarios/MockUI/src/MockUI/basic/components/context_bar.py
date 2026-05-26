@@ -3,17 +3,17 @@
 
 import lvgl as lv
 
-from .ui_consts import (
+from ..utils.ui_consts import (
     TITLE_ROW_HEIGHT,
     SCREEN_WIDTH,
 )
-from .specter_gui_base import SpecterGuiElement
-from .ui_utils import delete_all_children_of, configure_as_bare
-from .symbol_lib import BTC_ICONS
-from .widgets.seed_widgets import build_seed_card
-from .widgets.wallet_widgets import build_wallet_card, wallet_net_text
-from .keyboard_manager import Layout
-from ..stubs.ui_state import Context
+from ..templates.specter_gui_base import SpecterGuiElement
+from ..utils.ui_utils import delete_all_children_of, configure_as_bare
+from ..symbol_lib import BTC_ICONS
+from ..widgets.seed_widgets import build_seed_card
+from ..widgets.wallet_widgets import build_wallet_card, wallet_net_text
+from ..utils.keyboard_manager import Layout
+from ...stubs.ui_state import Context
 
 
 class ContextBar(SpecterGuiElement):

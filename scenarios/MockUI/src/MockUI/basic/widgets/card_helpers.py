@@ -11,7 +11,7 @@ from .labels import make_label, best_font_for_size
 from .inputs import title_textarea
 from .btn import Btn
 from ..symbol_lib import BTC_ICONS
-from ..ui_consts import WHITE_HEX, BIG_PAD
+from ..utils.ui_consts import WHITE_HEX, BIG_PAD
 
 
 def compute_name_width(width, slots, slot_costs, min_width=10):

@@ -29,15 +29,29 @@ if "utime" not in sys.modules:
 
 # Mock lvgl module to prevent LVGL imports from failing
 if "lvgl" not in sys.modules:
-    class LvMockObj:
-        """Mock LVGL base object."""
+    class _LvSentinel:
+        """Generic sentinel for any lvgl attribute or return value."""
         def __init__(self, *args, **kwargs):
             pass
+        def __call__(self, *args, **kwargs):
+            return _LvSentinel()
+        def __getattr__(self, name):
+            return _LvSentinel()
+        def __int__(self):
+            return 0
+        def __index__(self):
+            return 0
+
+    class LvMockObj(_LvSentinel):
+        """Mock LVGL base object."""
+        pass
 
     class LvMockEvent:
         CLICKED = 1
 
     lvgl_mock = ModuleType("lvgl")
+    # Make the mock auto-return a callable sentinel for any unknown attribute (e.g. fonts, pct, etc.)
+    lvgl_mock.__getattr__ = lambda name: _LvSentinel()
     lvgl_mock.color_hex = lambda x: x
     lvgl_mock.obj = LvMockObj
     lvgl_mock.label = LvMockObj
@@ -52,5 +66,5 @@ if "lvgl" not in sys.modules:
     lvgl_mock.ALIGN = type("ALIGN", (), {"CENTER": 0, "TOP_LEFT": 1, "TOP_RIGHT": 2, "BOTTOM_LEFT": 3, "BOTTOM_RIGHT": 4})()
     lvgl_mock.SYMBOL = type("SYMBOL", (), {"BATTERY_FULL": "F", "BATTERY_3": "3", "BATTERY_2": "2", "BATTERY_1": "1", "BATTERY_EMPTY": "E", "CHARGE": "C"})()
     lvgl_mock.FLEX_FLOW = type("FLEX_FLOW", (), {"COLUMN": 0, "ROW": 1})()
-    lvgl_mock.FLEX_ALIGN = type("FLEX_ALIGN", (), {"START": 0, "CENTER": 1, "END": 2, "SPACE_BETWEEN": 3})()
+    lvgl_mock.FLEX_ALIGN = type("FLEX_ALIGN", (), {"START": 0, "CENTER": 1, "END": 2, "SPACE_BETWEEN": 3, "SPACE_EVENLY": 4, "SPACE_AROUND": 5})()
     sys.modules["lvgl"] = lvgl_mock

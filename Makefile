@@ -48,13 +48,13 @@ trim-icons:
 build-i18n: sync-i18n
 	@echo Building i18n files...
 	@mkdir -p build/flash_image/i18n
-	@cd scenarios/MockUI/src/MockUI/i18n && python3 lang_compiler.py generate_keys languages/specter_ui_en.json
-	@cd scenarios/MockUI/src/MockUI/i18n && python3 lang_compiler.py compile languages/specter_ui_en.json && mv lang_en.bin ../../../../../build/flash_image/i18n/
+	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py generate_keys languages/specter_ui_en.json
+	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_en.json && mv lang_en.bin ../../../../../../build/flash_image/i18n/
 	@if [ -n "$(ADD_LANG)" ]; then \
 		for lang in $(shell echo $(ADD_LANG) | tr ',' ' '); do \
-			if [ -f scenarios/MockUI/src/MockUI/i18n/languages/specter_ui_$$lang.json ]; then \
+			if [ -f scenarios/MockUI/src/MockUI/basic/i18n/languages/specter_ui_$$lang.json ]; then \
 				echo "  Compiling $$lang..."; \
-				cd scenarios/MockUI/src/MockUI/i18n && python3 lang_compiler.py compile languages/specter_ui_$$lang.json && mv lang_$$lang.bin ../../../../../build/flash_image/i18n/ || true; \
+				cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_$$lang.json && mv lang_$$lang.bin ../../../../../../build/flash_image/i18n/ || true; \
 			else \
 				echo "  Warning: Language file languages/specter_ui_$$lang.json not found"; \
 			fi; \
@@ -190,7 +190,7 @@ all: mpy-cross disco unix
 clean:
 	rm -rf $(TARGET_DIR)
 	rm -rf build
-	rm -f scenarios/MockUI/src/MockUI/i18n/translation_keys.py scenarios/MockUI/src/MockUI/i18n/language_config.json
+	rm -f scenarios/MockUI/src/MockUI/basic/i18n/translation_keys.py scenarios/MockUI/src/MockUI/basic/i18n/language_config.json
 	make -C $(MPY_DIR)/mpy-cross clean
 	rm -rf $(MPY_DIR)/mpy-cross/build
 	make -C $(MPY_DIR)/ports/unix \

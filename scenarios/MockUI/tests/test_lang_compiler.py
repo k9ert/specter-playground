@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-import MockUI.i18n.lang_compiler as lc
-from MockUI.i18n.lang_compiler import (
+import MockUI.basic.i18n.lang_compiler as lc
+from MockUI.basic.i18n.lang_compiler import (
     BINARY_FILE_PREFIX,
     BINARY_FILE_SUFFIX,
     HEADER_SIZE,
@@ -400,7 +400,7 @@ class TestValidateBinaryFile:
 
     def test_with_translation_keys_module(self, en_binary_path):
         """Pass the real translation_keys module for key-count checking."""
-        from MockUI.i18n import translation_keys as tk_mod
+        from MockUI.basic.i18n import translation_keys as tk_mod
         success, error = validate_binary_file(str(en_binary_path), tk_mod)
         assert success is True
 
@@ -422,7 +422,7 @@ class TestValidateBinaryFile:
             f.write(struct.pack("<I", 1))
             f.write(struct.pack("<I", 999))
             f.write(b"Test\x00" + b"\x00" * (LANG_NAME_FIELD_SIZE - 5))
-        from MockUI.i18n import translation_keys as tk_mod
+        from MockUI.basic.i18n import translation_keys as tk_mod
         success, error = validate_binary_file(str(bad), tk_mod)
         assert success is False
         assert "mismatch" in error

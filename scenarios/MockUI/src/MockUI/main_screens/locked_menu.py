@@ -1,11 +1,11 @@
 import lvgl as lv
-from .titled_screen import TitledScreen
-from .symbol_lib import BTC_ICONS
-from .ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH, SMALL_PAD
-from .ui_utils import configure_flex, shuffle
-from .widgets.btn import Btn
-from .widgets.containers import flex_row
-from .widgets.labels import body_label
+from ..basic.templates.titled_screen import TitledScreen
+from ..basic.symbol_lib import BTC_ICONS
+from ..basic.utils.ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH, SMALL_PAD
+from ..basic.utils.ui_utils import configure_flex, shuffle
+from ..basic.widgets.btn import Btn
+from ..basic.widgets.containers import flex_row
+from ..basic.widgets.labels import body_label
 
 
 class LockedMenu(TitledScreen):

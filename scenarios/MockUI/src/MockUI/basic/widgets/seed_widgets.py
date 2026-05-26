@@ -3,7 +3,7 @@
 
 import lvgl as lv
 from ..symbol_lib import BTC_ICONS
-from ..ui_consts import (
+from ..utils.ui_consts import (
     WHITE_HEX, GREY_HEX, ORANGE_HEX, SMALL_TEXT_FONT, FINGERPRINT_LBL_WIDTH,
     BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, SCREEN_WIDTH, CARD_H,
 )

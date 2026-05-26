@@ -1,7 +1,7 @@
 """Input helpers — lv.textarea wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..ui_consts import TITLE_ROW_HEIGHT, TITLE_TA_WIDTH, WHITE_HEX, TITLE_FONT, TEXT_FONT
+from ..utils.ui_consts import TITLE_ROW_HEIGHT, TITLE_TA_WIDTH, WHITE_HEX, TITLE_FONT, TEXT_FONT
 
 ACCEPTED_CHARS = (
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

@@ -1,14 +1,14 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WIDTH_PCT, SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD, SMALL_TEXT_FONT, BTC_ICON_WIDTH, DEFAULT_MODAL_BG_OPA, SCREEN_WIDTH, SCREEN_HEIGHT
+from ..utils.ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WIDTH_PCT, SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD, SMALL_TEXT_FONT, BTC_ICON_WIDTH, DEFAULT_MODAL_BG_OPA, SCREEN_WIDTH, SCREEN_HEIGHT
 from .titled_screen import TitledScreen
-from .symbol_lib import Icon, BTC_ICONS
-from .widgets.modal_overlay import ModalOverlay
-from .widgets.action_modal import ActionModal
-from .widgets.btn import Btn
-from .widgets.containers import flex_col, dialog_card, flex_row
-from .widgets.labels import body_label, section_header, form_label
-from .widgets.icon_widgets import make_icon
-from .ui_utils import configure_flex, delete_all_children_of
+from ..symbol_lib import Icon, BTC_ICONS
+from ..widgets.modal_overlay import ModalOverlay
+from ..widgets.action_modal import ActionModal
+from ..widgets.btn import Btn
+from ..widgets.containers import flex_col, dialog_card, flex_row
+from ..widgets.labels import body_label, section_header, form_label
+from ..widgets.icon_widgets import make_icon
+from ..utils.ui_utils import configure_flex, delete_all_children_of
 
 
 class GenericMenu(TitledScreen):

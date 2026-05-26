@@ -16,22 +16,22 @@ The panel fills from the nav bar top edge upward.
 
 import lvgl as lv
 from micropython import const
-from .widgets.action_modal import ActionModal
-from .widgets.menu_item import MenuItem
+from ..widgets.action_modal import ActionModal
+from ..widgets.menu_item import MenuItem
 from .confirm_modals import confirm_delete_seed, confirm_delete_wallet
-from .ui_consts import (
+from ..utils.ui_consts import (
     BTC_ICON_WIDTH, SMALL_TEXT_FONT, STATUS_BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
     STATUS_BAR_PCT, WHITE_HEX, ORANGE_HEX, BIG_PAD, CARD_H,
     DROPUP_DIVIDER_OPA, ANIM_MS_VERTICAL, TEXT_FONT
 )
-from .symbol_lib import BTC_ICONS
-from .widgets.containers import flex_col, flex_row
-from .widgets.btn import Btn
-from .widgets.seed_widgets import build_seed_card
-from .widgets.wallet_widgets import build_wallet_card, wallet_net_text
-from .animations import slide_y
-from .specter_gui_base import SpecterGuiMixin
-from ..stubs.ui_state import Context
+from ..symbol_lib import BTC_ICONS
+from ..widgets.containers import flex_col, flex_row
+from ..widgets.btn import Btn
+from ..widgets.seed_widgets import build_seed_card
+from ..widgets.wallet_widgets import build_wallet_card, wallet_net_text
+from ..utils.animations import slide_y
+from ..templates.specter_gui_base import SpecterGuiMixin
+from ...stubs.ui_state import Context
 
 
 # ── Layout constants ──────────────────────────────────────────────────────────

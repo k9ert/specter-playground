@@ -25,8 +25,8 @@ Usage::
 """
 
 import lvgl as lv
-from ..ui_consts import DEFAULT_MODAL_BG_OPA, BLACK, SCREEN_WIDTH, SCREEN_HEIGHT
-from ..ui_utils import to_lv_color
+from ..utils.ui_consts import DEFAULT_MODAL_BG_OPA, BLACK, SCREEN_WIDTH, SCREEN_HEIGHT
+from ..utils.ui_utils import to_lv_color
 
 class ModalOverlay:
     """Container parented to ``layer_top``.

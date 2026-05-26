@@ -1,9 +1,9 @@
 import lvgl as lv
-from .menu import GenericMenu
-from ..seed.add_seed_menu import make_add_seed_items
-from .symbol_lib import BTC_ICONS
-from .ui_consts import GREEN_HEX, RED_HEX, WHITE_HEX, ORANGE_HEX
-from .widgets import MenuItem
+from ..basic.templates.menu import GenericMenu
+from ..seed_screens.add_seed_menu import make_add_seed_items
+from ..basic.symbol_lib import BTC_ICONS
+from ..basic.utils.ui_consts import GREEN_HEX, RED_HEX, WHITE_HEX, ORANGE_HEX
+from ..basic.widgets import MenuItem
 
 
 class MainMenu(GenericMenu):

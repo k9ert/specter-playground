@@ -1,4 +1,4 @@
-from ..basic.menu import GenericMenu
+from ..basic.templates.menu import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
 

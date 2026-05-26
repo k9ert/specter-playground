@@ -1,4 +1,4 @@
-from .ui_consts import (
+from .utils.ui_consts import (
     BTN_HEIGHT, BTN_WIDTH,
     SMALL_PAD,
     SWITCH_HEIGHT, SWITCH_WIDTH,
@@ -8,11 +8,9 @@ from .ui_consts import (
     GREEN, ORANGE, RED,
     ORANGE_HEX, RED_HEX, WHITE_HEX, GREY_HEX,
 )
-from .titled_screen import TitledScreen
-from .menu import GenericMenu
-from .main_menu import MainMenu
-from .locked_menu import LockedMenu
-from .action_screen import ActionScreen
+from .templates.titled_screen import TitledScreen
+from .templates.menu import GenericMenu
+from .templates.action_screen import ActionScreen
 from .specter_gui import SpecterGui
 
 __all__ = [
@@ -27,7 +25,6 @@ __all__ = [
     "ORANGE_HEX", "RED_HEX", "WHITE_HEX", "GREY_HEX",
     # classes used outside basic/
     "TitledScreen",
-    "MainMenu", "LockedMenu",
     "ActionScreen", "GenericMenu",
     "SpecterGui",
 ]

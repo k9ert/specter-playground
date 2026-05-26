@@ -1,7 +1,7 @@
 import lvgl as lv
-from ..basic.titled_screen import TitledScreen
-from ..basic.ui_utils import configure_flex, delete_all_children_of
-from ..basic.ui_consts import BTN_HEIGHT, BTN_WIDTH, SCREEN_WIDTH
+from ..basic.templates.titled_screen import TitledScreen
+from ..basic.utils.ui_utils import configure_flex, delete_all_children_of
+from ..basic.utils.ui_consts import BTN_HEIGHT, BTN_WIDTH, SCREEN_WIDTH
 from ..basic.widgets.btn import Btn
 from ..basic.widgets.labels import section_header
 from ..basic.widgets.wallet_widgets import build_wallet_card

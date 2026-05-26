@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from MockUI.i18n import I18nManager
-from MockUI.i18n.translation_keys import KEY_TO_INDEX, Keys
-import MockUI.i18n.lang_compiler as lang_compiler
+from MockUI.basic.i18n import I18nManager
+from MockUI.basic.i18n.translation_keys import KEY_TO_INDEX, Keys
+import MockUI.basic.i18n.lang_compiler as lang_compiler
 
 
 # =====================================================================

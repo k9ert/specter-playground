@@ -1,30 +1,30 @@
 import lvgl as lv
 
-from .ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS
+from .utils.ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS
 from ..stubs import UIState, DeviceState
 from ..stubs.ui_state import Context
-from ..i18n import I18nManager
-from ..tour import GuidedTour, INTRO_TOUR_STEPS
-from .keyboard_manager import KeyboardManager
-from .animations import slide_x, slide_y, GUIAnimations
-from .navigation_bar import NavigationBar
-from .app_screen import AppScreen
-from .ui_utils import configure_as_bare
+from .i18n import I18nManager
+from .tour import GuidedTour, INTRO_TOUR_STEPS
+from .utils.keyboard_manager import KeyboardManager
+from .utils.animations import slide_x, slide_y, GUIAnimations
+from .components.navigation_bar import NavigationBar
+from .components.app_screen import AppScreen
+from .utils.ui_utils import configure_as_bare
 
 _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
 
 
-from .action_screen import ActionScreen
-from .main_menu import MainMenu
-from .locked_menu import LockedMenu
-from ..wallet import (
+from .templates.action_screen import ActionScreen
+from ..main_screens.main_menu import MainMenu
+from ..main_screens.locked_menu import LockedMenu
+from ..wallet_screens import (
     WalletMenu,
     ConnectWalletsMenu,
     AddWalletMenu,
     CreateCustomWalletMenu,
     ViewSignersMenu,
 )
-from ..seed import (
+from ..seed_screens import (
     AddSeedMenu,
     SeedPhraseMenu,
     StoreSeedphraseMenu,
@@ -33,7 +33,7 @@ from ..seed import (
     PassphraseMenu,
     RelatedWalletsForSeedMenu,
 )
-from ..device import (
+from ..device_screens import (
     SecuritySettingsMenu,
     BackupsMenu,
     FirmwareMenu,
@@ -127,7 +127,6 @@ class SpecterGui(lv.obj):
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
-
         self.screen.refresh()
         self.navigation_bar.refresh()
 

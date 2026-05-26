@@ -10,13 +10,13 @@ from pathlib import Path
 
 import pytest
 
-from MockUI.i18n import I18nManager
-from MockUI.i18n.translation_keys import KEY_TO_INDEX, Keys
-import MockUI.i18n.lang_compiler as lang_compiler
+from MockUI.basic.i18n import I18nManager
+from MockUI.basic.i18n.translation_keys import KEY_TO_INDEX, Keys
+import MockUI.basic.i18n.lang_compiler as lang_compiler
 
 
 # Path to real language source files
-_I18N_LANGUAGES_DIR = Path(__file__).parent.parent / "src" / "MockUI" / "i18n" / "languages"
+_I18N_LANGUAGES_DIR = Path(__file__).parent.parent / "src" / "MockUI" / "basic" / "i18n" / "languages"
 _EN_JSON = _I18N_LANGUAGES_DIR / "specter_ui_en.json"
 _DE_JSON = _I18N_LANGUAGES_DIR / "specter_ui_de.json"
 

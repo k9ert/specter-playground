@@ -24,16 +24,16 @@ Layout variants (absolute, no flex on root):
 """
 
 import lvgl as lv
-from .ui_consts import (
+from ..utils.ui_consts import (
     TITLE_ROW_HEIGHT, TITLE_PADDING, SCREEN_HEIGHT, CONTENT_PCT,
     TITLE_FONT, SMALL_PAD, RED_HEX,
 )
-from .widgets.labels import body_label
-from .widgets.containers import bare_strip
-from .widgets.btn import Btn
+from ..widgets.labels import body_label
+from ..widgets.containers import bare_strip
+from ..widgets.btn import Btn
 from .specter_gui_base import SpecterGuiElement
-from .ui_utils import configure_as_bare
-from .symbol_lib import BTC_ICONS
+from ..utils.ui_utils import configure_as_bare
+from ..symbol_lib import BTC_ICONS
 
 
 class TitledScreen(SpecterGuiElement):

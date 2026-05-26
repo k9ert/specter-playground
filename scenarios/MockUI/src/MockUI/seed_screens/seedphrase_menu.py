@@ -1,6 +1,6 @@
 from ..basic import ORANGE_HEX, GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
-from ..basic.confirm_modals import confirm_delete_seed, make_delete_active_handler
+from ..basic.components.confirm_modals import confirm_delete_seed, make_delete_active_handler
 from ..basic.widgets import MenuItem
 
 
