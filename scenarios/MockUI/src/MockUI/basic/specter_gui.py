@@ -143,11 +143,11 @@ class SpecterGui(lv.obj):
         going_back = target_menu_id in [None, "back"]
 
         # Update UIState navigation history
-        if going_back:
-            anim = self.ui_state.pop_menu()
-        elif target_menu_id in ["start_intro_tour", "main", "locked"]:
+        if target_menu_id in ["start_intro_tour", "main", "locked"]:
             anim = self.ui_state.clear_history()
             self.ui_state.current_menu_id = target_menu_id
+        elif going_back:
+            anim = self.ui_state.pop_menu()
         else:
             anim = self.ui_state.push_menu(target_menu_id)
 
