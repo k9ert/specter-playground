@@ -184,8 +184,7 @@ class GenericMenu(TitledScreen):
 
     def _add_help_btn(self, parent, size, text, help_key, fontcolor):
         """Add a transparent help icon button to *parent*."""
-        btn = Btn(parent, icon=BTC_ICONS.QUESTION_CIRCLE, fontcolor=fontcolor, size=size)
-        btn.make_background_transparent()
+        btn = Btn(parent, icon=BTC_ICONS.QUESTION_CIRCLE, fontcolor=fontcolor, size=size, transparent=True,)
         btn.add_event_cb(self.make_help_callback(text, help_key), lv.EVENT.CLICKED, None)
 
     def make_help_callback(self, title_text, help_key):

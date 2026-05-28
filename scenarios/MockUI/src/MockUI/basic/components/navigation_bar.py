@@ -71,8 +71,7 @@ class NavigationBar(SpecterGuiElement):
 
         self.buttons = {}
         for i, (name, icon, cb) in enumerate(zip(names, icons, cbs)):
-            self.buttons[name] = Btn(self, icon=icon, size=(w, h), callback=cb)
-            self.buttons[name].make_background_transparent()
+            self.buttons[name] = Btn(self, icon=icon, size=(w, h), callback=cb, transparent=True)
             self.buttons[name].align(lv.ALIGN.LEFT_MID, i * w, 0)
 
     # ── Drop-up management ────────────────────────────────────────────────────────

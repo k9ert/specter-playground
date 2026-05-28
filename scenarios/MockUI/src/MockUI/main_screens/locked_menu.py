@@ -57,6 +57,7 @@ class LockedMenu(TitledScreen):
                         icon=BTC_ICONS.CLEAR_CHARACTER,
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_del(e),
+                        transparent=True,
                     )
                 elif k == "OK":
                     b = Btn(
@@ -64,6 +65,7 @@ class LockedMenu(TitledScreen):
                         icon=BTC_ICONS.CHECK,
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_ok(e),
+                        transparent=True,
                     )
                 else:
                     b = Btn(
@@ -72,8 +74,8 @@ class LockedMenu(TitledScreen):
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         font=TITLE_FONT,
                         callback=lambda e, d=k: self._on_digit(e, d),
+                        transparent=True,
                     )
-                b.make_background_transparent()
 
     def _update_mask(self):
         self.mask_lbl.set_text("*" * len(self.pin_buf))
