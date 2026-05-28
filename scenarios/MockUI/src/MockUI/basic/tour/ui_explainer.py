@@ -73,10 +73,13 @@ class UIExplainer:
             # Manual positioning
             return self.highlighted_element
         else:
-            # Get absolute screen coordinates from lv.obj
+            # Get absolute screen coordinates from lv.obj via get_coords()
+            # (LVGL 9.x: area.x1/y1 are absolute screen coordinates)
             obj = self.highlighted_element
-            x = obj.get_x_absolute()
-            y = obj.get_y_absolute()
+            coords = lv.area_t()
+            obj.get_coords(coords)
+            x = coords.x1
+            y = coords.y1
             width = obj.get_width()
             height = obj.get_height()
             return (x, y, width, height)

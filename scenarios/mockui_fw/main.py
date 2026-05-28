@@ -23,8 +23,7 @@ else:
     display.init()
 # --- End simulator setup ---
 
-from MockUI import SpecterGui, DeviceState, Wallet
-from MockUI.stubs import Seed
+from MockUI import SpecterGui, DeviceState, UIState, Wallet, Seed
 
 gc.collect()
 
@@ -57,6 +56,10 @@ specter_state._SmartCard_hasSeed = True
 specter_state._Flash_hasSeed = True
 
 specter_state.pin = "21"
+specter_state.lock()
+
+ui_state = UIState()
+ui_state.reset_tour_completed()
 
 # ── Test data: one seed with passphrase + one wallet ─────────────────────────
 _test_seed = Seed(
@@ -78,7 +81,7 @@ _test_wallet = Wallet(
 
 gc.collect()
 
-scr = SpecterGui(specter_state)
+scr = SpecterGui(specter_state, ui_state)
 lv.screen_load(scr)
 
 # Start TCP control server when --control flag is passed (simulator only)

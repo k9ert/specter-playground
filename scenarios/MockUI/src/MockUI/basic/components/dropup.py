@@ -169,8 +169,8 @@ class _DropUp(SpecterGuiMixin):
             size=(None, _ADD_BTN_H),
             callback=self._add_cb,
             font=TEXT_FONT,
+            transparent=True,
         )
-        btn.make_background_transparent()
 
         self._panel.set_size(SCREEN_WIDTH, panel_h)
         self._panel.set_pos(0, _PANEL_MAX_H - panel_h)

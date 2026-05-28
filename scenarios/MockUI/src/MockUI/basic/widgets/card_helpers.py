@@ -119,5 +119,4 @@ def build_delete_slot(row, icon_w, height, on_delete):
             if event is not None:
                 event.stop_bubbling = 1
             on_delete()
-        del_btn = Btn(row, icon=BTC_ICONS.TRASH, size=(icon_w, height), callback=_del_cb)
-        del_btn.make_background_transparent()
+        del_btn = Btn(row, icon=BTC_ICONS.TRASH, size=(icon_w, height), callback=_del_cb, transparent=True)

@@ -34,7 +34,7 @@ class Btn:
     """
 
     def __init__(self, parent, icon=None, text=None, color=None, size=None,
-                 callback=None, font=TEXT_FONT, fontcolor=None):
+                 callback=None, font=TEXT_FONT, fontcolor=None, transparent=False):
         self._btn = lv.button(parent)
 
         if size is not None:
@@ -46,6 +46,10 @@ class Btn:
 
         if color is not None:
             self._btn.set_style_bg_color(color, lv.PART.MAIN)
+
+        self.transparent = transparent
+        if transparent:
+            self.make_background_transparent()
 
         # If both icon and text: flex row so they sit side by side
         if icon is not None and text is not None:
@@ -101,6 +105,11 @@ class Btn:
             self._ico_img.set_style_opa(opa, 0)
         if self.lbl is not None:
             self.lbl.set_style_opa(opa, 0)
+        if self.transparent or not visible:
+            self._btn.set_style_bg_opa(lv.OPA.TRANSP, 0)
+        else:
+            self._btn.set_style_bg_opa(lv.OPA.COVER, 0)
+
         if visible:
             self._btn.add_flag(lv.obj.FLAG.CLICKABLE)
         else:

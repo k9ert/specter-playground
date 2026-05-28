@@ -12,6 +12,7 @@ from .templates.titled_screen import TitledScreen
 from .templates.menu import GenericMenu
 from .templates.action_screen import ActionScreen
 from .specter_gui import SpecterGui
+from .ui_state import UIState
 
 __all__ = [
     # ui_consts re-exports used outside basic/
@@ -27,4 +28,5 @@ __all__ = [
     "TitledScreen",
     "ActionScreen", "GenericMenu",
     "SpecterGui",
+    "UIState",
 ]
