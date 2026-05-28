@@ -102,12 +102,12 @@ class SpecterGui(lv.obj):
         # Active screen (screen.view holds the active TitledScreen widget)
         self.screen = None
 
-        # Build the initial screen for the current ui_state menu
-        self.screen = self._make_screen()
-
         # Navigation bar at bottom — always present, owned by SpecterGui
         self.navigation_bar = NavigationBar(self)
         self.navigation_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
+
+        # Build the initial screen for the current ui_state menu
+        self.screen = self._make_screen()
 
         # Start guided tour on first startup (after UI is fully constructed)
         if self.ui_state.is_run_tour_on_startup:
