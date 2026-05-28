@@ -3,11 +3,11 @@
 
 import lvgl as lv
 from ..symbol_lib import BTC_ICONS
-from ..ui_consts import (
+from ..utils.ui_consts import (
     WHITE_HEX, GREY_HEX, BTC_ICON_WIDTH, SCREEN_WIDTH,
     STATUS_BTN_HEIGHT, SMALL_TEXT_FONT, CARD_H,
 )
-from ..ui_utils import configure_as_bare
+from ..utils.ui_utils import configure_as_bare
 from .icon_widgets import make_icon
 from .labels import make_label, best_font_for_size
 from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot, compute_name_width

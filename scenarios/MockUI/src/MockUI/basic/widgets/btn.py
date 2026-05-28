@@ -14,8 +14,8 @@ Proxy: all lv.button methods are accessible directly on Btn instances (e.g. btn.
 
 import lvgl as lv
 from ..symbol_lib import Icon
-from ..ui_consts import TEXT_FONT
-from ..ui_utils import configure_flex, to_lv_color
+from ..utils.ui_consts import TEXT_FONT
+from ..utils.ui_utils import configure_flex, to_lv_color
 
 
 class Btn:

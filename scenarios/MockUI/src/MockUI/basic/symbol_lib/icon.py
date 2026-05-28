@@ -1,7 +1,7 @@
 """Core Icon class and bitmap conversion utilities."""
 
 import lvgl as lv
-from ..ui_consts import WHITE_HEX, BTC_ICON_ZOOM
+from ..utils.ui_consts import WHITE_HEX, BTC_ICON_ZOOM
 
 
 

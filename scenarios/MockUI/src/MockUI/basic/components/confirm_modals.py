@@ -1,9 +1,9 @@
 """Shared confirmation modals for destructive actions."""
 
-from .widgets.action_modal import ActionModal
-from .widgets.menu_item import MenuItem
-from .symbol_lib import BTC_ICONS
-from .ui_consts import RED_HEX
+from ..widgets.action_modal import ActionModal
+from ..widgets.menu_item import MenuItem
+from ..symbol_lib import BTC_ICONS
+from ..utils.ui_consts import RED_HEX
 
 
 def _confirm_delete(t, title_text, on_confirm):

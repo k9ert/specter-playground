@@ -24,17 +24,17 @@ lazily on the first open and destroyed once both drop-ups are closed.
 """
 
 import lvgl as lv
-from .ui_consts import (
+from ..utils.ui_consts import (
     SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BTN_HEIGHT, STATUS_BAR_PCT,
     DEFAULT_MODAL_BG_OPA
 )
-from .symbol_lib import BTC_ICONS
-from .widgets.btn import Btn
-from .widgets.modal_overlay import ModalOverlay
-from .specter_gui_base import SpecterGuiElement
-from .ui_utils import configure_as_bare, set_background_visible
+from ..symbol_lib import BTC_ICONS
+from ..widgets.btn import Btn
+from ..widgets.modal_overlay import ModalOverlay
+from ..templates.specter_gui_base import SpecterGuiElement
+from ..utils.ui_utils import configure_as_bare, set_background_visible
 from .dropup import SeedDropUp, WalletDropUp, DropUpState
-from ..stubs.ui_state import Context
+from ..ui_state import Context
 
 class NavigationBar(SpecterGuiElement):
     """Permanent bottom navigation bar with 5 fixed-position icon buttons."""

@@ -25,7 +25,7 @@ from .btn import Btn
 from .containers import dialog_card, flex_row
 from .labels import body_label
 from .menu_item import MenuItem
-from ..ui_consts import DEFAULT_MODAL_BG_OPA, MODAL_WIDTH_PCT, MODAL_HEIGHT_PCT, BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT
+from ..utils.ui_consts import DEFAULT_MODAL_BG_OPA, MODAL_WIDTH_PCT, MODAL_HEIGHT_PCT, BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
 class ActionModal:

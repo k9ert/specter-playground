@@ -19,7 +19,7 @@ if _SRC_DIR not in sys.path:
 
 # Now we can safely import shuffle (locked_menu's top-level ``import rng``
 # will resolve to src/rng.py which uses os.urandom on the host).
-from MockUI.basic.ui_utils import shuffle
+from MockUI.basic.utils.ui_utils import shuffle
 from MockUI.stubs.device_state import DeviceState
 
 # A non-trivial PIN used throughout the lock/unlock tests.

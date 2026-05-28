@@ -15,7 +15,7 @@ Options:
     --source-dir      Directory to search for Python source files
                       (default: scenarios/MockUI relative to repo root)
     --languages-dir   Directory containing JSON language files
-                      (default: scenarios/MockUI/src/MockUI/i18n/languages relative to repo root)
+                      (default: scenarios/MockUI/src/MockUI/basic/i18n/languages relative to repo root)
     --log-dir         Directory to write log files
                       (default: build/ relative to repo root)
 
@@ -45,7 +45,7 @@ from typing import Dict, List, Set, Tuple
 # ---------------------------------------------------------------------------
 _SCRIPT_DIR = Path(__file__).resolve().parent   # …/tools/
 _REPO_ROOT = _SCRIPT_DIR.parent                 # …/specter-playground/
-_I18N_PKG_DIR = _REPO_ROOT / "scenarios" / "MockUI" / "src" / "MockUI" / "i18n"
+_I18N_PKG_DIR = _REPO_ROOT / "scenarios" / "MockUI" / "src" / "MockUI" / "basic" / "i18n"
 
 sys.path.insert(0, str(_I18N_PKG_DIR))
 
@@ -529,7 +529,7 @@ def main():
         type=str,
         help=(
             "Directory containing JSON language files "
-            "(default: scenarios/MockUI/src/MockUI/i18n/languages relative to repo root)"
+            "(default: scenarios/MockUI/src/MockUI/basic/i18n/languages relative to repo root)"
         ),
     )
     parser.add_argument(
@@ -540,7 +540,7 @@ def main():
 
     args = parser.parse_args()
 
-    default_languages_dir = _REPO_ROOT / "scenarios" / "MockUI" / "src" / "MockUI" / "i18n" / "languages"
+    default_languages_dir = _REPO_ROOT / "scenarios" / "MockUI" / "src" / "MockUI" / "basic" / "i18n" / "languages"
     default_source_dir = _REPO_ROOT / "scenarios" / "MockUI"
     default_log_dir = _REPO_ROOT / "build"
 

@@ -4,8 +4,8 @@ All containers have border, padding, and radius zeroed by default.
 """
 
 import lvgl as lv
-from ..ui_consts import DIALOG_RADIUS, BIG_PAD, WHITE_HEX, DROPUP_DIVIDER_OPA
-from ..ui_utils import configure_as_bare, configure_flex
+from ..utils.ui_consts import DIALOG_RADIUS, BIG_PAD, WHITE_HEX, DROPUP_DIVIDER_OPA
+from ..utils.ui_utils import configure_as_bare, configure_flex
 
 
 def _flex_container(parent, flow, width, height, pad = 0, main_align = lv.FLEX_ALIGN.START, transparent_bg=True):

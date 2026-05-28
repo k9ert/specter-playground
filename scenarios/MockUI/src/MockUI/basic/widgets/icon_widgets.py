@@ -1,7 +1,7 @@
 """Image helpers — lv.image wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..ui_consts import BTC_ICON_WIDTH, BTC_ICON_ZOOM, WHITE_HEX
+from ..utils.ui_consts import BTC_ICON_WIDTH, BTC_ICON_ZOOM, WHITE_HEX
 
 
 def make_icon(parent, icon, color=WHITE_HEX, width=BTC_ICON_WIDTH, zoom=BTC_ICON_ZOOM):

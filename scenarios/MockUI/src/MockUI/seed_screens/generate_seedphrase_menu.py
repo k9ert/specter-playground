@@ -1,8 +1,8 @@
 
 import lvgl as lv
 from ..basic import GREY_HEX, TitledScreen, BTN_HEIGHT, BTN_WIDTH
-from ..basic.ui_utils import configure_flex
-from ..basic.keyboard_manager import Layout
+from ..basic.utils.ui_utils import configure_flex
+from ..basic.utils.keyboard_manager import Layout
 from ..basic.widgets import flex_row, form_label, form_textarea, Btn, body_label
 from ..stubs import Seed
 import urandom

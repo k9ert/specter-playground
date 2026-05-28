@@ -2,8 +2,8 @@
 import lvgl as lv
 import urandom
 from ..basic import TitledScreen, BTN_HEIGHT, BTN_WIDTH, SWITCH_HEIGHT, SWITCH_WIDTH, SMALL_PAD
-from ..basic.ui_utils import configure_flex
-from ..basic.keyboard_manager import Layout
+from ..basic.utils.ui_utils import configure_flex
+from ..basic.utils.keyboard_manager import Layout
 from ..basic.widgets import Btn, form_label, form_textarea, flex_row
 from ..stubs import Wallet
 

@@ -63,7 +63,7 @@ class TestI18nInfrastructure:
         # --- 1. Import & get current language ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); print(mgr.get_language())",
         )
         lang = output.strip().split("\n")[-1].strip()
@@ -74,7 +74,7 @@ class TestI18nInfrastructure:
         # --- 2. Translate string key ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); print(repr(mgr.t('MAIN_MENU_TITLE')))",
         )
         assert STR_MISSING not in output, f"[2] Translation missing: {output}"
@@ -84,8 +84,8 @@ class TestI18nInfrastructure:
         # --- 3. Translate integer key ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
-            "from MockUI.i18n.translation_keys import Keys; "
+            "from MockUI.basic.i18n import I18nManager; "
+            "from MockUI.basic.i18n.translation_keys import Keys; "
             "mgr = I18nManager(); print(repr(mgr.t(Keys.MAIN_MENU_TITLE)))",
         )
         assert STR_MISSING not in output, f"[3] Missing with integer key: {output}"
@@ -94,7 +94,7 @@ class TestI18nInfrastructure:
         # --- 4. Available languages include English ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); print(mgr.get_available_languages())",
         )
         assert "'en'" in output, f"[4] English not in available languages: {output}"
@@ -102,7 +102,7 @@ class TestI18nInfrastructure:
         # --- 5. Language name for 'en' ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); print(mgr.get_language_name('en'))",
         )
         assert _ENGLISH in output, f"[5] Expected {_ENGLISH}, got: {output}"
@@ -110,7 +110,7 @@ class TestI18nInfrastructure:
         # --- 6. Unknown string key → [UNKNOWN_KEY] ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); print(mgr.t('NONEXISTENT_KEY_12345'))",
         )
         assert STR_UNKNOWN_KEY in output, f"[6] Expected [UNKNOWN_KEY]: {output}"
@@ -118,7 +118,7 @@ class TestI18nInfrastructure:
         # --- 7. Out-of-range integer key → [MISSING] ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); print(mgr.t(99999))",
         )
         assert STR_MISSING in output, f"[7] Expected [MISSING]: {output}"
@@ -126,7 +126,7 @@ class TestI18nInfrastructure:
         # --- 8. t(None) doesn't crash ---
         output = disco_run(
             "repl", "exec",
-            "from MockUI.i18n import I18nManager; "
+            "from MockUI.basic.i18n import I18nManager; "
             "mgr = I18nManager(); "
             "try:\n"
             "    result = mgr.t(None)\n"

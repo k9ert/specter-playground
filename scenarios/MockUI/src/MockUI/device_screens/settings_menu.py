@@ -1,8 +1,8 @@
 import lvgl as lv
-from ..basic.menu import GenericMenu
+from ..basic.templates.menu import GenericMenu
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
-from ..basic.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX
+from ..basic.utils.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX
 from ..basic.widgets.icon_widgets import make_icon
 from ..basic.widgets.containers import flex_row
 

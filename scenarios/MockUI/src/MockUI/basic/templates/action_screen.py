@@ -1,8 +1,8 @@
 import lvgl as lv
-from .ui_consts import BTN_HEIGHT, BTN_WIDTH
+from ..utils.ui_consts import BTN_HEIGHT, BTN_WIDTH
 from .titled_screen import TitledScreen
-from .widgets.btn import Btn
-from .widgets.labels import body_label
+from ..widgets.btn import Btn
+from ..widgets.labels import body_label
 
 class ActionScreen(TitledScreen):
     """Generic action screen for menu items.

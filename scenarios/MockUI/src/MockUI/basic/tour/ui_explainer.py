@@ -5,15 +5,15 @@ and displays explanatory text with navigation controls.
 """
 
 import lvgl as lv
-from ..basic.ui_consts import (
+from ..utils.ui_consts import (
     EXPLAINER_WIDTH_PCT,
     EXPLAINER_HEIGHT_PCT,
     DEFAULT_MODAL_BG_OPA,
     BLACK_HEX,
 )
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets.modal_overlay import ModalOverlay
-from ..basic.widgets import Btn, flex_row, flex_col, body_label, dialog_card
+from ..symbol_lib import BTC_ICONS
+from ..widgets.modal_overlay import ModalOverlay
+from ..widgets import Btn, flex_row, flex_col, body_label, dialog_card
 
 
 class UIExplainer:

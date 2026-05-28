@@ -66,6 +66,7 @@ class MockKeyboard:
     def set_style_text_font(self, *a):     pass
     def set_textarea(self, ta):            self._textarea = ta
     def set_map(self, *a):                 pass
+    def move_foreground(self):             pass
 
 
 class _EventDsc:
@@ -119,7 +120,7 @@ def nav():
 def manager(nav):
     original_kb = lv.keyboard
     lv.keyboard = MockKeyboard
-    from MockUI.basic.keyboard_manager import KeyboardManager
+    from MockUI.basic.utils.keyboard_manager import KeyboardManager
     km = KeyboardManager(nav)
     yield km
     lv.keyboard = original_kb
