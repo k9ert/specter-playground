@@ -106,12 +106,7 @@ class SpecterGui(lv.obj):
         self.navigation_bar = NavigationBar(self)
         self.navigation_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
 
-        # Build the initial screen for the current ui_state menu
-        self.screen = self._make_screen()
-
-        # Start guided tour on first startup (after UI is fully constructed)
-        if self.ui_state.is_run_tour_on_startup:
-            GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
+        self.navigate_to(self.ui_state.current_menu_id)
 
         # Periodic refresh (e.g. to update battery level)
         def _tick(timer):
@@ -119,7 +114,6 @@ class SpecterGui(lv.obj):
             self.refresh_ui()
         lv.timer_create(_tick, GUI_REFRESH_MS, None)
         
-        self.refresh_ui()
 
     def change_language(self, lang_code):
         """Change the active language."""
@@ -127,13 +121,18 @@ class SpecterGui(lv.obj):
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
-        self.screen.refresh()
-        self.navigation_bar.refresh()
+        if self.screen:
+            self.screen.refresh()
+        if self.navigation_bar:
+            self.navigation_bar.refresh()
 
     def navigate_to(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
         # Drop all input while animating
         if self._animating:
             return
+        
+        if target_menu_id == "main" and self.ui_state.is_run_tour_on_startup:
+            target_menu_id = "start_intro_tour"
 
         if target_menu_id == "locked":
             self.device_state.lock()
