@@ -16,7 +16,7 @@ The panel fills from the nav bar top edge upward.
 
 import lvgl as lv
 from micropython import const
-from ..widgets.action_modal import ActionModal
+from ..widgets.action_modal import ButtonModal
 from ..widgets.menu_item import MenuItem
 from .confirm_modals import confirm_delete_seed, confirm_delete_wallet
 from ..utils.ui_consts import (
@@ -249,7 +249,7 @@ class SeedDropUp(_DropUp):
                 def _mark_backed_up():
                     s.is_backed_up = True
                     self.gui.refresh_ui()
-                ActionModal(
+                ButtonModal(
                     text=t("MODAL_BACKUP_WARNING_TEXT"),
                     buttons=[
                         MenuItem(BTC_ICONS.CHECK, t("MODAL_BACKUP_CONFIRMED_BTN"), target=_mark_backed_up),

@@ -50,6 +50,9 @@ MODAL_HEIGHT_PCT = const(75) # height of modals as percentage of screen height
 DIALOG_RADIUS = const(8)     # corner radius for dialog cards
 DEFAULT_MODAL_BG_OPA = const(180)  # default backdrop opacity for modals (0-255, ~70% = 180)
 
+# Confirmation slider
+CONFIRMATION_SLIDER_HEIGHT = BTN_HEIGHT  # slider height matches button height
+
 # DropUp style
 DROPUP_DIVIDER_OPA = const(200)  # opacity of divider line between dropup items (0-255, ~80% = 200)
 

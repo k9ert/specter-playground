@@ -3,7 +3,7 @@ from ..utils.ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WID
 from .titled_screen import TitledScreen
 from ..symbol_lib import Icon, BTC_ICONS
 from ..widgets.modal_overlay import ModalOverlay
-from ..widgets.action_modal import ActionModal
+from ..widgets.action_modal import ButtonModal
 from ..widgets.btn import Btn
 from ..widgets.containers import flex_col, dialog_card, flex_row
 from ..widgets.labels import body_label, section_header, form_label
@@ -191,7 +191,7 @@ class GenericMenu(TitledScreen):
         """Create callback for help button - shows a modal overlay with help text."""
         def callback(e):
             if e.get_code() == lv.EVENT.CLICKED:
-                ActionModal(text=title_text + "\n" + self.t(help_key))
+                ButtonModal(text=title_text + "\n" + self.t(help_key))
                 # stop the underlying button from firing too
                 e.stop_bubbling = 1
         return callback
