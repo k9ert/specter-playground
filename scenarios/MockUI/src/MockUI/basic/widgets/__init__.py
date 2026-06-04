@@ -1,5 +1,5 @@
 from .modal_overlay import ModalOverlay
-from .action_modal import ActionModal
+from .action_modal import ButtonModal, SliderConfirmModal
 from .btn import Btn
 from .containers import flex_col, flex_row, dialog_card, bare_strip
 from .icon_widgets import make_icon, set_visible
@@ -9,7 +9,7 @@ from .menu_item import MenuItem
 from .battery import Battery
 
 __all__ = [
-    "ModalOverlay", "ActionModal",
+    "ModalOverlay", "ButtonModal", "SliderConfirmModal",
     "Btn",
     "flex_col", "flex_row", "dialog_card", "bare_strip",
     "make_icon", "set_visible",
