@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from MockUI.basic.i18n import I18nManager
-from MockUI.basic.i18n.translation_keys import KEY_TO_INDEX, Keys
+from MockUI.basic.i18n.translation_keys import KEY_COUNT, Keys
 import MockUI.basic.i18n.lang_compiler as lang_compiler
 
 
@@ -39,13 +39,19 @@ class TestFullWorkflow:
         kti = lang_compiler.generate_translation_keys(str(en_src), output_path=keys_out)
         assert len(kti) > 0
 
+        # Load the generated Keys class (required by json_to_binary)
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("tk", keys_out)
+        tk_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tk_mod)
+
         # Step 2: Compile EN
         en_bin = str(tmp_path / "lang_en.bin")
-        assert lang_compiler.json_to_binary(str(en_src), kti, en_bin) is not None
+        assert lang_compiler.json_to_binary(str(en_src), tk_mod.Keys, en_bin) is not None
 
         # Step 3: Compile DE
         de_bin = str(tmp_path / "lang_de.bin")
-        assert lang_compiler.json_to_binary(str(de_src), kti, de_bin) is not None
+        assert lang_compiler.json_to_binary(str(de_src), tk_mod.Keys, de_bin) is not None
 
         # Step 4: Validate both
         success, error = lang_compiler.validate_binary_file(en_bin)
@@ -66,8 +72,8 @@ class TestFullWorkflow:
 
         en_bin = str(flash_dir / "lang_en.bin")
         de_bin = str(flash_dir / "lang_de.bin")
-        lang_compiler.json_to_binary(str(en_src), KEY_TO_INDEX, en_bin)
-        lang_compiler.json_to_binary(str(de_src), KEY_TO_INDEX, de_bin)
+        lang_compiler.json_to_binary(str(en_src), Keys, en_bin)
+        lang_compiler.json_to_binary(str(de_src), Keys, de_bin)
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
@@ -111,7 +117,7 @@ class TestFullWorkflow:
         en_src = tmp_path / "specter_ui_en.json"
         shutil.copy(_EN_JSON, en_src)
         en_bin = str(flash_dir / "lang_en.bin")
-        lang_compiler.json_to_binary(str(en_src), KEY_TO_INDEX, en_bin)
+        lang_compiler.json_to_binary(str(en_src), Keys, en_bin)
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
@@ -155,8 +161,8 @@ class TestFullWorkflow:
         shutil.copy(_EN_JSON, en_src)
         shutil.copy(_DE_JSON, de_src)
 
-        lang_compiler.json_to_binary(str(en_src), KEY_TO_INDEX, str(flash_dir / "lang_en.bin"))
-        lang_compiler.json_to_binary(str(de_src), KEY_TO_INDEX, str(flash_dir / "lang_de.bin"))
+        lang_compiler.json_to_binary(str(en_src), Keys, str(flash_dir / "lang_en.bin"))
+        lang_compiler.json_to_binary(str(de_src), Keys, str(flash_dir / "lang_de.bin"))
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
@@ -217,7 +223,7 @@ class TestRealLanguageFiles:
     def test_roundtrip_every_english_key(self, en_json_path, key_to_index, tmp_path, en_json_data):
         """Compile from JSON and read back every single key."""
         out = str(tmp_path / "lang_en.bin")
-        lang_compiler.json_to_binary(str(en_json_path), key_to_index, out)
+        lang_compiler.json_to_binary(str(en_json_path), Keys, out)
         translations = en_json_data["translations"]
         for key, idx in key_to_index.items():
             text, error = lang_compiler.read_translation_from_binary(out, idx)
@@ -227,7 +233,7 @@ class TestRealLanguageFiles:
     def test_roundtrip_every_german_key(self, de_json_path, key_to_index, tmp_path, de_json_data):
         """Compile German and read back all translated keys."""
         out = str(tmp_path / "lang_de.bin")
-        lang_compiler.json_to_binary(str(de_json_path), key_to_index, out)
+        lang_compiler.json_to_binary(str(de_json_path), Keys, out)
         translations = de_json_data["translations"]
         for key, idx in key_to_index.items():
             text, error = lang_compiler.read_translation_from_binary(out, idx)
@@ -241,14 +247,14 @@ class TestRealLanguageFiles:
 
     def test_key_count_matches_json(self, en_json_data):
         """translation_keys.py key count matches the English JSON."""
-        assert len(KEY_TO_INDEX) == len(en_json_data["translations"])
+        assert KEY_COUNT == len(en_json_data["translations"])
 
-    def test_all_json_keys_in_key_to_index(self, en_json_data):
-        """Every key in the English JSON is mapped in KEY_TO_INDEX."""
+    def test_all_json_keys_in_keys_class(self, en_json_data):
+        """Every key in the English JSON has a corresponding Keys.CONSTANT."""
         for key in en_json_data["translations"]:
-            assert key in KEY_TO_INDEX, f"Key '{key}' from JSON not in KEY_TO_INDEX"
+            assert getattr(Keys, key, None) is not None, f"Keys.{key} not found"
 
-    def test_keys_class_matches_dict(self):
-        """Keys.CONSTANT == KEY_TO_INDEX['CONSTANT'] for all entries."""
-        for key, idx in KEY_TO_INDEX.items():
-            assert getattr(Keys, key) == idx, f"Keys.{key} != KEY_TO_INDEX['{key}']"
+    def test_keys_attrs_are_sequential(self):
+        """All Keys.CONSTANT values are contiguous integers 0..KEY_COUNT-1."""
+        indices = [getattr(Keys, k) for k in dir(Keys) if not k.startswith('_') and isinstance(getattr(Keys, k), int)]
+        assert sorted(indices) == list(range(KEY_COUNT))

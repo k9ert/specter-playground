@@ -8,7 +8,7 @@ Enables runtime loading of new languages via JSON to binary conversion.
 
 import os
 import json
-from .translation_keys import KEY_TO_INDEX, Keys
+from .translation_keys import Keys
 from .lang_compiler import (
     read_translation_from_binary,
     get_binary_filename,
@@ -215,7 +215,7 @@ class I18nManager:
         
         # Convert string key to index if needed
         if isinstance(key, str):
-            key_index = KEY_TO_INDEX.get(key)
+            key_index = getattr(Keys, key, None)
             if key_index is None:
                 print(f"Warning: Unknown translation key '{key}'")
                 return self.STR_UNKNOWN_KEY
@@ -290,7 +290,7 @@ class I18nManager:
             output_path = f"{self.FLASH_I18N_DIR}/{get_binary_filename(lang_code)}"
             
             # Convert JSON to binary - write directly to target location
-            result_path = json_to_binary(json_path, KEY_TO_INDEX, output_path)
+            result_path = json_to_binary(json_path, Keys, output_path)
             
             if result_path is None:
                 print("Error: Language compilation failed due to validation errors")

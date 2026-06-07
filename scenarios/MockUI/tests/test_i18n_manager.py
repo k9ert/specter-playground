@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from MockUI.basic.i18n import I18nManager
-from MockUI.basic.i18n.translation_keys import KEY_TO_INDEX, Keys
+from MockUI.basic.i18n.translation_keys import Keys
 import MockUI.basic.i18n.lang_compiler as lang_compiler
 
 
@@ -131,12 +131,12 @@ class TestTranslationLookup:
         assert result == expected
 
     def test_missing_translation_falls_back_to_english(
-        self, i18n_flash_dir, en_binary_path, key_to_index,
+        self, i18n_flash_dir, en_binary_path,
         incomplete_de_json_path, en_json_data
     ):
         """German binary with missing keys -> falls back to English."""
         de_out = str(i18n_flash_dir / "lang_de.bin")
-        lang_compiler.json_to_binary(str(incomplete_de_json_path), key_to_index, de_out)
+        lang_compiler.json_to_binary(str(incomplete_de_json_path), Keys, de_out)
 
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import MockUI.basic.i18n.lang_compiler as lc
+from MockUI.basic.i18n.translation_keys import Keys
 from MockUI.basic.i18n.lang_compiler import (
     BINARY_FILE_PREFIX,
     BINARY_FILE_SUFFIX,
@@ -135,9 +136,8 @@ class TestGenerateTranslationKeys:
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         assert hasattr(mod, "Keys")
-        assert hasattr(mod, "KEY_TO_INDEX")
         assert hasattr(mod, "KEY_COUNT")
-        assert mod.KEY_COUNT == len(mod.KEY_TO_INDEX)
+        assert mod.KEY_COUNT > 0
 
     def test_keys_class_has_integer_attrs(self, en_json_path, tmp_path):
         out = str(tmp_path / "translation_keys.py")
@@ -158,7 +158,7 @@ class TestJsonToBinary:
     def test_english_roundtrip(self, en_json_path, key_to_index, tmp_path, en_json_data):
         """Compile EN, read back every key, verify matches JSON."""
         out = str(tmp_path / "lang_en.bin")
-        result = json_to_binary(str(en_json_path), key_to_index, out)
+        result = json_to_binary(str(en_json_path), Keys, out)
         assert result is not None
         translations = en_json_data["translations"]
         for key, idx in key_to_index.items():
@@ -169,7 +169,7 @@ class TestJsonToBinary:
     def test_german_object_format(self, de_json_path, key_to_index, tmp_path, de_json_data):
         """German uses {text, ref_en} — only 'text' should be stored."""
         out = str(tmp_path / "lang_de.bin")
-        result = json_to_binary(str(de_json_path), key_to_index, out)
+        result = json_to_binary(str(de_json_path), Keys, out)
         assert result is not None
         translations = de_json_data["translations"]
         for key, idx in key_to_index.items():
@@ -190,7 +190,7 @@ class TestJsonToBinary:
         with open(json_path, "w") as f:
             json.dump(partial, f)
         out = str(tmp_path / "lang_xx.bin")
-        result = json_to_binary(str(json_path), key_to_index, out)
+        result = json_to_binary(str(json_path), Keys, out)
         assert result is not None
         idx = key_to_index["MAIN_MENU_TITLE"]
         text, error = read_translation_from_binary(out, idx)
@@ -200,14 +200,14 @@ class TestJsonToBinary:
         assert text is None
         assert error == "missing"
 
-    def test_missing_language_code_in_metadata(self, tmp_path, key_to_index):
+    def test_missing_language_code_in_metadata(self, tmp_path):
         data = {"_metadata": {"language_name": "Test"}, "translations": {"A": "a"}}
         p = tmp_path / "specter_ui_xx.json"
         with open(p, "w") as f:
             json.dump(data, f)
-        assert json_to_binary(str(p), key_to_index) is None
+        assert json_to_binary(str(p), Keys) is None
 
-    def test_language_code_mismatch(self, tmp_path, key_to_index):
+    def test_language_code_mismatch(self, tmp_path):
         """Filename says 'xx' but metadata says 'yy'."""
         data = {
             "_metadata": {"language_code": "yy", "language_name": "Test"},
@@ -216,13 +216,13 @@ class TestJsonToBinary:
         p = tmp_path / "specter_ui_xx.json"
         with open(p, "w") as f:
             json.dump(data, f)
-        assert json_to_binary(str(p), key_to_index) is None
+        assert json_to_binary(str(p), Keys) is None
 
-    def test_invalid_filename_format(self, tmp_path, key_to_index):
+    def test_invalid_filename_format(self, tmp_path):
         p = tmp_path / "bad_name.json"
         with open(p, "w") as f:
             json.dump({"_metadata": {"language_code": "en"}, "translations": {"A": "a"}}, f)
-        assert json_to_binary(str(p), key_to_index) is None
+        assert json_to_binary(str(p), Keys) is None
 
     def test_language_name_in_header(self, en_binary_path):
         """The 32-byte name field contains the language name."""
@@ -233,7 +233,7 @@ class TestJsonToBinary:
         assert null_pos > 0
         assert raw[:null_pos].decode("utf-8") == "English"
 
-    def test_extra_keys_warning(self, tmp_path, key_to_index, capsys):
+    def test_extra_keys_warning(self, tmp_path, capsys):
         """Keys in JSON not in mapping trigger a warning."""
         data = {
             "_metadata": {"language_code": "xx", "language_name": "Test"},
@@ -246,12 +246,12 @@ class TestJsonToBinary:
         with open(p, "w") as f:
             json.dump(data, f)
         out = str(tmp_path / "lang_xx.bin")
-        result = json_to_binary(str(p), key_to_index, out)
+        result = json_to_binary(str(p), Keys, out)
         assert result is not None
         captured = capsys.readouterr()
         assert "THIS_KEY_DOES_NOT_EXIST" in captured.out
 
-    def test_empty_translations_rejected(self, tmp_path, key_to_index):
+    def test_empty_translations_rejected(self, tmp_path):
         data = {
             "_metadata": {"language_code": "xx", "language_name": "Test"},
             "translations": {},
@@ -259,7 +259,7 @@ class TestJsonToBinary:
         p = tmp_path / "specter_ui_xx.json"
         with open(p, "w") as f:
             json.dump(data, f)
-        assert json_to_binary(str(p), key_to_index) is None
+        assert json_to_binary(str(p), Keys) is None
 
 
 # =====================================================================
@@ -284,7 +284,7 @@ class TestReadTranslationFromBinary:
         with open(p, "w") as f:
             json.dump(data, f)
         out = str(tmp_path / "lang_xx.bin")
-        json_to_binary(str(p), key_to_index, out)
+        json_to_binary(str(p), Keys, out)
         other = [k for k in key_to_index if k != "MAIN_MENU_TITLE"][0]
         text, error = read_translation_from_binary(out, key_to_index[other])
         assert text is None
