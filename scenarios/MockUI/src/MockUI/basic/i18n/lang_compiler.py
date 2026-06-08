@@ -242,15 +242,14 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
     """
     Generate translation_keys.py from default language JSON file.
     
-    Creates both Keys class (with integer constants for RAM efficiency)
-    and KEY_TO_INDEX dictionary (for backward compatibility).
+    Creates Keys class (with integer constants for RAM efficiency).
     
     Args:
         default_lang_json_path: Path to specter_ui_en.json
         output_path: Where to write translation_keys.py (default: same dir)
     
     Returns:
-        dict: KEY_TO_INDEX mapping
+        dict: keys_to_index dict
     """
     with open(default_lang_json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -286,15 +285,7 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
             f.write(f'    {key} = {index}\n')
         
         f.write('\n\n')
-        
-        # KEY_TO_INDEX dictionary (backward compatibility)
-        f.write('# String to index mapping (for convenience/backward compatibility)\n')
-        f.write('# When using strings, prefer Keys.CONSTANT for RAM efficiency\n')
-        f.write('KEY_TO_INDEX = {\n')
-        for key, index in sorted(key_to_index.items(), key=lambda x: x[1]):
-            f.write(f'    "{key}": Keys.{key},\n')
-        f.write('}\n\n')
-        
+                
         # Metadata for validation
         f.write(f'# Metadata\n')
         f.write(f'KEY_COUNT = {len(keys)}\n')
@@ -302,13 +293,12 @@ def generate_translation_keys(default_lang_json_path, output_path=None):
     
     print(f"Generated {output_path}")
     print(f"  Keys class: {len(keys)} constants")
-    print(f"  KEY_TO_INDEX: {len(keys)} entries")
     print(f"  Usage: i18n.t(Keys.MAIN_MENU_TITLE) or i18n.t('MAIN_MENU_TITLE')")
     
     return key_to_index
 
 
-def json_to_binary(json_path, key_to_index, output_path=None):
+def json_to_binary(json_path, keys_class, output_path=None):
     """
     Convert JSON language file to binary format.
     
@@ -329,9 +319,8 @@ def json_to_binary(json_path, key_to_index, output_path=None):
     
     Args:
         json_path: Input JSON file path
-        key_to_index: KEY_TO_INDEX mapping from generate_translation_keys()
+        keys_class: Keys class from translation_keys.py for mapping keys to indices
         output_path: Output .bin file path (default: auto-generate)
-        calc_stats: If True, calculate and print statistics about translations
     Returns:
         str: Path to generated binary file, or None if validation failed
     """
@@ -382,7 +371,10 @@ def json_to_binary(json_path, key_to_index, output_path=None):
         print("Please ensure the file has a 'translations' section with content")
         return None
     
-    # Prepare index and string data - process in key_to_index order for easier debugging
+    # Prepare index and string data - process in keys_class order for easier debugging
+    key_to_index = {k: getattr(keys_class, k) 
+                    for k in dir(keys_class)
+                    if not k.startswith('_') and isinstance(getattr(keys_class, k), int)}
     key_count = len(key_to_index)
     
     # Calculate binary format layout
@@ -535,10 +527,8 @@ def validate_binary_file(binary_path, translation_keys_module=None):
             if translation_keys_module is not None:
                 if hasattr(translation_keys_module, 'KEY_COUNT'):
                     expected_count = translation_keys_module.KEY_COUNT
-                elif hasattr(translation_keys_module, 'KEY_TO_INDEX'):
-                    expected_count = len(translation_keys_module.KEY_TO_INDEX)
                 else:
-                    return (False, "translation_keys module missing KEY_COUNT or KEY_TO_INDEX")
+                    return (False, "translation_keys module missing KEY_COUNT")
                 
                 if key_count != expected_count:
                     return (False, f"Key count mismatch: expected {expected_count}, got {key_count}")
@@ -641,7 +631,6 @@ def main():
             spec = importlib.util.spec_from_file_location("keys", keys_file)
             keys_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(keys_module)
-            key_to_index = keys_module.KEY_TO_INDEX
         else:
             # Try to find translation_keys.py in CWD first, then fall back to JSON dir
             keys_path = os.path.join('.', "translation_keys.py")
@@ -653,12 +642,11 @@ def main():
                 spec = importlib.util.spec_from_file_location("keys", keys_path)
                 keys_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(keys_module)
-                key_to_index = keys_module.KEY_TO_INDEX
             else:
                 print("Error: No key mapping found. Run 'generate_keys' first.")
                 return
         
-        result = json_to_binary(json_path, key_to_index)
+        result = json_to_binary(json_path, keys_module.Keys)
         if result is None:
             print("Compilation failed due to validation errors.")
             sys.exit(1)

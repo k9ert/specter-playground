@@ -19,7 +19,7 @@ from MockUI.stubs.wallet import Wallet
 
 # i18n imports
 from MockUI.basic.i18n import I18nManager
-from MockUI.basic.i18n.translation_keys import KEY_TO_INDEX, Keys
+from MockUI.basic.i18n.translation_keys import Keys
 import MockUI.basic.i18n.lang_compiler as lang_compiler
 
 # ---------------------------------------------------------------------------
@@ -60,8 +60,8 @@ def multisig_wallet():
 
 @pytest.fixture
 def key_to_index():
-    """The real KEY_TO_INDEX mapping from translation_keys.py."""
-    return KEY_TO_INDEX
+    """Key-to-index dict built from the Keys class (for test index lookups)."""
+    return {k: getattr(Keys, k) for k in dir(Keys) if not k.startswith('_') and isinstance(getattr(Keys, k), int)}
 
 
 @pytest.fixture
@@ -115,19 +115,19 @@ def de_json_path(tmp_path):
 
 
 @pytest.fixture
-def en_binary_path(i18n_flash_dir, en_json_path, key_to_index):
+def en_binary_path(i18n_flash_dir, en_json_path):
     """Compiled lang_en.bin in the flash dir."""
     out = str(i18n_flash_dir / "lang_en.bin")
-    result = lang_compiler.json_to_binary(str(en_json_path), key_to_index, out)
+    result = lang_compiler.json_to_binary(str(en_json_path), Keys, out)
     assert result is not None, "Failed to compile English binary"
     return Path(out)
 
 
 @pytest.fixture
-def de_binary_path(i18n_flash_dir, de_json_path, key_to_index):
+def de_binary_path(i18n_flash_dir, de_json_path):
     """Compiled lang_de.bin in the flash dir."""
     out = str(i18n_flash_dir / "lang_de.bin")
-    result = lang_compiler.json_to_binary(str(de_json_path), key_to_index, out)
+    result = lang_compiler.json_to_binary(str(de_json_path), Keys, out)
     assert result is not None, "Failed to compile German binary"
     return Path(out)
 

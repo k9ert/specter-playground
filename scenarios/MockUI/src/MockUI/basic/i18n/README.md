@@ -163,7 +163,7 @@ Filesystem in git repository:
 └── languages/               # Source JSON translation files and auto-generated key mapping
     ├── specter_ui_en.json   # English translations (source / default)
     ├── specter_ui_XX.json   # XX translations (source)
-    └── translation_keys.py  # Auto-generated KEY_TO_INDEX mapping
+    └── translation_keys.py  # Auto-generated Keys to index mapping
 
 # Build-time tools
 /tools/
@@ -313,7 +313,7 @@ Binary File Format (.bin):
   - Saves binary to `/flash/i18n/` for persistent access
 
 - **Translation Lookups:**
-  - Uses `translation_keys.KEY_TO_INDEX` for key → index mapping
+  - Uses `translation_keys.Keys` for key → index mapping
   - Calls `lang_compiler` functions to read from specific binary files
   - Implements fallback chain (no binary format knowledge needed)
 
@@ -350,9 +350,9 @@ Binary File Format (.bin):
 **Contents:**
 
 ```python
-KEY_TO_INDEX = {
-    "MAIN_MENU_TITLE": 0,
-    "SETTINGS_BUTTON": 1,
+class Keys:
+    MAIN_MENU_TITLE = 0
+    SETTINGS_BUTTON = 1
     # ... all keys in sorted order
 }
 ```
