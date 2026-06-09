@@ -7,13 +7,13 @@ Generates translation key mappings for runtime lookups.
 """
 
 if '.' in __name__:
-    from ..templates.settings_file_compiler import SettingsFileCompiler
+    from ..templates.settings_file_compiler import SettingsFileCompiler, read_cstring
 else:
     # Running as a script or loaded without package context
     # Add basic/ to sys.path so templates.settings_file_compiler is importable directly.
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))
-    from templates.settings_file_compiler import SettingsFileCompiler
+    from templates.settings_file_compiler import SettingsFileCompiler, read_cstring
 
 
 class LangCompiler(SettingsFileCompiler):
@@ -37,13 +37,7 @@ class LangCompiler(SettingsFileCompiler):
 
     def reconstruct_setting_from_binary(self, f):
         """Read a null-terminated UTF-8 string from file handle."""
-        result = bytearray()
-        while True:
-            byte = f.read(1)
-            if not byte or byte == b'\x00':
-                break
-            result.extend(byte)
-        return result.decode('utf-8')
+        return read_cstring(f)
 
     def convert_setting_to_binary(self, value):
         """

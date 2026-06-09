@@ -23,6 +23,35 @@ HEADER_SIZE = MAGIC_SIZE + VERSION_SIZE + KEY_COUNT_SIZE + NAME_FIELD_SIZE  # = 
 OFFSET_SIZE = 4       # uint32 offset in index
 
 
+def read_cstring(f):
+    """Read a null-terminated UTF-8 string from *f* at the current position.
+    Returns the decoded string (may be empty if the first byte is the null terminator)."""
+    result = bytearray()
+    while True:
+        byte = f.read(1)
+        if not byte or byte == b'\x00':
+            break
+        result.extend(byte)
+    return result.decode('utf-8')
+
+
+def collect_int_constants(cls, recursive=False):
+    """Return a {name: value} dict of all public integer attributes of *cls*.
+    With *recursive=True*, descends into nested class attributes; keys are
+    qualified with the nested class name (e.g. 'TEXT.DEFAULT')."""
+    result = {}
+    for name in dir(cls):
+        if name.startswith('_'):
+            continue
+        val = getattr(cls, name)
+        if isinstance(val, int):
+            result[name] = val
+        elif recursive and isinstance(val, type):
+            for sub_name, sub_val in collect_int_constants(val, recursive=True).items():
+                result[name + '.' + sub_name] = sub_val
+    return result
+
+
 class SettingsFileCompiler:
     """
     Base class for settings file compilers.
@@ -44,6 +73,7 @@ class SettingsFileCompiler:
     JSON_FILE_SUFFIX = ".json"
     MAGIC_BYTES = None          # 4-byte file type signature, e.g. b"LANG"
     SETTINGS_NAME_DESC = "a settings name"  # used in error messages
+    RECURSIVE_KEYS = False      # set True in subclasses with nested key classes (e.g. SPECTER_STYLES)
     SETTINGS_KEY = None         # top-level key in the JSON data section, e.g. "translations"
 
     # --- Path/Filename helpers (os.path not available in MicroPython) ---
@@ -177,12 +207,18 @@ class SettingsFileCompiler:
         """Called after compilation with keys found in JSON that are not in the key mapping."""
         pass
 
+    def after_binary_written(self, output_path):
+        """Called unconditionally after the main binary body is written.
+        Override to append extra data to the binary file."""
+        pass
+
     def write_lookup_keys_specific_header(self, file_handle):
         """Called inside generate_lookup_keys_from_default_file to write extra header content."""
         pass
 
-    # --- Core read function ---
+    # --- Binary I/O helpers ---
 
+    # --- Core read function ---
     def read_setting_from_binary(self, file_path, key_index):
         """
         Read one setting entry from a pre-validated binary file.
@@ -318,10 +354,10 @@ class SettingsFileCompiler:
             print(f"Error: No data found under key '{self.SETTINGS_KEY}' in '{json_path}'")
             return None
 
-        key_to_index = {k: getattr(default_keys_class, k)
-                        for k in dir(default_keys_class)
-                        if not k.startswith('_') and isinstance(getattr(default_keys_class, k), int)}
-        key_count = len(key_to_index)
+        key_to_index = collect_int_constants(default_keys_class, recursive=self.RECURSIVE_KEYS)
+        # key_count is the size of the index table: must cover the highest index
+        # value so sparse key spaces (e.g. SPECTER_STYLES with gaps) work correctly.
+        key_count = (max(key_to_index.values()) + 1) if key_to_index else 0
 
         index_size = key_count * OFFSET_SIZE
         data_start_offset = HEADER_SIZE + index_size
@@ -329,15 +365,18 @@ class SettingsFileCompiler:
         index_data = [0xFFFFFFFF] * key_count
         binary_data = bytearray()
         index_to_key = {v: k for k, v in key_to_index.items()}
+        # Normalise JSON entries to uppercase for case-insensitive lookup
+        entries_upper = {k.upper(): v for k, v in entries.items()}
 
         for i in range(key_count):
+            if i not in index_to_key:
+                continue  # gap in key space — leave slot as 0xFFFFFFFF
             key = index_to_key[i]
-            if key not in entries:
+            if key.upper() not in entries_upper:
                 print(f"Warning: Missing entry for key '{key}', will fall back to default")
                 continue
             entry_offset = len(binary_data)
-            
-            binary_data.extend(self.convert_setting_to_binary(entries[key]))
+            binary_data.extend(self.convert_setting_to_binary(entries_upper[key.upper()]))
             index_data[i] = data_start_offset + entry_offset
 
         if self.MAGIC_BYTES is None:
@@ -358,9 +397,11 @@ class SettingsFileCompiler:
             print(f"Error: Could not write binary file '{output_path}': {e}")
             return None
 
-        extra_keys = [k for k in entries if k not in key_to_index]
+        extra_keys = [k for k in entries if k.upper() not in {ek.upper() for ek in key_to_index}]
         if extra_keys:
             self.handle_extra_keys_from_json(output_path, extra_keys)
+
+        self.after_binary_written(output_path)
 
         return str(output_path)
 
@@ -421,10 +462,10 @@ class SettingsFileCompiler:
                 print(f"  Settings name: {settings_name!r}")
 
                 if keys_class is not None:
-                    if not hasattr(keys_class, 'KEY_COUNT'):
-                        return (False, "keys_class missing KEY_COUNT attribute")
-                    if key_count != keys_class.KEY_COUNT:
-                        return (False, f"Key count mismatch: expected {keys_class.KEY_COUNT}, got {key_count}")
+                    key_to_index = collect_int_constants(keys_class)
+                    reference_key_count = len(key_to_index)
+                    if key_count != reference_key_count:
+                        return (False, f"Key count mismatch: expected {reference_key_count}, got {key_count}")
 
                 min_size = HEADER_SIZE + key_count * OFFSET_SIZE
                 if file_size < min_size:
