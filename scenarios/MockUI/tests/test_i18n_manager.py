@@ -6,7 +6,9 @@ import pytest
 
 from MockUI.basic.i18n import I18nManager
 from MockUI.basic.i18n.translation_keys import Keys
-import MockUI.basic.i18n.lang_compiler as lang_compiler
+from MockUI.basic.i18n.lang_compiler import LangCompiler
+
+_c = LangCompiler()
 
 
 # =====================================================================
@@ -136,7 +138,7 @@ class TestTranslationLookup:
     ):
         """German binary with missing keys -> falls back to English."""
         de_out = str(i18n_flash_dir / "lang_de.bin")
-        lang_compiler.json_to_binary(str(incomplete_de_json_path), Keys, de_out)
+        _c.json_to_binary(str(incomplete_de_json_path), Keys, de_out)
 
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:

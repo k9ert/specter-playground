@@ -7,25 +7,30 @@ from pathlib import Path
 import pytest
 
 import MockUI.basic.i18n.lang_compiler as lc
+from MockUI.basic.i18n.lang_compiler import LangCompiler
 from MockUI.basic.i18n.translation_keys import Keys
-from MockUI.basic.i18n.lang_compiler import (
-    BINARY_FILE_PREFIX,
-    BINARY_FILE_SUFFIX,
+from MockUI.basic.templates.settings_file_compiler import (
     HEADER_SIZE,
     KEY_COUNT_SIZE,
-    LANG_NAME_FIELD_SIZE,
     MAGIC_SIZE,
+    NAME_FIELD_SIZE as LANG_NAME_FIELD_SIZE,
     OFFSET_SIZE,
     VERSION_SIZE,
-    extract_language_code_from_filename,
-    extract_language_name_from_file,
-    generate_translation_keys,
-    get_binary_filename,
-    get_json_filename,
-    json_to_binary,
-    read_translation_from_binary,
-    validate_binary_file,
 )
+
+# Module-level compiler instance for test convenience
+_c = LangCompiler()
+BINARY_FILE_PREFIX = LangCompiler.BINARY_FILE_PREFIX
+BINARY_FILE_SUFFIX = LangCompiler.BINARY_FILE_SUFFIX
+
+
+def extract_language_code_from_filename(f): return _c.extract_settings_name_from_filename(f)
+def extract_language_name_from_file(f): return _c.extract_settings_name_from_binary_file(f)
+def get_json_filename(c): return _c.get_json_filename(c)
+def get_binary_filename(c): return _c.get_binary_filename(c)
+def json_to_binary(p, k, o=None): return _c.json_to_binary(p, k, o)
+def read_translation_from_binary(p, i): return _c.read_setting_from_binary(p, i)
+def validate_binary_file(p, m=None): return _c.validate_binary_file(p, m)
 
 
 # =====================================================================
@@ -116,22 +121,22 @@ class TestExtractLanguageName:
 # TestGenerateTranslationKeys
 # =====================================================================
 class TestGenerateTranslationKeys:
-    """generate_translation_keys()"""
+    """LangCompiler.generate_lookup_keys_from_default_file()"""
 
     def test_generates_key_to_index(self, en_json_path):
-        kti = generate_translation_keys(str(en_json_path))
+        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path))
         assert isinstance(kti, dict)
         assert len(kti) > 0
 
     def test_keys_are_sorted_sequential(self, en_json_path):
-        kti = generate_translation_keys(str(en_json_path))
+        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path))
         keys_sorted = sorted(kti.keys())
         for i, key in enumerate(keys_sorted):
             assert kti[key] == i, f"Key '{key}' should have index {i}, got {kti[key]}"
 
     def test_output_file_importable(self, en_json_path, tmp_path):
         out = str(tmp_path / "translation_keys.py")
-        generate_translation_keys(str(en_json_path), output_path=out)
+        _c.generate_lookup_keys_from_default_file(str(en_json_path), output_path=out)
         spec = importlib.util.spec_from_file_location("tk", out)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -141,7 +146,7 @@ class TestGenerateTranslationKeys:
 
     def test_keys_class_has_integer_attrs(self, en_json_path, tmp_path):
         out = str(tmp_path / "translation_keys.py")
-        kti = generate_translation_keys(str(en_json_path), output_path=out)
+        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path), output_path=out)
         spec = importlib.util.spec_from_file_location("tk", out)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
