@@ -10,7 +10,8 @@ lvgl style objects.
 Compile-time  (PC or device with SD card)
 ──────────────────────────────────────────────────────────────────────────────
 
-    ThemeCompiler.json_to_binary(json_path, output_dir)
+    ThemeCompiler.json_to_binary(json_path, keys_class, output_dir)
+    (keys_class can be set as None)
 
 Given a theme JSON whose _metadata.name is e.g. <name>, the following
 three binary files are written to *output_dir*:
@@ -28,7 +29,7 @@ Runtime
 ──────────────────────────────────────────────────────────────────────────────
 
     tc = ThemeCompiler()
-    style = tc.read_setting_from_binaries(
+    style = tc.read_setting_from_binary(
                     colors_path,
                     fonts_path,
                     styles_path,
@@ -50,7 +51,7 @@ FontPaletteCompiler, StylePaletteCompiler) — each of those IS a full
 SettingsFileCompiler subclass. 
 However, 
     ThemeCompiler.json_to_binary() and
-    ThemeCompiler.read_setting_from_binaries() 
+    ThemeCompiler.read_setting_from_binary() 
 follow the same naming convention (return values might slightly differ from the
 single-path return of the section compilers due to the need to handle multiple 
 binaries simultaneously).
@@ -64,6 +65,7 @@ except ImportError:
 
 
 if '.' in __name__:
+    from .theme_section_compiler import ThemeSectionCompiler
     from .color_palette_compiler import (
         ColorPaletteCompiler, SpecterColorPalette, ColorMode
     )
@@ -77,6 +79,7 @@ else:
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
+    from theme_section_compiler import ThemeSectionCompiler
     from color_palette_compiler import (
         ColorPaletteCompiler, SpecterColorPalette, ColorMode
     )
@@ -88,7 +91,7 @@ else:
     )
 
 
-class ThemeCompiler:
+class ThemeCompiler(ThemeSectionCompiler):
     """
     Orchestrates theme compilation (JSON → binary) and reconstruction
     (binary → lv objects) for a complete Specter UI theme.
@@ -153,6 +156,12 @@ class ThemeCompiler:
                 return None
             return result
 
+    # use Styles binaries as main anchors for binaries. JSON file prefix is
+    # inherited from ThemeSectionCompiler for ThemeCompiler and all sub compiler
+    BINARY_FILE_PREFIX = StylePaletteCompiler.BINARY_FILE_PREFIX  # "styles_"
+    SETTINGS_KEY = StylePaletteCompiler.SETTINGS_KEY  # "styles"
+    RECURSIVE_KEYS = True  # for validation, collect all nested style indices from SPECTER_STYLES
+
     def __init__(self):
         self._color_compiler = ColorPaletteCompiler()
         self._font_compiler = FontPaletteCompiler()
@@ -160,7 +169,7 @@ class ThemeCompiler:
 
     # ── compile-time ──────────────────────────────────────────────────────────
 
-    def json_to_binary(self, json_path, output_dir=None):
+    def json_to_binary(self, json_path, keys_class, output_dir=None):
         """Compile a full theme JSON file into three binary files.
 
         Writes:
@@ -187,6 +196,9 @@ class ThemeCompiler:
             print("Error: missing '_metadata.name' in theme JSON")
             return None
 
+        #strip filename if accidentally given as output_dir
+        if output_dir is not None and output_dir.endswith(self.BINARY_FILE_SUFFIX):
+            output_dir = self._path_dirname(output_dir)
         if output_dir is None:
             output_dir = "."
 
@@ -218,7 +230,7 @@ class ThemeCompiler:
 
     # ── runtime reconstruction (binaries → lv objects) ───────────────────────
 
-    def read_setting_from_binaries(self, color_path, font_path, style_path, key_index, mode=ColorMode.DARK):
+    def read_setting_from_binary(self, color_path, font_path, style_path, key_index, mode=ColorMode.DARK):
         reconstruction_context = self.ThemeCompilerContext(
             theme_compiler=self,
             colors_path=color_path,
@@ -269,7 +281,7 @@ class ThemeCompiler:
         missing = []
         for mode in (ColorMode.DARK, ColorMode.LIGHT):          
             for idx in all_indices.values():
-                s = self.read_setting_from_binaries(colors_path, fonts_path, styles_path, idx, mode=mode)[0]
+                s = self.read_setting_from_binary(colors_path, fonts_path, styles_path, idx, mode=mode)[0]
                 if s is None:
                     missing.append((idx, mode))
 
@@ -295,7 +307,7 @@ def main():
     if command == "compile":
         json_path  = sys.argv[2]
         output_dir = sys.argv[3]
-        result = ThemeCompiler().json_to_binary(json_path, output_dir)
+        result = ThemeCompiler().json_to_binary(json_path, SPECTER_STYLES, output_dir)
         if result is None:
             print("Error: failed to compile theme")
             sys.exit(1)

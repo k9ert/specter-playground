@@ -104,30 +104,41 @@ class SettingFileManager:
         try:
             with open(self.FLASH_CONFIG_PATH, 'r') as f:
                 config = json.load(f)
-                file = config.get('selected_file', self.DEFAULT_SETTING_FILE)
-                
-                # Validate that the file is available
-                if file in self.available_files:
-                    return file
-                else:
-                    print(f"Warning: Saved settings file '{file}' not available, using default settings file '{self.DEFAULT_SETTING_FILE}'")
-                    return self.DEFAULT_SETTING_FILE
+            self._apply_loaded_preference(config)
+            file = config.get('selected_file', self.DEFAULT_SETTING_FILE)
+
+            # Validate that the file is available
+            if file in self.available_files:
+                return file
+            else:
+                print(f"Warning: Saved settings file '{file}' not available, using default settings file '{self.DEFAULT_SETTING_FILE}'")
+                return self.DEFAULT_SETTING_FILE
         except Exception as e:
             # Config file doesn't exist or can't be read - use default and try to create it
             print(f"Config file not found or unreadable, using default settings file: {self.DEFAULT_SETTING_FILE}")
-            self._save_settings_preference(self.DEFAULT_SETTING_FILE)
+            self._save_settings_preference()
             return self.DEFAULT_SETTING_FILE
     
-    def _save_settings_preference(self, file):
-        """Save the selected settings file to flash filesystem."""
+    def _build_preference_data(self):
+        """Build the dict to persist as preference data.
+        Override in subclasses to add extra fields — call super() and extend the returned dict."""
+        return {'selected_file': self.current if self.current is not None else self.DEFAULT_SETTING_FILE}
+
+    def _apply_loaded_preference(self, config):
+        """Hook called with the loaded config dict after a successful read.
+        Override in subclasses to restore extra persisted state."""
+        pass
+
+    def _save_settings_preference(self):
+        """Persist current preferences to flash. Reads state via _build_preference_data()."""
         try:
-            config = {'selected_file': file}
+            config = self._build_preference_data()
             with open(self.FLASH_CONFIG_PATH, 'w') as f:
                 json.dump(config, f)
-            print(f"Settings file preference saved: {file}")
+            print(f"Settings preference saved: {self.current}")
         except Exception as e:
             # Preference won't persist across reboots, but settings still work in current session
-            print(f"Warning: Could not save settings file preference (will use default on next boot): {e}")
+            print(f"Warning: Could not save settings preference (will use default on next boot): {e}")
     
     def set_setting(self, file):
         """
@@ -162,8 +173,8 @@ class SettingFileManager:
         self.current = file
         
         # Save preference
-        self._save_settings_preference(file)
-        
+        self._save_settings_preference()
+
         print(f"Settings file set to '{file}' (file: {current_path})")
         return True
     
