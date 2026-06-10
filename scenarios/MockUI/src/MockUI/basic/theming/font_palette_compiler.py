@@ -16,8 +16,15 @@ else:
 
 try:
     import lvgl as lv
+    if '.' in __name__:
+        from ..fonts.font_manager import font_manager
+    else:
+        import sys as _sys, pathlib as _pathlib
+        _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))
+        from fonts.font_manager import font_manager
 except ImportError:
     lv = None
+    font_manager = None
 
 class SpecterFontPalette:
     """Template class defining the minimum set of values a font palette JSON file must contain to be valid."""
@@ -82,8 +89,10 @@ class FontPaletteCompiler(ThemeSectionCompiler):
             return (None, err)
         if raw_str is None:
             return (None, "missing")
-        font_name, font_size_str = raw_str.split(":", 1)
-        return (lv.font_load(font_name.strip(), int(font_size_str.strip())), None)
+        if font_manager is None:
+            return (None, "font_manager not available")
+        font = font_manager.get(raw_str.strip())
+        return (font, None) if font is not None else (None, "could not resolve " + raw_str)
 
     # --- END: Section-specific overrides ---
 

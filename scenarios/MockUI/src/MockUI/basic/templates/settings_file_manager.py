@@ -170,10 +170,11 @@ class SettingFileManager:
         # Set file paths
         self.current_file = current_path
         self.default_file = default_path
-        self.current = file
         
-        # Save preference
-        self._save_settings_preference()
+        # Save preference only when the selection actually changes
+        if self.current != file:
+            self.current = file
+            self._save_settings_preference()
 
         print(f"Settings file set to '{file}' (file: {current_path})")
         return True

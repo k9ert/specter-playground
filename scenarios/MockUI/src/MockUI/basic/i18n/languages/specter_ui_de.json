@@ -230,6 +230,14 @@
       "text": "Animationen",
       "ref_en": "Animations"
     },
+    "DEVICE_MENU_DARK_MODE": {
+      "text": "Dunkelmodus",
+      "ref_en": "Dark Mode"
+    },
+    "DEVICE_MENU_THEME": {
+      "text": "Theme wählen",
+      "ref_en": "Select Theme"
+    },
     "DEVICE_MENU_DISPLAY": {
       "text": "Display konfigurieren",
       "ref_en": "Manage Display"

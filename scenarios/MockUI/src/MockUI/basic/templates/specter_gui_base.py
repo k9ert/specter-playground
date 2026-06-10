@@ -34,6 +34,7 @@ def _install_gui_properties(cls):
         "active_seed":      lambda self: self.gui.ui_state.active_seed,
         "active_wallet":    lambda self: self.gui.ui_state.active_wallet,
         "i18n":             lambda self: self.gui.i18n,
+        "theme":            lambda self: self.gui.theme,
         "t":                lambda self: self.gui.i18n.t,
         "on_navigate":      lambda self: self.gui.on_navigate,
         "keyboard_manager": lambda self: self.gui.keyboard_manager,
@@ -69,5 +70,16 @@ class SpecterGuiElement(lv.obj):
     def refresh(self):
         pass  # optional helper for LVGL components to trigger a UI refresh after changing state
 
+    def ap_st(self, keys, selector=0):
+        """Apply one or more SPECTER_STYLES keys to this widget."""
+        self.gui.theme.apply_style(self, keys, selector)
+
+    def rm_st(self, keys, selector=0):
+        """Remove one or more SPECTER_STYLES keys from this widget."""
+        self.gui.theme.remove_style(self, keys, selector)
+
+    def reset_st(self, selector=0):
+        """Reset one or more SPECTER_STYLES keys on this widget."""
+        self.gui.theme.reset_style(self, selector)
 
 _install_gui_properties(SpecterGuiElement)

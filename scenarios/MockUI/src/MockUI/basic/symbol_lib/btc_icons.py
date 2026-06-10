@@ -36,7 +36,7 @@ from .icons.bitcoin import BITCOIN
 # from .icons.bitty import BITTY
 # from .icons.block import BLOCK
 # from .icons.boat import BOAT
-# from .icons.brush import BRUSH
+from .icons.brush import BRUSH
 # from .icons.buoy import BUOY
 # from .icons.calendar import CALENDAR
 # from .icons.camera import CAMERA
@@ -120,7 +120,7 @@ from .icons.menu import MENU
 # from .icons.minus import MINUS
 # from .icons.mixed import MIXED
 from .icons.mnemonic import MNEMONIC
-# from .icons.moon import MOON
+from .icons.moon import MOON
 # from .icons.nfc import NFC
 # from .icons.no_dollars import NO_DOLLARS
 # from .icons.node import NODE
@@ -224,7 +224,7 @@ class BTC_ICONS:
 #     BITTY = BITTY
 #     BLOCK = BLOCK
 #     BOAT = BOAT
-#     BRUSH = BRUSH
+    BRUSH = BRUSH
 #     BUOY = BUOY
 #     CALENDAR = CALENDAR
 #     CAMERA = CAMERA
@@ -308,7 +308,7 @@ class BTC_ICONS:
 #     MINUS = MINUS
 #     MIXED = MIXED
     MNEMONIC = MNEMONIC
-#     MOON = MOON
+    MOON = MOON
 #     NFC = NFC
 #     NO_DOLLARS = NO_DOLLARS
 #     NODE = NODE

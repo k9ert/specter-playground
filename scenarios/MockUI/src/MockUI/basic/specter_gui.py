@@ -4,6 +4,7 @@ from .utils.ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_H
 from ..stubs import DeviceState
 from .ui_state import UIState, Context
 from .i18n import I18nManager
+from .theming.theme_manager import ThemeManager
 from .tour import GuidedTour, INTRO_TOUR_STEPS
 from .utils.keyboard_manager import KeyboardManager
 from .utils.animations import slide_x, slide_y, GUIAnimations
@@ -15,8 +16,10 @@ _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
 
 
 from .templates.action_screen import ActionScreen
-from ..main_screens.main_menu import MainMenu
-from ..main_screens.locked_menu import LockedMenu
+from ..main_screens import (
+    MainMenu,
+    LockedMenu,
+)
 from ..wallet_screens import (
     WalletMenu,
     ConnectWalletsMenu,
@@ -43,6 +46,7 @@ from ..device_screens import (
     LanguageMenu,
     SettingsMenu,
     PreferencesMenu,
+    ThemeMenu,
 )
 
 
@@ -69,6 +73,7 @@ _VIEW_MAP = {
     "create_custom_wallet":     CreateCustomWalletMenu,
     "manage_storage":           StorageMenu,
     "select_language":          LanguageMenu,
+    "select_theme":             ThemeMenu,
     "manage_preferences":       PreferencesMenu,
     "manage_settings":          SettingsMenu,
 }
@@ -84,6 +89,9 @@ class SpecterGui(lv.obj):
 
         # Initialize i18n manager
         self.i18n = I18nManager()
+
+        # Initialize theme manager — singleton already warmed up at boot
+        self.theme = ThemeManager.get_instance()
 
         if specter_state:
             self.device_state = specter_state
@@ -116,8 +124,19 @@ class SpecterGui(lv.obj):
         
 
     def change_language(self, lang_code):
-        """Change the active language."""
+        """Change the active language and rebuild the current screen."""
         self.i18n.set_language(lang_code)
+        self.refresh_ui()
+
+    def change_theme(self, theme_name, mode=None):
+        """Change the active theme (and optionally mode) and rebuild the current screen."""
+        self.theme.set_theme(theme_name, mode)
+        self.refresh_ui()
+
+    def change_mode(self, mode):
+        """Toggle dark/light mode and rebuild the current screen."""
+        self.theme.set_mode(mode)
+        self.refresh_ui()
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""

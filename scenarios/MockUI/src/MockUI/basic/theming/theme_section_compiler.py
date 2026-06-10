@@ -21,11 +21,17 @@ class ThemeSectionCompiler(SettingsFileCompiler):
     """Compiler for Specter UI theme sections (color palette, font palette, etc)."""
 
     JSON_FILE_PREFIX = "specter_ui_theme_"
-    SETTINGS_NAME_DESC = "theme name (alphanumeric, non-empty string)"
+    SETTINGS_NAME_DESC = "theme name (alphanumeric + underscore, non-empty string)"
+
+    _ALNUM = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 
     def validate_settings_name(self, name):
-        """Theme section name must be a non-empty alphanumeric string."""
-        return isinstance(name, str) and len(name) > 0 and name.isalnum()
+        """Theme section name must be a non-empty alphanumeric (+ underscore) string."""
+        return isinstance(name, str) and len(name) > 0 and all(c in self._ALNUM for c in name)
+
+    def _get_name_for_binary_header(self, settings_name, metadata):
+        """Store the human-readable name in the binary header."""
+        return metadata.get('name')
 
     def validate_metadata_and_extract_settings_name(self, metadata):
         """

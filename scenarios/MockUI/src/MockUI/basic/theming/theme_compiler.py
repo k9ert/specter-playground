@@ -124,6 +124,10 @@ class ThemeCompiler(ThemeSectionCompiler):
         def _style_compiler(self):
             return self._theme_compiler._style_compiler
 
+        def str_to_style(self, key_str):
+            """Helper to resolve a key string like "BG.INVISIBLE" to the corresponding integer index."""
+            return self._style_compiler.key_to_index.get(key_str)
+
         # ── context interface (consumed by StylePaletteCompiler) ─────────────────
         def get_color(self, palette_idx):
             """Internal. Return lv.color_t for *palette_idx*, read from flash.
@@ -201,6 +205,8 @@ class ThemeCompiler(ThemeSectionCompiler):
             output_dir = self._path_dirname(output_dir)
         if output_dir is None:
             output_dir = "."
+        # strip trailing slash to avoid double-slash in output paths
+        output_dir = output_dir.rstrip("/")
 
         colors_out = output_dir + "/" + self._color_compiler.get_binary_filename(theme_name)
         fonts_out  = output_dir + "/" + self._font_compiler.get_binary_filename(theme_name)

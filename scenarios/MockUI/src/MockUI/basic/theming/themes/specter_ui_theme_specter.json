@@ -6,7 +6,7 @@
   },
   "colors": {
     "primary":    "#f7931a",
-    "secondary":  "#5c6bc0",
+    "secondary":  { "dark": "#1e2a45", "light": "#dce8ff" },
     "tertiary":   "#26a69a",
     "quaternary": "#9c27b0",
     "neutral":    "#777777",
@@ -23,10 +23,10 @@
   },
   "styles": {
     "WIDGET.SCREEN":      { "bg_color": "@canvas",   "bg_opa": "COVER", "border_width": 0, "radius": 0, "pad_all": 0 },
-    "WIDGET.NAVBAR":      { "bg_color": "@primary",  "bg_opa": "COVER", "border_width": 0, "radius": 0, "pad_all": 0 },
+    "WIDGET.NAVBAR":      { "bg_color": "@secondary", "bg_opa": "COVER", "border_width": 0, "radius": 0, "pad_all": 0 },
     "WIDGET.PANEL":       { "border_width": 0, "radius": 0, "pad_all": 0 },
     "WIDGET.CARD":        { "radius": 8, "border_width": 0, "pad_all": 12 },
-    "WIDGET.OVERLAY":     { "bg_color": "@neutral",  "bg_opa": 180, "border_width": 0, "radius": 0, "pad_all": 0 },
+    "WIDGET.OVERLAY":     { "bg_color": "shade(@neutral, -6)", "bg_opa": 180, "border_width": 0, "radius": 0, "pad_all": 0 },
     "WIDGET.BUTTON":      { "text_font": "@text" },
     "WIDGET.BUTTON_FLAT": { "bg_opa": "TRANSP", "shadow_width": 0, "border_width": 0 },
     "WIDGET.TEXT_INPUT":  { "border_width": 1, "border_color": "@ink", "text_font": "@text" },

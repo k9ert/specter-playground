@@ -75,6 +75,8 @@
     "CONNECT_WALLETS_OTHER": "Other...",
     
     "DEVICE_MENU_ANIMATIONS": "Animations",
+    "DEVICE_MENU_DARK_MODE": "Dark Mode",
+    "DEVICE_MENU_THEME": "Select Theme",
     "DEVICE_MENU_DISPLAY": "Manage Display",
     "DEVICE_MENU_SOUNDS": "Manage Sounds",
     "DEVICE_MENU_DANGERZONE": "Dangerzone",

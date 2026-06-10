@@ -7,5 +7,6 @@ from .storage_menu import StorageMenu
 from .language_menu import LanguageMenu
 from .settings_menu import SettingsMenu
 from .preferences_menu import PreferencesMenu
+from .theme_menu import ThemeMenu
 
-__all__ = ["SecuritySettingsMenu", "FirmwareMenu", "InterfacesMenu", "BackupsMenu", "SecurityFeaturesMenu", "StorageMenu", "LanguageMenu", "SettingsMenu", "PreferencesMenu"]
+__all__ = ["SecuritySettingsMenu", "FirmwareMenu", "InterfacesMenu", "BackupsMenu", "SecurityFeaturesMenu", "StorageMenu", "LanguageMenu", "SettingsMenu", "PreferencesMenu", "ThemeMenu"]

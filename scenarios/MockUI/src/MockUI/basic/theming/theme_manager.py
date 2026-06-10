@@ -24,6 +24,7 @@ Files that violate this rule are skipped during scanning.
 import os
 
 from .theme_compiler import ThemeCompiler, SPECTER_STYLES, ColorMode
+from .style_palette_compiler import collect_int_constants
 from ..templates.settings_file_manager import SettingFileManager
 
 
@@ -41,6 +42,8 @@ class ThemeManager(SettingFileManager):
         self.current_fonts_file = None
         self.default_fonts_file = None
         super().__init__()
+        if self.current_file is not None:
+            self._preload_styles()
 
     @property
     def current_styles_file(self):
@@ -61,13 +64,11 @@ class ThemeManager(SettingFileManager):
                 colors_file_name = self.COMPILER._path_basename(colors_file)
                 fonts_file_name = self.COMPILER._path_basename(fonts_file)
 
-                if (not colors_file_name in binary_files or 
-                    theme_name != self.COMPILER._color_compiler.extract_settings_name_from_binary_file(colors_file)):
+                if colors_file_name not in binary_files:
                     print(f"Warning: Colors file '{colors_file}' not found for theme '{theme_name}' (skipping theme)")
                     all_found = False
 
-                if (not fonts_file_name in binary_files or 
-                    theme_name != self.COMPILER._font_compiler.extract_settings_name_from_binary_file(fonts_file)):
+                if fonts_file_name not in binary_files:
                     print(f"Warning: Fonts file '{fonts_file}' not found for theme '{theme_name}' (skipping theme)")
                     all_found = False
 
@@ -86,27 +87,102 @@ class ThemeManager(SettingFileManager):
             print(f"CRITICAL ERROR: Default theme '{self.DEFAULT_SETTING_FILE}' not found in {self.FLASH_DIR}!")
             print("This indicates a build system problem - the default theme should be embedded in firmware.")
 
+    # ── External GUI interface ────────────────────────────────────────────────
+
     def set_theme(self, theme_name, mode=None):
+        """Set active theme (and optionally mode) by name. Returns True on success."""
         if self.set_setting(theme_name):
+            success = True
             if mode is not None:
-                self.set_mode(mode)
-            return True
+                success = self.set_mode(mode, load_on_change=False)
+            self._preload_styles()
+            return success
         return False
 
+    def set_mode(self, mode, load_on_change=True):
+        """Set the current color mode (dark/light) and persist it."""
+        if mode in (ColorMode.LIGHT, ColorMode.DARK):
+            if mode != self.mode:
+                self.mode = mode
+                self._save_settings_preference()
+                if load_on_change:
+                    self._preload_styles()
+            return True
+        print(f"Error: Invalid color mode '{mode}' (must be a ColorMode constant)")
+        return False
+
+    def get_style(self, style_key):
+        """Return ``lv.style_t`` for *style_key*, using the cache when available."""
+        cache = getattr(self, '_style_cache', None)
+        if cache is not None and style_key in cache:
+            return cache[style_key]
+        return self.get_setting(style_key)
+    
+    def __getitem__(self, key):
+        """Allow theme_manager['KEY']"""
+        return self.get_style(key)
+
+    def __call__(self, key):
+        """Allow theme_manager('KEY')"""
+        return self.get_style(key)    
+
+    def apply_style(self, obj, keys, selector=0):
+        """Apply one or more SPECTER_STYLES keys to an LVGL widget.
+
+        Args:
+            obj:      LVGL widget (any object with ``add_style``).
+            keys:     A single int (``SPECTER_STYLES.*``) or
+                      string (``"BG.INVISIBLE"``) or
+                      a list of ints or strings.
+                    
+            selector: LVGL part/state selector (default 0 = MAIN/DEFAULT).
+        """
+        if isinstance(keys, int):
+            keys = [keys]
+        if isinstance(keys, str):
+            # resolve e.g. "BG.INVISIBLE" to the corresponding integer key
+            keys = [self.COMPILER.str_to_style(keys)]
+        for key in keys:
+            if isinstance(key, str):
+                key = self.COMPILER.str_to_style(key)
+            style = self.get_style(key)
+            if style is not None:
+                obj.add_style(style, selector)
+
+    def remove_style(self, obj, keys, selector=0):
+        """Remove one or more SPECTER_STYLES keys from an LVGL widget."""
+        if isinstance(keys, int):
+            keys = [keys]
+        if isinstance(keys, str):
+            # resolve e.g. "BG.INVISIBLE" to the corresponding integer key
+            keys = [self.COMPILER.str_to_style(keys)]
+        for key in keys:
+            if isinstance(key, str):
+                key = self.COMPILER.str_to_style(key)
+            style = self.get_style(key)
+            if style is not None:
+                obj.remove_style(style, selector)
+
+    def reset_style(self, obj, selector=0):
+        """Remove all styles from an LVGL widget for the given selector."""
+        obj.set_style_list(selector, None)
+
+
+    # ── SettingFileManager overrides ──────────────────────────────────────────
+
     def set_setting(self, theme_name):
-        """Set the current theme and color mode."""
+        """Resolve and assign all three binary paths for *theme_name*."""
         if theme_name not in self.available_files:
             print(f"Error: Theme '{theme_name}' not found in available themes: {self.available_files}")
             return False
 
         (new_colors_file, new_fonts_file, new_style_file) = self.COMPILER.get_binary_filenames(theme_name, self.FLASH_DIR)
         (default_colors_file, default_fonts_file, default_style_file) = self.COMPILER.get_binary_filenames(self.DEFAULT_SETTING_FILE, self.FLASH_DIR)
-        
-        #check if the files exist before setting. Style file is checked by set_setting
+
         for file2test in [new_colors_file, new_fonts_file, default_colors_file, default_fonts_file]:
-             try:
+            try:
                 os.stat(file2test)
-             except OSError as e:
+            except OSError:
                 print(f"Error: Required binary file '{file2test}' not found for theme '{theme_name}'")
                 return False
 
@@ -117,15 +193,19 @@ class ThemeManager(SettingFileManager):
             self.default_fonts_file = default_fonts_file
             return True
         return False
-    
-    def set_mode(self, mode):
-        """Set the current color mode (light/dark)."""
-        if mode in (ColorMode.LIGHT, ColorMode.DARK):
-            self.mode = mode
-            self._save_settings_preference()
-            return True
-        print(f"Error: Invalid color mode '{mode}' (must be a ColorMode enum value)")
-        return False
+
+    def get_setting(self, style_key):
+        """Read one ``lv.style_t`` live from binary — try current, fall back to default."""
+        value, _err = self.COMPILER.read_setting_from_binary(
+            self.current_colors_file, self.current_fonts_file,
+            self.current_file, style_key, self.mode)
+        if value is None:
+            value, _err = self.COMPILER.read_setting_from_binary(
+                self.default_colors_file, self.default_fonts_file,
+                self.default_file, style_key, self.mode)
+        return value
+
+    # ── Persistence hooks (SettingFileManager) ────────────────────────────────
 
     def _build_preference_data(self):
         data = super()._build_preference_data()
@@ -137,26 +217,38 @@ class ThemeManager(SettingFileManager):
         if mode in (ColorMode.DARK, ColorMode.LIGHT):
             self.mode = mode
 
-    def get_setting(self, style_key):
-        # Try to read from current settings file
-        value, error = self.COMPILER.read_setting_from_binary(self.current_colors_file,
-                                                              self.current_fonts_file,
-                                                              self.current_file,
-                                                              style_key,
-                                                              self.mode)
-        
-        # If not found in current settings, try default settings
-        if value is None:
-            value, error = self.COMPILER.read_setting_from_binary(self.default_colors_file,
-                                                                  self.default_fonts_file,
-                                                                  self.default_file,
-                                                                  style_key,
-                                                                  self.mode)
-        
-        return value
+    # ── Style cache (internal) ────────────────────────────────────────────────
 
-# --- Module-level convenience API (unchanged from before) ---
+    def _preload_styles(self):
+        """Load every SPECTER_STYLES entry into an in-memory cache.
+
+        Reads all styles from binary once and stores the resulting ``lv.style_t``
+        objects by integer key.  Called by ``SpecterGui`` after ``set_theme()``
+        / ``set_mode()`` and before the first screen render.
+        """
+        if (self.current_colors_file is None or 
+            self.current_file is None or
+            self.current_fonts_file is None):
+            return
+        all_indices = collect_int_constants(SPECTER_STYLES, recursive=True)
+        self._style_cache = {}
+        for name, idx in all_indices.items():
+            style = self.get_setting(idx)
+            if style is not None:
+                self._style_cache[idx] = style
+
+
+# ── Module-level shortcuts ────────────────────────────────────────────────────
 
 def get_theme_manager():
-    """Get the global ThemeManager singleton."""
+    """Return the global ThemeManager singleton."""
     return ThemeManager.get_instance()
+
+def apply_style(obj, keys, selector=0):
+    return get_theme_manager().apply_style(obj, keys, selector)
+
+def remove_style(obj, keys, selector=0):
+    return get_theme_manager().remove_style(obj, keys, selector)
+
+def reset_style(obj, selector=0):
+    return get_theme_manager().reset_style(obj, selector)

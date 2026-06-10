@@ -47,7 +47,7 @@ def to_lv_color(spec):
         return lv.color_hex(spec)
     return spec  # assume it is already an lv.color_t
 
-def to_hex_str(color):
+def to_hex_color_str(color):
     """Return *color* as a ``"#RRGGBB"`` hex string.
 
     Accepts either an ``lv.color_t`` object or a hex string
@@ -70,8 +70,10 @@ def shade(lv_color, level):
     if not level:
         return lv_color
     ratio = min(255, abs(level) * 30)   # ~12% per step (30/255)
-    target = lv.color_white() if level > 0 else lv.color_black()
-    return lv.color_mix(lv_color, target, ratio)
+    if level > 0:
+        return lv_color.lighten(ratio)
+    else:
+        return lv_color.darken(ratio)
 
 class ColorMode:
     """Enum for color mode (light/dark) in dual-variant palette entries."""
@@ -120,9 +122,9 @@ class ColorPaletteCompiler(ThemeSectionCompiler):
                     value_dark = value_light
                 elif not value_light:
                     value_light = value_dark
-                value = "d" + to_hex_str(value_dark) + "l" + to_hex_str(value_light)
+                value = "d" + to_hex_color_str(value_dark) + "l" + to_hex_color_str(value_light)
         elif isinstance(entry, str):
-            value = to_hex_str(entry)
+            value = to_hex_color_str(entry)
         else:
             value = ''
 

@@ -122,17 +122,17 @@ class TestJsonToBinary:
     def test_colors_binary_has_correct_theme_name(self, specter_binaries):
         colors_path, _, _ = specter_binaries
         name = _tc._color_compiler.extract_settings_name_from_binary_file(str(colors_path))
-        assert name == "specter"
+        assert name == "Specter"
 
     def test_fonts_binary_has_correct_theme_name(self, specter_binaries):
         _, fonts_path, _ = specter_binaries
         name = _tc._font_compiler.extract_settings_name_from_binary_file(str(fonts_path))
-        assert name == "specter"
+        assert name == "Specter"
 
     def test_styles_binary_has_correct_theme_name(self, specter_binaries):
         _, _, styles_path = specter_binaries
         name = _tc._style_compiler.extract_settings_name_from_binary_file(str(styles_path))
-        assert name == "specter"
+        assert name == "Specter"
 
 
 # =====================================================================
