@@ -72,6 +72,10 @@ class LangCompiler(SettingsFileCompiler):
             return None
         return lang_code
 
+    def _get_name_for_binary_header(self, settings_name, metadata):
+        """Store the human-readable language name (e.g. 'English') in the header."""
+        return metadata.get('language_name', settings_name)
+
     def handle_extra_keys_from_json(self, binary_file_path, extra_keys):
         """Warn about extra translation keys not present in the key mapping."""
         print(f"Warning: Found {len(extra_keys)} extra translation(s) not in key mapping:")

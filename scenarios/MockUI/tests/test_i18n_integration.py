@@ -79,13 +79,13 @@ class TestFullWorkflow:
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         # Init manager
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(flash_dir)
+        mgr.FLASH_DIR = str(flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("en")
 
         # Load expected values
@@ -123,12 +123,12 @@ class TestFullWorkflow:
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(flash_dir)
+        mgr.FLASH_DIR = str(flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("en")
 
         # Only English available initially
@@ -168,22 +168,22 @@ class TestFullWorkflow:
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         # First "boot" — switch to German
         mgr1 = I18nManager()
-        mgr1.FLASH_I18N_DIR = str(flash_dir)
+        mgr1.FLASH_DIR = str(flash_dir)
         mgr1.FLASH_CONFIG_PATH = str(config_path)
-        mgr1._scan_available_languages()
+        mgr1._scan_available_files()
         mgr1.set_language("de")
         assert mgr1.get_language() == "de"
 
         # Second "boot" — new manager instance, same flash dir
         mgr2 = I18nManager()
-        mgr2.FLASH_I18N_DIR = str(flash_dir)
+        mgr2.FLASH_DIR = str(flash_dir)
         mgr2.FLASH_CONFIG_PATH = str(config_path)
-        mgr2._scan_available_languages()
-        selected = mgr2._load_language_preference()
+        mgr2._scan_available_files()
+        selected = mgr2._load_stored_preference()
         mgr2.set_language(selected)
         assert mgr2.get_language() == "de"
 

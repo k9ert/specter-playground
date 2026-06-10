@@ -164,11 +164,11 @@ def i18n_manager(i18n_flash_dir, en_binary_path):
     # Write initial config so the manager finds it
     config_path = i18n_flash_dir / "language_config.json"
     with open(config_path, "w") as f:
-        json.dump({"selected_language": "en"}, f)
+        json.dump({"selected_file": "en"}, f)
 
     mgr = I18nManager()
-    mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+    mgr.FLASH_DIR = str(i18n_flash_dir)
     mgr.FLASH_CONFIG_PATH = str(config_path)
-    mgr._scan_available_languages()
+    mgr._scan_available_files()
     mgr.set_language("en")
     return mgr

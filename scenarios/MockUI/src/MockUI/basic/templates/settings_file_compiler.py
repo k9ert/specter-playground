@@ -346,6 +346,11 @@ class SettingsFileCompiler:
         if settings_name is None:
             return None
 
+        if settings_name != settingsfile_name:
+            print(f"Error: Settings name '{settings_name}' in _metadata does not match "
+                  f"filename '{settingsfile_name}' (expected '{settingsfile_name}')")
+            return None
+
         if output_path is None:
             output_path = './' + self.get_binary_filename(settings_name)
 
@@ -388,7 +393,8 @@ class SettingsFileCompiler:
                 f.write(self.MAGIC_BYTES)
                 f.write(struct.pack('<I', 1))           # version
                 f.write(struct.pack('<I', key_count))   # key count
-                name_bytes = settings_name.encode('utf-8')[:NAME_FIELD_SIZE - 1]
+                header_name = self._get_name_for_binary_header(settings_name, metadata)
+                name_bytes = header_name.encode('utf-8')[:NAME_FIELD_SIZE - 1]
                 f.write(name_bytes + b'\x00' * (NAME_FIELD_SIZE - len(name_bytes)))
                 for offset in index_data:
                     f.write(struct.pack('<I', offset))
@@ -404,6 +410,12 @@ class SettingsFileCompiler:
         self.after_binary_written(output_path)
 
         return str(output_path)
+
+    def _get_name_for_binary_header(self, settings_name, metadata):
+        """Return the string to embed in the binary file header name field.
+        Base implementation uses the settings name (code). Override in subclasses
+        to store a human-readable display name instead."""
+        return settings_name
 
     # --- Validation ---
 
