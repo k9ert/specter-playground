@@ -2,38 +2,32 @@
 
 One AppScreen is always active in SpecterGui.  It owns:
 
-  - context_bar  (optional ContextBar, top 60 px, SEED/WALLET contexts only)
+  - context_bar  (optional ContextBar, top 7.5%, SEED/WALLET contexts only)
   - battery      (optional Battery, top-right corner, overlaps context_bar row)
   - content      (flex-col, fills remaining height below context_bar)
 """
 
 import lvgl as lv
 
-from ..utils.ui_consts import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, CONTENT_PCT, TITLE_ROW_HEIGHT, BATTERY_WIDTH,
+from .context_bar import ContextBar
+from ..utils import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, CONTENT_PCT, TITLE_ROW_HEIGHT_PCT, BATTERY_WIDTH,
+    set_pos, set_scroll, set_align,
+    style_as_screen_backdrop,
 )
 from ..templates.specter_gui_base import SpecterGuiElement
-from ..utils.ui_utils import configure_as_bare
-from ..widgets.containers import flex_col
-from ..widgets.battery import Battery
-from ..components.context_bar import ContextBar
+from ..widgets import flex_col, Battery
 from ..ui_state import Context
 
 _CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
-CONTEXT_BAR_WIDTH = SCREEN_WIDTH - BATTERY_WIDTH
-
+_TITLE_ROW_H = SCREEN_HEIGHT * TITLE_ROW_HEIGHT_PCT // 100
 
 class AppScreen(SpecterGuiElement):
     """Self-contained screen unit: content + optional context_bar + battery."""
 
     def __init__(self, gui):
-        super().__init__(gui)   # LVGL parent = SpecterGui
-        self.gui = gui
-
-        configure_as_bare(self, width=SCREEN_WIDTH, height=_CONTENT_H, transparent_bg=False)
-        self.set_pos(0, 0)
-        self.set_layout(lv.LAYOUT.NONE)
-        self.set_scroll_dir(lv.DIR.NONE)
+        super().__init__(gui)
+        style_as_screen_backdrop(self, width=SCREEN_WIDTH, height=_CONTENT_H, x=0, y=0)
 
         ctx = gui.ui_state.active_context
         needs_bar = (
@@ -41,24 +35,26 @@ class AppScreen(SpecterGuiElement):
             or (ctx == Context.WALLET and gui.ui_state.active_wallet is not None)
         )
 
-        content_y = TITLE_ROW_HEIGHT if needs_bar else 0
+        content_y = _TITLE_ROW_H if needs_bar else 0
         content_h = _CONTENT_H - content_y
+        context_bar_width = SCREEN_WIDTH - BATTERY_WIDTH
 
         # ── 1. Content (painted first = behind everything) ────────────────────
         self.content = flex_col(self, width=lv.pct(100), height=content_h)
-        self.content.set_pos(0, content_y)
-        self.content.set_scroll_dir(lv.DIR.NONE)
+        set_pos(self.content, x=0, y=content_y)
+        set_scroll(self.content, horizontal=False, vertical=False)
 
         # ── 2. Context bar (painted over content top area) ────────────────────
         if needs_bar:
-            self.context_bar = ContextBar(self, width=CONTEXT_BAR_WIDTH, height=TITLE_ROW_HEIGHT)
+            self.context_bar = ContextBar(self, width=context_bar_width, height=_TITLE_ROW_H)
         else:
             self.context_bar = None
 
         # ── 3. Battery (painted last = always on top) ─────────────────────────
         if gui.device_state.has_battery:
-            self.battery = Battery(self, width=BATTERY_WIDTH, height=TITLE_ROW_HEIGHT)
-            self.battery.align(lv.ALIGN.TOP_RIGHT, 0, 0)
+            self.battery = Battery(self, width=BATTERY_WIDTH, height=_TITLE_ROW_H)
+            set_align(self.battery, lv.ALIGN.TOP_RIGHT)
+            set_pos(self.battery, x=0, y=0)
             self.battery.update(gui.device_state.battery_pct, gui.device_state.is_charging)
         else:
             self.battery = None

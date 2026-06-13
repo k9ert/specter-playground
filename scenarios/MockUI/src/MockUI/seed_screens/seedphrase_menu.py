@@ -1,4 +1,4 @@
-from ..basic import ORANGE_HEX, GenericMenu
+from ..basic import GenericMenu, BTC_ICONS, MenuItem
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.components.confirm_modals import confirm_delete_seed, make_delete_active_handler
 from ..basic.widgets import MenuItem
@@ -22,7 +22,7 @@ class SeedPhraseMenu(GenericMenu):
 
         menu_items = []
 
-        menu_items.append(MenuItem(BTC_ICONS.VISIBLE, t("SEEDPHRASE_MENU_SHOW"), "show_seedphrase", color=ORANGE_HEX))
+        menu_items.append(MenuItem(BTC_ICONS.VISIBLE, t("SEEDPHRASE_MENU_SHOW"), "show_seedphrase", modifier="Warning", is_submenu=True))
 
         pp_label = t("MENU_CHANGE_CLEAR_PASSPHRASE") if self.ui_state.active_seed.passphrase else t("MENU_SET_PASSPHRASE")
         menu_items.append(MenuItem(BTC_ICONS.PASSWORD, pp_label, "set_passphrase", is_submenu=True))

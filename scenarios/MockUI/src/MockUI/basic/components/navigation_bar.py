@@ -24,16 +24,18 @@ lazily on the first open and destroyed once both drop-ups are closed.
 """
 
 import lvgl as lv
-from ..utils.ui_consts import (
+
+from .seed_dropup import SeedDropUp
+from .wallet_dropup import WalletDropUp
+from ..utils import (
     SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BTN_HEIGHT, STATUS_BAR_PCT,
-    DEFAULT_MODAL_BG_OPA
+    style_as_screen_backdrop
 )
 from ..symbol_lib import BTC_ICONS
-from ..widgets.btn import Btn
-from ..widgets.modal_overlay import ModalOverlay
+from ..widgets import Btn, modal_overlay, make_icon
 from ..templates.specter_gui_base import SpecterGuiElement
-from ..utils.ui_utils import configure_as_bare, set_background_visible
-from .dropup import SeedDropUp, WalletDropUp, DropUpState
+from ..templates.dropup import DropUpState
+from ..theming import apply_style
 from ..ui_state import Context
 
 class NavigationBar(SpecterGuiElement):
@@ -41,22 +43,19 @@ class NavigationBar(SpecterGuiElement):
 
     def __init__(self, gui):
         super().__init__(gui)
-
-        self.gui = gui
-
-        # Shared semi-transparent backdrop (one ModalOverlay for both drop-ups)
+        # Shared semi-transparent backdrop (one modal_overlay for both drop-ups)
         self._backdrop = None
 
         # Create drop-ups — NavigationBar owns their lifecycle
-        self._seed_dropup = SeedDropUp(gui)
+        self._seed_dropup = SeedDropUp()
         self._seed_dropup._on_closed = self._on_any_panel_closed
-        self._wallet_dropup = WalletDropUp(gui)
+        self._wallet_dropup = WalletDropUp()
         self._wallet_dropup._on_closed = self._on_any_panel_closed
 
-        # ── Bar container style ───────────────────────────────────────────────
-        configure_as_bare(self, width=lv.pct(100), height=lv.pct(STATUS_BAR_PCT))
-        self.set_layout(lv.LAYOUT.NONE)   # absolute child positioning
-        self.set_scroll_dir(lv.DIR.NONE)
+        # ── Screen backdrop style ───────────────────────────────────────────────
+        style_as_screen_backdrop(self, height=SCREEN_HEIGHT * STATUS_BAR_PCT // 100)
+        apply_style(self, "WIDGET.NAVBAR")
+        apply_style(self, "WIDGET.SCREEN", lv.STATE.DISABLED)
 
         h = STATUS_BTN_HEIGHT
         w = SCREEN_WIDTH // 5
@@ -71,20 +70,21 @@ class NavigationBar(SpecterGuiElement):
 
         self.buttons = {}
         for i, (name, icon, cb) in enumerate(zip(names, icons, cbs)):
-            self.buttons[name] = Btn(self, icon=icon, size=(w, h), callback=cb, transparent=True)
+            self.buttons[name] = Btn(self, icon=icon, size=(w, h), callback=cb)
             self.buttons[name].align(lv.ALIGN.LEFT_MID, i * w, 0)
+            apply_style(self.buttons[name], "WIDGET.NAVBAR_BUTTON")
+            apply_style(self.buttons[name], "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
 
     # ── Drop-up management ────────────────────────────────────────────────────────
 
     def _ensure_backdrop(self):
         """Create shared backdrop if not already present; return its container."""
         if self._backdrop is not None:
-            return self._backdrop.overlay
+            return self._backdrop
         _panel_max_h = SCREEN_HEIGHT - SCREEN_HEIGHT * STATUS_BAR_PCT // 100
-        self._backdrop = ModalOverlay(bg_opa=DEFAULT_MODAL_BG_OPA,
-                                      width=SCREEN_WIDTH, height=_panel_max_h)
-        self._backdrop.overlay.add_event_cb(self._backdrop_tap_cb, lv.EVENT.CLICKED, None)
-        return self._backdrop.overlay
+        self._backdrop = modal_overlay(width=SCREEN_WIDTH, height=_panel_max_h)
+        self._backdrop.add_event_cb(self._backdrop_tap_cb, lv.EVENT.CLICKED, None)
+        return self._backdrop
 
     def _release_backdrop_if_idle(self):
         """Destroy shared backdrop once both drop-ups are fully closed."""
@@ -106,8 +106,8 @@ class NavigationBar(SpecterGuiElement):
 
     def _open_dropup(self, dropup):
         """Ensure the shared backdrop exists and open *dropup* inside it."""
-        container = self._ensure_backdrop()
-        dropup.open(container)
+        backdrop = self._ensure_backdrop()
+        dropup.open(backdrop)
 
     def _close_dropup(self, dropup):
         """Close a specific drop-up."""
@@ -128,15 +128,15 @@ class NavigationBar(SpecterGuiElement):
         Reads gui.ui_state.current_menu_id directly.
         """
         if self.device_state.is_locked:
-            # If device is locked, nav bar shows no icons and no back button and is not transparent
-            set_background_visible(self, True)
+            # If device is locked, nav bar shows no buttons and looks like a screen backdrop
+            self.set_state(lv.STATE.DISABLED, True)
             for btn in self.buttons.values():
-                btn.set_visible(False)
+                btn.set_state(lv.STATE.DISABLED, True)
         else:
-            set_background_visible(self, False)
+            self.set_state(lv.STATE.DISABLED, False)
 
             # Back button: visible unless we are at the root / home menu
-            self.buttons["Back"].set_visible(not self.current_menu == "main")
+            self.buttons["Back"].set_state(lv.STATE.DISABLED, self.current_menu == "main")
 
             seed_open = self._seed_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
             wallet_open = self._wallet_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
@@ -146,7 +146,8 @@ class NavigationBar(SpecterGuiElement):
                 self.buttons["Home"].update_icon(BTC_ICONS.HOME)
             else:
                 self.buttons["Home"].update_icon(BTC_ICONS.HOME_OUTLINE)
-            self.buttons["Home"].set_visible(True)  # Home is always visible when not locked
+            # Home is always visible when not locked
+            self.buttons["Home"].set_state(lv.STATE.DISABLED, False)
 
             # Seed icon: filled when dropup open OR when in a seed menu
             if (self.context == Context.SEED and not wallet_open) or seed_open:
@@ -154,7 +155,9 @@ class NavigationBar(SpecterGuiElement):
             else:
                 self.buttons["Seed"].update_icon(BTC_ICONS.KEY_OUTLINE)
             #Seed icon: invisible when no seed loaded
-            self.buttons["Seed"].set_visible(self.gui.device_state and len(self.gui.device_state.loaded_seeds) > 0)
+            self.buttons["Seed"].set_state(lv.STATE.DISABLED,
+                                           self.gui.device_state is None or 
+                                           len(self.gui.device_state.loaded_seeds) == 0)
 
             # Wallet icon: filled when dropup open OR when in a wallet menu
             if (self.context == Context.WALLET and not seed_open) or wallet_open:
@@ -162,18 +165,17 @@ class NavigationBar(SpecterGuiElement):
             else:
                 self.buttons["Wallet"].update_icon(BTC_ICONS.WALLET_OUTLINE)
             #Wallet icon: invisible when no seed loaded
-            self.buttons["Wallet"].set_visible(
-                self.gui.device_state and 
-                ((len(self.gui.device_state.loaded_seeds) > 0) or
-                 (len(self.gui.device_state.registered_wallets) > 1))
-            )
+            self.buttons["Wallet"].set_state(lv.STATE.DISABLED, 
+                                             self.gui.device_state is None or 
+                                             len(self.gui.device_state.loaded_seeds) == 0)
 
             # Device icon
             if self.context == Context.DEVICE and not seed_open and not wallet_open:
                 self.buttons["Device"].update_icon(BTC_ICONS.GEAR)
             else:
                 self.buttons["Device"].update_icon(BTC_ICONS.GEAR_OUTLINE)
-            self.buttons["Device"].set_visible(True)  # Device is always visible when not locked
+            # Device is always visible when not locked
+            self.buttons["Device"].set_state(lv.STATE.DISABLED, False)
 
             # Rebuild drop-up card lists if open (e.g. after passphrase/wallet state change)
             if self._seed_dropup.get_state() == DropUpState.OPEN:

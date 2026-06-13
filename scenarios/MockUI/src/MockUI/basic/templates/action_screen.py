@@ -1,8 +1,7 @@
 import lvgl as lv
-from ..utils.ui_consts import BTN_HEIGHT, BTN_WIDTH
 from .titled_screen import TitledScreen
-from ..widgets.btn import Btn
-from ..widgets.labels import body_label
+from ..utils import set_align, set_pos
+from ..widgets import Btn, body_label
 
 class ActionScreen(TitledScreen):
     """Generic action screen for menu items.
@@ -23,13 +22,5 @@ class ActionScreen(TitledScreen):
 
         # Message – placed inside body
         self.msg = body_label(self.body, self.t("ACTION_SCREEN_PREFIX") + title)
-        self.msg.align(lv.ALIGN.TOP_MID, 0, 20)
-
-        # Back button – placed inside body below the message
-        self.action_back_btn = Btn(
-            self.body,
-            text=self.t("ACTION_SCREEN_BACK"),
-            size=(lv.pct(BTN_WIDTH), BTN_HEIGHT),
-            callback=self.on_back,
-        )
-        self.action_back_btn.align_to(self.msg, lv.ALIGN.OUT_BOTTOM_MID, 0, 40)
+        set_align(self.msg, lv.ALIGN.TOP_MID)
+        set_pos(self.msg, y=20)

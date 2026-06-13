@@ -1,4 +1,4 @@
-"""Bitcoin icon library aggregator — 177 icons at 42×42 px.
+"""Bitcoin icon library aggregator — 177 icons at 42x42 px.
 
 AUTO-GENERATED — do not edit directly.
 Regenerate with:

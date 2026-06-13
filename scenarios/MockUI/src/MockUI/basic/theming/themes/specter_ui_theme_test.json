@@ -62,6 +62,31 @@
     "CONTEXT.WALLET":     { },
     "CONTEXT.MAIN":       { },
     "CONTEXT.SETTINGS":   { },
-    "MODIFIER.MUTED":     { "opa": 100 }
+    "MODIFIER.MUTED":     { "opa": 100 },
+
+    "WIDGET.SCREEN_TITLE":      {},
+    "WIDGET.NAVBAR_BUTTON":     {},
+    "WIDGET.MODAL_WINDOW":      {},
+    "WIDGET.TEXT_EDIT":         {},
+    "WIDGET.INFO_ITEM":         {},
+    "WIDGET.HELP_ICON":         {},
+    "WIDGET.MENU_SECTION_HEADER": {},
+    "WIDGET.MENU_BUTTON":       {},
+    "WIDGET.MENU_ICON":         {},
+    "WIDGET.MENU_BUTTON_LABEL": {},
+    "WIDGET.MENU_SWITCH":       {},
+    "WIDGET.SUBMENU_INDICATOR": {},
+    "WIDGET.DROPUP":            {},
+    "WIDGET.DROP_UP_ROW":       {},
+    "WIDGET.DROP_UP_ADDBTN":    {},
+    "WIDGET.CONTEXT_BAR":       {},
+    "WIDGET.KEYBOARD":          {},
+    "WIDGET.BATTERY":           {},
+    "WIDGET.PIN_BUTTON":        {},
+    "TEXT.BODY":                {},
+    "APPEARANCE.VISIBLE":       {},
+    "APPEARANCE.TRANSPARENT":   {},
+    "APPEARANCE.INVISIBLE":     {},
+    "APPEARANCE.SEE_THROUGH":   {}
   }
 }

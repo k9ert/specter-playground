@@ -66,28 +66,33 @@ except ImportError:
 
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler
+    from .theme_schema import SpecterColorPalette, SpecterFontPalette, SpecterStylePalette
+    from ..templates.settings_file_compiler import collect_int_constants
     from .color_palette_compiler import (
-        ColorPaletteCompiler, SpecterColorPalette, ColorMode
+        ColorPaletteCompiler, ColorMode, color_ref_to_palette_idx
     )
     from .font_palette_compiler import (
-        FontPaletteCompiler, SpecterFontPalette
+        FontPaletteCompiler, font_ref_to_palette_idx
     )
     from .style_palette_compiler import (
-        StylePaletteCompiler, SPECTER_STYLES, collect_int_constants
+        StylePaletteCompiler, style_ref_to_palette_idx
     )
 else:
     import sys as _sys, pathlib as _pathlib
+    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "templates"))
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
     from theme_section_compiler import ThemeSectionCompiler
+    from theme_schema import SpecterColorPalette, SpecterFontPalette, SpecterStylePalette
+    from settings_file_compiler import collect_int_constants
     from color_palette_compiler import (
-        ColorPaletteCompiler, SpecterColorPalette, ColorMode
+        ColorPaletteCompiler, ColorMode
     )
     from font_palette_compiler import (
-        FontPaletteCompiler, SpecterFontPalette
+        FontPaletteCompiler
     )
     from style_palette_compiler import (
-        StylePaletteCompiler, SPECTER_STYLES, collect_int_constants
+        StylePaletteCompiler
     )
 
 
@@ -126,7 +131,7 @@ class ThemeCompiler(ThemeSectionCompiler):
 
         def str_to_style(self, key_str):
             """Helper to resolve a key string like "BG.INVISIBLE" to the corresponding integer index."""
-            return self._style_compiler.key_to_index.get(key_str)
+            return self._theme_compiler._style_compiler.style_ref_to_palette_idx(key_str)
 
         # ── context interface (consumed by StylePaletteCompiler) ─────────────────
         def get_color(self, palette_idx):
@@ -226,7 +231,7 @@ class ThemeCompiler(ThemeSectionCompiler):
             return None
         print("  Fonts  → " + fonts_out)
 
-        r = self._style_compiler.json_to_binary(json_path, SPECTER_STYLES, output_path=styles_out)
+        r = self._style_compiler.json_to_binary(json_path, SpecterStylePalette, output_path=styles_out)
         if r is None:
             print("Error: style palette compilation failed")
             return None
@@ -247,6 +252,28 @@ class ThemeCompiler(ThemeSectionCompiler):
 
         (result, err) = self._style_compiler.read_setting_from_binary(style_path, key_index, context=reconstruction_context)
         return (result, err)
+
+    #Alias for easier mapping/use
+    def str_to_color_ind(self, key_str):
+        """Helper to resolve a key string like "PRIMARY" to the corresponding color_t."""
+        return color_ref_to_palette_idx(key_str)
+
+    def str_to_font_ind(self, key_str):
+        """Helper to resolve a key string like "TEXT" to the corresponding font index."""
+        return font_ref_to_palette_idx(key_str)
+    
+    def str_to_style_ind(self, key_str):
+        """Helper to resolve a key string like "BG.INVISIBLE" to the corresponding style index."""
+        return style_ref_to_palette_idx(key_str)
+
+    def read_style_from_binary(self, color_path, font_path, style_path, key_str, mode=ColorMode.DARK):
+        return self.read_setting_from_binary(color_path, font_path, style_path, key_str, mode=mode)
+    
+    def read_color_from_binary(self, color_path, palette_idx, mode=ColorMode.DARK):
+        return self._color_compiler.read_setting_from_binary(color_path, palette_idx, mode=mode)
+    
+    def read_font_from_binary(self, font_path, palette_idx):
+        return self._font_compiler.read_setting_from_binary(font_path, palette_idx)
 
     # ── path helpers ──────────────────────────────────────────────────────────
     
@@ -283,7 +310,7 @@ class ThemeCompiler(ThemeSectionCompiler):
         if not ok:
             return (False, err)
 
-        all_indices = collect_int_constants(SPECTER_STYLES, recursive=True)
+        all_indices = collect_int_constants(SpecterStylePalette, recursive=True)
         missing = []
         for mode in (ColorMode.DARK, ColorMode.LIGHT):          
             for idx in all_indices.values():
@@ -313,7 +340,7 @@ def main():
     if command == "compile":
         json_path  = sys.argv[2]
         output_dir = sys.argv[3]
-        result = ThemeCompiler().json_to_binary(json_path, SPECTER_STYLES, output_dir)
+        result = ThemeCompiler().json_to_binary(json_path, SpecterStylePalette, output_dir)
         if result is None:
             print("Error: failed to compile theme")
             sys.exit(1)

@@ -8,11 +8,13 @@ Generates font key mappings for runtime lookups.
 
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler
+    from .theme_schema import SpecterFontPalette
 else:
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))  # basic/
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))          # theming/
     from theme_section_compiler import ThemeSectionCompiler
+    from theme_schema import SpecterFontPalette
 
 try:
     import lvgl as lv
@@ -26,11 +28,14 @@ except ImportError:
     lv = None
     font_manager = None
 
-class SpecterFontPalette:
-    """Template class defining the minimum set of values a font palette JSON file must contain to be valid."""
-    TEXT = 0
-    TITLE = 1
-    SMALL = 2
+
+def font_ref_to_palette_idx(name):
+    """Map a font palette name like 'text' to SpecterFontPalette int.
+    Returns None if unknown."""
+    val = getattr(SpecterFontPalette, name.upper(), None)
+    if isinstance(val, int):
+        return val
+    return None
 
 class FontPaletteCompiler(ThemeSectionCompiler):
     """Compiler for Specter UI font palette (theming) files."""
@@ -91,7 +96,7 @@ class FontPaletteCompiler(ThemeSectionCompiler):
             return (None, "missing")
         if font_manager is None:
             return (None, "font_manager not available")
-        font = font_manager.get(raw_str.strip())
+        font = font_manager.get_font(raw_str.strip())
         return (font, None) if font is not None else (None, "could not resolve " + raw_str)
 
     # --- END: Section-specific overrides ---

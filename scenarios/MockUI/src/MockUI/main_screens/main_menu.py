@@ -1,9 +1,6 @@
 import lvgl as lv
-from ..basic.templates.menu import GenericMenu
+from ..basic import GenericMenu, MenuItem, BTC_ICONS
 from ..seed_screens.add_seed_menu import make_add_seed_items
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.utils.ui_consts import GREEN_HEX, RED_HEX, WHITE_HEX, ORANGE_HEX
-from ..basic.widgets import MenuItem
 
 
 class MainMenu(GenericMenu):
@@ -51,14 +48,14 @@ class MainMenu(GenericMenu):
         if has_seed_that_is_not_backed_up:
             menu_items += [
                 MenuItem(text=t("MAIN_MENU_BACKUP_SECTION")),
-                MenuItem(BTC_ICONS.MNEMONIC, t("MAIN_MENU_BACKUP_SEED"), "backup_seed", size=1.5, color=ORANGE_HEX, help_key="HELP_BACKUP_SEED"),
+                MenuItem(BTC_ICONS.MNEMONIC, t("MAIN_MENU_BACKUP_SEED"), "backup_seed", height_scaling=1.5, modifier="Warning", help_key="HELP_BACKUP_SEED"),
             ]
 
 
         if has_controlled_input:
             menu_items.append(MenuItem(text=t("MAIN_MENU_PROCESS_INPUT")))
             if state.QR_enabled():
-                menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("MAIN_MENU_SCAN_QR"), "scan_qr", size=1.5, help_key="HELP_SCAN_QR"))
+                menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("MAIN_MENU_SCAN_QR"), "scan_qr", height_scaling=1.5, help_key="HELP_SCAN_QR"))
             if state.SD_detected():
                 menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("MAIN_MENU_LOAD_FROM_SD"), "load_sd"))
 
@@ -72,7 +69,7 @@ class MainMenu(GenericMenu):
         if has_wallet_that_was_never_synched:
             menu_items += [
                 MenuItem(text=t("MAIN_MENU_CONNECT_SECTION")),
-                MenuItem(BTC_ICONS.LINK, t("MAIN_MENU_CONNECT_COMPANION"), "connect_sw_wallet", size=1.5),
+                MenuItem(BTC_ICONS.LINK, t("MAIN_MENU_CONNECT_COMPANION"), "connect_sw_wallet", height_scaling=1.5),
             ]
 
         return menu_items

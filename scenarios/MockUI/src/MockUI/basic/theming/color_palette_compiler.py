@@ -8,11 +8,13 @@ Generates color key mappings for runtime lookups.
 
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler, read_cstring
+    from .theme_schema import SpecterColorPalette
 else:
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))  # basic/
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))         # theming/
     from theme_section_compiler import ThemeSectionCompiler, read_cstring
+    from theme_schema import SpecterColorPalette
 
 try:
     import lvgl as lv
@@ -80,18 +82,14 @@ class ColorMode:
     LIGHT = "light"
     DARK = "dark"
 
-class SpecterColorPalette:
-    """Template class defining the minimum set of values a color palette JSON file must contain to be valid."""
-    PRIMARY = 0
-    SECONDARY = 1
-    TERTIARY = 2
-    QUATERNARY = 3
-    NEUTRAL = 4
-    SUCCESS = 5
-    WARNING = 6
-    DANGER = 7
-    CANVAS = 8
-    INK = 9
+
+def color_ref_to_palette_idx(name):
+    """Map a colour palette name like 'primary' to SpecterColorPalette int.
+    Returns None if unknown."""
+    val = getattr(SpecterColorPalette, name.upper(), None)
+    if isinstance(val, int):
+        return val
+    return None
 
 class ColorPaletteCompiler(ThemeSectionCompiler):
     """Compiler for Specter UI color palette (theming) files."""

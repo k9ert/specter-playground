@@ -35,109 +35,30 @@ import struct
 
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler
+    from .theme_schema import SpecterStylePalette, SpecterColorPalette, SpecterFontPalette
     from ..templates.settings_file_compiler import (
-        MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, NAME_FIELD_SIZE, HEADER_SIZE, OFFSET_SIZE,
+        MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, HEADER_SIZE, OFFSET_SIZE,
         read_cstring, collect_int_constants
     )
-    from .color_palette_compiler import (
-        SpecterColorPalette, to_lv_color, shade
-    )
-    from .font_palette_compiler import SpecterFontPalette
+    from .color_palette_compiler import to_lv_color, shade, color_ref_to_palette_idx
+    from .font_palette_compiler import font_ref_to_palette_idx
 else:
     import sys as _sys, pathlib as _pathlib
-    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))
+    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "templates"))
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
     from theme_section_compiler import ThemeSectionCompiler
-    from templates.settings_file_compiler import (
-        MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, NAME_FIELD_SIZE, HEADER_SIZE, OFFSET_SIZE,
+    from theme_schema import SpecterStylePalette, SpecterColorPalette, SpecterFontPalette
+    from settings_file_compiler import (
+        MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, HEADER_SIZE, OFFSET_SIZE,
         read_cstring, collect_int_constants
     )
-    from color_palette_compiler import (
-        SpecterColorPalette, to_lv_color, shade
-    )
-    from font_palette_compiler import SpecterFontPalette
+    from color_palette_compiler import to_lv_color, shade, color_ref_to_palette_idx
+    from font_palette_compiler import font_ref_to_palette_idx
 
 try:
     import lvgl as lv
 except ImportError:
     lv = None
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SPECTER_STYLES — stable integer style-token keys
-# ─────────────────────────────────────────────────────────────────────────────
-
-class SPECTER_STYLES:    
-
-    class TEXT:
-        DEFAULT = 0    # FONT_TEXT + ON_SURFACE colour
-        TITLE   = 1    # FONT_TITLE + ON_SURFACE colour
-        SMALL   = 2    # FONT_SMALL + ON_SURFACE colour
-        # 3-9 reserved
-
-    class WIDGET:
-        BUTTON      = 10
-        BUTTON_FLAT = 11   # modifier: strip bg/shadow/border
-        TEXT_INPUT  = 12
-        PANEL       = 13   # plain container, no decoration
-        CARD        = 14   # rounded + padded container
-        NAVBAR      = 15
-        SCREEN      = 16
-        OVERLAY     = 17   # modal dimming layer
-        # 18-19 reserved
-
-    class LAYOUT:
-        BARE        = 20   # no padding/border/radius, transparent bg
-        TRANSPARENT = 21   # bg fully transparent
-        INVISIBLE   = 22   # full widget opacity = 0
-        SEE_THROUGH = 23   # bg semi-transparent (~70% scrim)
-        # 24-29 reserved
-
-    class FG:
-        DEFAULT   = 30   # ON_SURFACE (normal text/icon colour)
-        SUCCESS   = 31
-        WARNING   = 32
-        DANGER    = 33
-        # 34 reserved (was MUTED — use [FG.DEFAULT, MODIFIER.MUTED] instead)
-        HIGHLIGHT = 35   # accent/primary colour, for emphasis
-        LIGHT     = 36   # pure white — readable on dark fills
-        DARK      = 37   # pure black — readable on light fills
-        # 38-39 reserved
-
-    class BG:
-        DEFAULT   = 40   # SURFACE (normal background)
-        SUCCESS   = 41
-        WARNING   = 42
-        DANGER    = 43
-        # 44 reserved (was MUTED)
-        HIGHLIGHT = 45   # accent/primary fill
-        LIGHT     = 46   # pure white background
-        DARK      = 47   # pure black background
-        # 48-49 reserved
-
-    class BORDER:
-        TOP    = 50
-        BOTTOM = 51
-        LEFT   = 52
-        RIGHT  = 53
-        # 54-59 reserved
-
-    class CONTEXT:
-        SEED     = 60
-        WALLET   = 61
-        MAIN     = 62
-        SETTINGS = 63
-        # 64-69 reserved
-
-    class SLIDER:
-        TRACK     = 70   # apply with lv.PART.MAIN
-        INDICATOR = 71   # apply with lv.PART.INDICATOR
-        KNOB      = 72   # apply with lv.PART.KNOB
-        # 73-79 reserved
-
-    class MODIFIER:
-        MUTED = 80   # disabled/unusable widgets
-
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # val_type constants
@@ -295,24 +216,18 @@ def _attr_to_prop_id(attr_name):
             return (_BOOL_BASE + i, _GRP_BOOL)
     return (None, None)
 
-
-def _color_ref_to_palette_idx(name):
-    """Map a colour palette name like 'primary' to SpecterColorPalette int.
+def style_ref_to_palette_idx(name):
+    """Map a style palette name like 'WIDGET.BUTTON' to SpecterStylePalette int.
     Returns None if unknown."""
-    val = getattr(SpecterColorPalette, name.upper(), None)
-    if isinstance(val, int):
-        return val
-    return None
-
-
-def _font_ref_to_palette_idx(name):
-    """Map a font palette name like 'text' to SpecterFontPalette int.
-    Returns None if unknown."""
-    val = getattr(SpecterFontPalette, name.upper(), None)
-    if isinstance(val, int):
-        return val
-    return None
-
+    parts = name.split(".")
+    obj = SpecterStylePalette
+    for part in parts:
+        obj = getattr(obj, part.upper(), None)
+        if obj is None:
+            print("Warning: unknown style palette ref '{}'".format(name))
+            return None
+    if isinstance(obj, int):
+        return obj
 
 def _lit_index(lit_builder, s):
     """Return the index of string *s* in *lit_builder*, appending if not present."""
@@ -322,7 +237,6 @@ def _lit_index(lit_builder, s):
     idx = len(lit_builder)
     lit_builder.append(s)
     return idx
-
 
 def _encode_value(attr_name, group, raw_val, lit_builder):
     """Encode one attribute value into (val_type, index) for a 3-byte op.
@@ -334,7 +248,7 @@ def _encode_value(attr_name, group, raw_val, lit_builder):
 
     if group == _GRP_COLOR:
         if isinstance(raw_val, str) and raw_val.startswith("@"):
-            idx = _color_ref_to_palette_idx(raw_val[1:])
+            idx = color_ref_to_palette_idx(raw_val[1:])
             if idx is None:
                 print("Warning: unknown color palette ref '{}' for attr '{}'".format(raw_val, attr_name))
                 return None
@@ -344,7 +258,7 @@ def _encode_value(attr_name, group, raw_val, lit_builder):
 
     if group == _GRP_FONT:
         if isinstance(raw_val, str) and raw_val.startswith("@"):
-            idx = _font_ref_to_palette_idx(raw_val[1:])
+            idx = font_ref_to_palette_idx(raw_val[1:])
             if idx is None:
                 print("Warning: unknown font palette ref '{}' for attr '{}'".format(raw_val, attr_name))
                 return None
@@ -433,7 +347,7 @@ def _resolve_shade_expr(expr, context):
         level_str = inner[comma + 1:].strip().lstrip("+")
         level = int(level_str)
         if color_tok.startswith("@"):
-            palette_idx = _color_ref_to_palette_idx(color_tok[1:])
+            palette_idx = color_ref_to_palette_idx(color_tok[1:])
             if palette_idx is None:
                 print("Warning: unknown color ref in shade: " + color_tok)
                 return None
@@ -600,7 +514,7 @@ def key_to_style_index(key_str):
     """Map a theme JSON key string like 'WIDGET.BUTTON' to its SPECTER_STYLES int constant.
     Returns None if the key is not known."""
     parts = key_str.split(".")
-    obj = SPECTER_STYLES
+    obj = SpecterStylePalette
     for part in parts:
         obj = getattr(obj, part, None)
         if obj is None:

@@ -1,12 +1,16 @@
 
 import lvgl as lv
 import urandom
-from ..basic import TitledScreen, BTN_HEIGHT, BTN_WIDTH, SWITCH_HEIGHT, SWITCH_WIDTH, SMALL_PAD
-from ..basic.utils.ui_utils import configure_flex
-from ..basic.utils.keyboard_manager import Layout
-from ..basic.widgets import Btn, form_label, form_textarea, flex_row
+from ..basic import (
+    TitledScreen, 
+    Btn, BTN_HEIGHT, BTN_WIDTH, 
+    SWITCH_HEIGHT, SWITCH_WIDTH, 
+    SMALL_PAD,
+    Layout,
+    form_label, form_textarea, flex_row,
+    style_as_flex_container,
+)
 from ..stubs import Wallet
-
 
 class CreateCustomWalletMenu(TitledScreen):
     """Form to create a custom (dummy) wallet descriptor for testing.
@@ -21,8 +25,7 @@ class CreateCustomWalletMenu(TitledScreen):
         super().__init__(parent.i18n.t("ADD_WALLET_CREATE_CUSTOM"), parent)
         t = self.i18n.t
 
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        configure_flex(self.body)
+        style_as_flex_container(self.body)
 
         ROW_H = 60
 
@@ -54,9 +57,9 @@ class CreateCustomWalletMenu(TitledScreen):
 
         # ── Extra fingerprints (for multisig cosigners) ──────────────
         self.fp_row = self._make_row(ROW_H)
-        form_label(self.fp_row, t("ADD_WALLET_SIGNERS"), width=lv.pct(35), font=lv.font_montserrat_16)
+        form_label(self.fp_row, t("ADD_WALLET_SIGNERS"), width=lv.pct(35))
 
-        self.fp_ta = form_textarea(self.fp_row, width=lv.pct(55), font=lv.font_montserrat_16)
+        self.fp_ta = form_textarea(self.fp_row, width=lv.pct(55))
         sig_text = ""
         if self.device_state.loaded_seeds:
             if self.ui_state.active_seed:
@@ -142,7 +145,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.create_btn = Btn(
             btn_row,
             text=t("COMMON_CREATE"),
-            size=(lv.pct(BTN_WIDTH), BTN_HEIGHT),
+            size=(BTN_WIDTH, BTN_HEIGHT),
             callback=lambda e: self._on_create(e),
         )
 

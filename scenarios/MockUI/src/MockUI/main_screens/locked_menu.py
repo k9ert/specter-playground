@@ -1,12 +1,11 @@
 import lvgl as lv
-from ..basic.templates.titled_screen import TitledScreen
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.utils.ui_consts import PIN_BTN_WIDTH, PIN_BTN_HEIGHT, TITLE_FONT, SMALL_TEXT_FONT, SCREEN_WIDTH, SMALL_PAD
-from ..basic.utils.ui_utils import configure_flex, shuffle
-from ..basic.widgets.btn import Btn
-from ..basic.widgets.containers import flex_row
-from ..basic.widgets.labels import body_label
-
+from ..basic import (
+    TitledScreen, BTC_ICONS,
+    PIN_BTN_WIDTH, PIN_BTN_HEIGHT, SCREEN_WIDTH,
+    shuffle,
+    Btn,  flex_row, body_label, title_label, style_as_flex_container,
+    apply_style
+)
 
 class LockedMenu(TitledScreen):
     """Simple lock screen that accepts a numeric PIN to unlock the device."""
@@ -15,21 +14,21 @@ class LockedMenu(TitledScreen):
         super().__init__(parent.i18n.t("LOCKED_MENU_TITLE"), parent)
 
         self.pin_buf = ""
-        t = self.t
-
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        configure_flex(self.body, main=lv.FLEX_ALIGN.CENTER)
+        style_as_flex_container(self.body, flow=lv.FLEX_FLOW.COLUMN,
+                                main_align = lv.FLEX_ALIGN.CENTER,
+                                scrollable=False
+                                )
 
         # Firmware version – shown as a subtitle directly under the title bar,
         # inside the TITLE_PADDING gap so it doesn't push body content down.
-        fw_ver = body_label(self, t("LOCKED_MENU_FW_VERSION") + str(self.device_state.fw_version), font=SMALL_TEXT_FONT)
-        fw_ver.align_to(self.title_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 1)
+        self.fw_ver = body_label(self, self.t("LOCKED_MENU_FW_VERSION") + str(self.device_state.fw_version))
+        self.fw_ver.align_to(self.title_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 1)
 
         # Instruction label
-        instr = body_label(self.body, t("LOCKED_MENU_ENTER_PIN"), font=TITLE_FONT, width=int(4*SCREEN_WIDTH/5))
+        self.instr = title_label(self.body, self.t("LOCKED_MENU_ENTER_PIN"), width=int(4*SCREEN_WIDTH/5))
 
         # masked PIN display
-        self.mask_lbl = body_label(self.body, "", font=TITLE_FONT, width=int(4*SCREEN_WIDTH/5))
+        self.mask_lbl = body_label(self.body, "", width=int(4*SCREEN_WIDTH/5))
 
         # keypad layout (3x4): digits in randomised order, Del, and OK
         chars = list("0123456789")
@@ -48,7 +47,6 @@ class LockedMenu(TitledScreen):
                 width=lv.pct(100),
                 height=lv.SIZE_CONTENT,
                 main_align=lv.FLEX_ALIGN.CENTER,
-                pad=SMALL_PAD,
             )
             for k in row:
                 if k == "Del":
@@ -57,7 +55,6 @@ class LockedMenu(TitledScreen):
                         icon=BTC_ICONS.CLEAR_CHARACTER,
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_del(e),
-                        transparent=True,
                     )
                 elif k == "OK":
                     b = Btn(
@@ -65,17 +62,15 @@ class LockedMenu(TitledScreen):
                         icon=BTC_ICONS.CHECK,
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e: self._on_ok(e),
-                        transparent=True,
                     )
                 else:
                     b = Btn(
                         row_cont,
                         text=k,
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
-                        font=TITLE_FONT,
                         callback=lambda e, d=k: self._on_digit(e, d),
-                        transparent=True,
                     )
+                apply_style(b, "WIDGET.PIN_BUTTON")
 
     def _update_mask(self):
         self.mask_lbl.set_text("*" * len(self.pin_buf))

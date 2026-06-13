@@ -1,8 +1,5 @@
-from ..basic import RED_HEX, ORANGE_HEX, GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets import MenuItem
 import lvgl as lv
-
+from ..basic import GenericMenu, BTC_ICONS, MenuItem
 class SecuritySettingsMenu(GenericMenu):
     """Security hub: security features, firmware, backups, danger zone."""
 
@@ -22,8 +19,8 @@ class SecuritySettingsMenu(GenericMenu):
             menu_items.append(MenuItem(BTC_ICONS.COPY, t("MENU_MANAGE_BACKUPS"), "manage_backups", is_submenu=True))
 
         menu_items += [
-            MenuItem(BTC_ICONS.SIREN, text=t("DEVICE_MENU_DANGERZONE"), font_color=ORANGE_HEX),
-            MenuItem(BTC_ICONS.ALERT_CIRCLE, t("DEVICE_MENU_WIPE"), "wipe_device", color=RED_HEX, help_key="HELP_DEVICE_MENU_WIPE"),
+            MenuItem(BTC_ICONS.SIREN, text=t("DEVICE_MENU_DANGERZONE"), modifier="Warning"),
+            MenuItem(BTC_ICONS.ALERT_CIRCLE, t("DEVICE_MENU_WIPE"), "wipe_device", modifier="Danger", help_key="HELP_DEVICE_MENU_WIPE"),
         ]
 
         return menu_items

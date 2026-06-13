@@ -1,6 +1,6 @@
-from ..basic import GenericMenu
-from ..basic.widgets import MenuItem
 import lvgl as lv
+from ..basic import GenericMenu, MenuItem
+
 
 class ConnectWalletsMenu(GenericMenu):
     """Menu to connect or export to software wallets.

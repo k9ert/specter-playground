@@ -3,15 +3,14 @@
 Provides helpers for the leading-icon, name, and delete slots that are
 identical between seed and wallet card rows, plus the row-container factory.
 """
-
 import lvgl as lv
-from .containers import card_row
 from .icon_widgets import make_icon
-from .labels import make_label, best_font_for_size
+from .labels import make_label
 from .inputs import title_textarea
 from .btn import Btn
 from ..symbol_lib import BTC_ICONS
-from ..utils.ui_consts import WHITE_HEX, BIG_PAD
+from ..utils import BIG_PAD, best_fonttype_for_size
+from ..theming import get_font, apply_style
 
 
 def compute_name_width(width, slots, slot_costs, min_width=10):
@@ -34,37 +33,7 @@ def compute_name_width(width, slots, slot_costs, min_width=10):
     fixed_w = 2 * BIG_PAD + sum(slot_costs.get(slot, 0) for slot in slots)
     return max(min_width, width - fixed_w)
 
-
-def build_card_row(parent, height, width, border, on_card_click):
-    """Create a card row container and optionally attach a click handler.
-
-    Args:
-        parent:        LVGL parent object.
-        height:        Row height in pixels.
-        width:         Row width in pixels.
-        border:        Whether to show the card border.
-        on_card_click: ``cb(event)`` attached to the row on ``CLICKED``, or None.
-
-    Returns:
-        The created ``lv.obj`` row.
-    """
-    row = card_row(parent, height=height, width=width, border=border)
-    if on_card_click is not None:
-        row.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
-    return row
-
-
-def build_leading_icon_slot(row, leading_icon):
-    """Append a leading icon to a card row.
-
-    Args:
-        row:          The card row ``lv.obj``.
-        leading_icon: Icon constant (e.g. ``BTC_ICONS.KEY_OUTLINE``).
-    """
-    make_icon(row, leading_icon, WHITE_HEX)
-
-
-def build_name_slot(row, label, name_w, height, on_name_click, editable=True):
+def build_name_slot(row, text, name_w, height, on_name_click, editable=True):
     """Append the name slot to a card row.
 
     Renders an editable textarea when *editable* is True and *on_name_click*
@@ -72,7 +41,7 @@ def build_name_slot(row, label, name_w, height, on_name_click, editable=True):
 
     Args:
         row:           The card row ``lv.obj``.
-        label:         Display string.
+        text:          Display string.
         name_w:        Width budget for this slot in pixels.
         height:        Row height (used for font selection).
         on_name_click: Callback ``cb(textarea)`` invoked on CLICKED, or None.
@@ -82,29 +51,25 @@ def build_name_slot(row, label, name_w, height, on_name_click, editable=True):
     Returns:
         The ``lv.textarea`` widget, or None when rendered as a static label.
     """
-    name_font, display_text = best_font_for_size(label, name_w, height)
+    font_key, display_text = best_fonttype_for_size(text, name_w, height)
+    font = get_font(font_key)
     if editable and on_name_click is not None:
-        ta = title_textarea(row)
-        ta.set_width(name_w)
-        ta.set_style_text_font(name_font, 0)
-        ta.set_text(display_text)
+        text_edit = title_textarea(row)
+        text_edit.set_width(name_w)
+        text_edit.set_style_text_font(font, 0)
+        text_edit.set_text(display_text)
 
-        def _make_name_cb(t):
-            def _cb(e):
-                if e.get_code() == lv.EVENT.CLICKED:
-                    on_name_click(t)
-            return _cb
-
-        ta.add_event_cb(_make_name_cb(ta), lv.EVENT.CLICKED, None)
-        return ta
+        text_edit.add_event_cb(lambda e: on_name_click(text_edit), lv.EVENT.CLICKED, None)
+        return (text_edit, True)
     else:
-        lbl = make_label(row, display_text, width=name_w, font=name_font)
-        lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
-        return None
+        lbl = make_label(row, display_text, width=name_w)
+        apply_style(lbl, ["TEXT.TITLE", "TEXT.BODY"])
+        lbl.set_style_text_font(font, 0)
+        return (lbl, False)
 
 
 def build_delete_slot(row, icon_w, height, on_delete):
-    """Append a TRASH delete button to a card row if *on_delete* is provided.
+    """Append a TRASH delete button to a card row.
 
     The button suppresses event bubbling on click before invoking *on_delete*.
 
@@ -112,11 +77,11 @@ def build_delete_slot(row, icon_w, height, on_delete):
         row:       The card row ``lv.obj``.
         icon_w:    Width (and height) of the delete button in pixels.
         height:    Row height in pixels.
-        on_delete: Zero-argument callable, or None (no button rendered).
+        on_delete: Zero-argument callable.
     """
-    if on_delete is not None:
-        def _del_cb(event=None):
-            if event is not None:
-                event.stop_bubbling = 1
-            on_delete()
-        del_btn = Btn(row, icon=BTC_ICONS.TRASH, size=(icon_w, height), callback=_del_cb, transparent=True)
+    def _del_cb(e):
+        e.stop_bubbling = 1
+        on_delete()
+    btn = Btn(row, icon=BTC_ICONS.TRASH, size=(icon_w, height), callback=_del_cb)
+    apply_style(btn, ["WIDGET.INFO_ITEM"])
+    return btn

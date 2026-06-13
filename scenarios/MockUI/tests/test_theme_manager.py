@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from MockUI.basic.theming.theme_manager import ThemeManager, get_theme_manager
-from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SPECTER_STYLES
+from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SpecterStylePalette
 
 _tc = ThemeCompiler()
 
@@ -37,7 +37,7 @@ def theme_flash_dir(tmp_path):
 
     specter_json = tmp_path / "specter_ui_theme_specter.json"
     shutil.copy(_SPECTER_JSON, specter_json)
-    result = _tc.json_to_binary(str(specter_json), SPECTER_STYLES, str(flash_dir))
+    result = _tc.json_to_binary(str(specter_json), SpecterStylePalette, str(flash_dir))
     assert result is not None, "Failed to compile default theme"
     return flash_dir
 
@@ -65,7 +65,7 @@ def _install_alt_theme(flash_dir, theme_name="custom"):
     alt_json = Path(flash_dir).parent / f"specter_ui_theme_{theme_name}.json"
     with open(alt_json, "w") as f:
         json.dump(data, f)
-    result = _tc.json_to_binary(str(alt_json), SPECTER_STYLES, str(flash_dir))
+    result = _tc.json_to_binary(str(alt_json), SpecterStylePalette, str(flash_dir))
     assert result is not None, f"Failed to compile alt theme '{theme_name}'"
 
 
@@ -248,7 +248,7 @@ class TestGetSetting:
     """get_setting() — reads styles from binary files"""
 
     def test_returns_style_for_known_key(self, theme_manager):
-        style = theme_manager.get_setting(SPECTER_STYLES.WIDGET.BUTTON)
+        style = theme_manager.get_setting(SpecterStylePalette.WIDGET.BUTTON)
         assert style is not None
 
     def test_returns_none_for_out_of_range_key(self, theme_manager):
@@ -257,12 +257,12 @@ class TestGetSetting:
 
     def test_dark_mode_returns_style(self, theme_manager):
         theme_manager.set_mode(ColorMode.DARK)
-        style = theme_manager.get_setting(SPECTER_STYLES.BG.DEFAULT)
+        style = theme_manager.get_setting(SpecterStylePalette.BG.DEFAULT)
         assert style is not None
 
     def test_light_mode_returns_style(self, theme_manager):
         theme_manager.set_mode(ColorMode.LIGHT)
-        style = theme_manager.get_setting(SPECTER_STYLES.BG.DEFAULT)
+        style = theme_manager.get_setting(SpecterStylePalette.BG.DEFAULT)
         assert style is not None
 
 

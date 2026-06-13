@@ -10,10 +10,12 @@ if '.' in __name__:
     from ..templates.settings_file_compiler import SettingsFileCompiler, read_cstring
 else:
     # Running as a script or loaded without package context
-    # Add basic/ to sys.path so templates.settings_file_compiler is importable directly.
+    # Add basic/templates to sys.path and import the module directly.
+    # This avoids importing templates/__init__.py, which pulls GUI modules
+    # (including lvgl) that are unavailable in host-side build tools.
     import sys as _sys, pathlib as _pathlib
-    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))
-    from templates.settings_file_compiler import SettingsFileCompiler, read_cstring
+    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "templates"))
+    from settings_file_compiler import SettingsFileCompiler, read_cstring
 
 
 class LangCompiler(SettingsFileCompiler):

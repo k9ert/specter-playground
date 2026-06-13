@@ -1,9 +1,12 @@
 import lvgl as lv
-from ..basic import TitledScreen, BTN_WIDTH, BTN_HEIGHT, SMALL_PAD
-from ..basic.utils.ui_utils import configure_flex
-from ..basic.utils.keyboard_manager import Layout
-from ..basic.widgets import flex_col, flex_row, form_label, form_textarea, Btn, ACCEPTED_CHARS
-from ..basic.symbol_lib import BTC_ICONS
+from ..basic import (
+    TitledScreen, BTN_WIDTH, BTN_HEIGHT, SMALL_PAD,
+    Layout, ACCEPTED_CHARS,
+    Btn,
+    BTC_ICONS,
+    flex_row, flex_col, style_as_flex_container,
+    form_label, form_textarea
+)
 
 class PassphraseMenu(TitledScreen):
     """Form to enter/set the active seed's passphrase.
@@ -15,8 +18,7 @@ class PassphraseMenu(TitledScreen):
         super().__init__(parent.i18n.t("MENU_SET_PASSPHRASE"), parent)
         t = self.i18n.t
 
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        configure_flex(self.body)
+        style_as_flex_container(self.body)
 
         # Row for passphrase input
         pa_row = flex_row(self.body, height=lv.pct(20), main_align=lv.FLEX_ALIGN.START)
@@ -51,7 +53,7 @@ class PassphraseMenu(TitledScreen):
             buttons_row,
             icon=BTC_ICONS.CROSS,
             text=t("PASSPHRASE_MENU_CLEAR"),
-            size=(lv.pct(BTN_WIDTH), BTN_HEIGHT),
+            size=(BTN_WIDTH, BTN_HEIGHT),
             callback=self._on_clear,
         )
 

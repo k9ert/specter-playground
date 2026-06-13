@@ -23,14 +23,14 @@ Files that violate this rule are skipped during scanning.
 
 import os
 
-from .theme_compiler import ThemeCompiler, SPECTER_STYLES, ColorMode
-from .style_palette_compiler import collect_int_constants
+from .theme_compiler import ThemeCompiler, SpecterStylePalette, ColorMode
+from ..templates.settings_file_compiler import collect_int_constants
 from ..templates.settings_file_manager import SettingFileManager
 
 
 class ThemeManager(SettingFileManager):
     COMPILER = ThemeCompiler()
-    KEYS_CLASS = SPECTER_STYLES
+    KEYS_CLASS = SpecterStylePalette
     SETTINGS_DIR = "/themes"
     DEFAULT_SETTING_FILE = "specter"
 
@@ -141,10 +141,10 @@ class ThemeManager(SettingFileManager):
             keys = [keys]
         if isinstance(keys, str):
             # resolve e.g. "BG.INVISIBLE" to the corresponding integer key
-            keys = [self.COMPILER.str_to_style(keys)]
+            keys = [self.COMPILER.str_to_style_ind(keys)]
         for key in keys:
             if isinstance(key, str):
-                key = self.COMPILER.str_to_style(key)
+                key = self.COMPILER.str_to_style_ind(key)
             style = self.get_style(key)
             if style is not None:
                 obj.add_style(style, selector)
@@ -167,6 +167,13 @@ class ThemeManager(SettingFileManager):
         """Remove all styles from an LVGL widget for the given selector."""
         obj.set_style_list(selector, None)
 
+    def get_color(self, palette_idx):
+        """Return an ``lv.color`` from the current theme's color palette."""
+        return self.COMPILER.read_color_from_binary(self.current_colors_file, palette_idx, mode=self.mode)
+    
+    def get_font(self, palette_idx):
+        """Return an ``lv.font`` from the current theme's font palette."""
+        return self.COMPILER.read_font_from_binary(self.current_fonts_file, palette_idx)
 
     # ── SettingFileManager overrides ──────────────────────────────────────────
 
@@ -230,7 +237,7 @@ class ThemeManager(SettingFileManager):
             self.current_file is None or
             self.current_fonts_file is None):
             return
-        all_indices = collect_int_constants(SPECTER_STYLES, recursive=True)
+        all_indices = collect_int_constants(SpecterStylePalette, recursive=True)
         self._style_cache = {}
         for name, idx in all_indices.items():
             style = self.get_setting(idx)
@@ -252,3 +259,12 @@ def remove_style(obj, keys, selector=0):
 
 def reset_style(obj, selector=0):
     return get_theme_manager().reset_style(obj, selector)
+
+def get_style(style_key):
+    return get_theme_manager().get_style(style_key)
+
+def get_color(palette_idx):
+    return get_theme_manager().get_color(palette_idx)
+
+def get_font(palette_idx):
+    return get_theme_manager().get_font(palette_idx)

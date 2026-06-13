@@ -9,4 +9,13 @@ from .settings_menu import SettingsMenu
 from .preferences_menu import PreferencesMenu
 from .theme_menu import ThemeMenu
 
-__all__ = ["SecuritySettingsMenu", "FirmwareMenu", "InterfacesMenu", "BackupsMenu", "SecurityFeaturesMenu", "StorageMenu", "LanguageMenu", "SettingsMenu", "PreferencesMenu", "ThemeMenu"]
+__all__ = ["SecuritySettingsMenu", 
+           "FirmwareMenu", 
+           "InterfacesMenu", 
+           "BackupsMenu", 
+           "SecurityFeaturesMenu", 
+           "StorageMenu", 
+           "LanguageMenu", 
+           "SettingsMenu", 
+           "PreferencesMenu", 
+           "ThemeMenu"]

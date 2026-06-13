@@ -51,7 +51,7 @@ class FontManager:
         return family
 
     # ── public API ────────────────────────────────────────────────────────
-    def get(self, descriptor):
+    def get_font(self, descriptor):
         """Return the ``lv.font`` for *descriptor* (``"family:size"`` or tuple)."""
         family, size = self._parse(descriptor)
         family = self._resolve_family(family)

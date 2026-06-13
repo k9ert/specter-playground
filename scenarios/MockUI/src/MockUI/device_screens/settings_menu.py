@@ -1,40 +1,46 @@
 import lvgl as lv
-from ..basic.templates.menu import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets import MenuItem
-from ..basic.utils.ui_consts import BTC_ICON_WIDTH, STATUS_BTN_HEIGHT, GREEN_HEX, WHITE_HEX, GREY_HEX
-from ..basic.widgets.icon_widgets import make_icon
-from ..basic.widgets.containers import flex_row
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, STATUS_BTN_HEIGHT, make_icon, flex_row, apply_style
 
 
 class SettingsMenu(GenericMenu):
     TITLE_KEY = "MENU_MANAGE_SETTINGS"
 
     def pre_init(self, t, state):
-        self._build_iface_row(state)
+        self.row = flex_row(self.body, 
+                            width=lv.pct(100), height=STATUS_BTN_HEIGHT, 
+                            main_align=lv.FLEX_ALIGN.CENTER)
+        apply_style(self.row, "WIDGET.DROP_UP_ROW")
 
-    def _build_iface_row(self, state):
-        row = flex_row(self.body, width=lv.pct(100), height=STATUS_BTN_HEIGHT, main_align=lv.FLEX_ALIGN.CENTER)
-
-        def _add_ico(icon, color):
-            img = make_icon(row, icon, color)
+        def _add_ico(icon):
+            img = make_icon(self.row, icon)
+            apply_style(img, "WIDGET.INFO_ICON")
             img.add_flag(lv.obj.FLAG.CLICKABLE)
             img.add_event_cb(self._iface_ico_cb, lv.EVENT.CLICKED, None)
+            return img
 
         if state.hasQR():
-            _add_ico(BTC_ICONS.QR_CODE, GREEN_HEX if state.QR_enabled() else GREY_HEX)
+            self.QR_ico = _add_ico(BTC_ICONS.QR_CODE)
+            if not state.QR_enabled():
+                apply_style(self.QR_ico, "MODIFIER.MUTED")
         if state.hasUSB():
-            _add_ico(BTC_ICONS.USB, WHITE_HEX if state.USB_enabled() else GREY_HEX)
+            self.USB_ico = _add_ico(BTC_ICONS.USB)
+            if not state.USB_enabled():
+                apply_style(self.USB_ico, "MODIFIER.MUTED")
         if state.hasSD():
-            col = (GREEN_HEX if state.SD_detected() else WHITE_HEX) if state.SD_enabled() else GREY_HEX
-            _add_ico(BTC_ICONS.SD_CARD, col)
+            self.SD_ico = _add_ico(BTC_ICONS.SD_CARD)
+            if not state.SD_enabled():
+                apply_style(self.SD_ico, "MODIFIER.MUTED")
+            if state.SD_detected():
+                apply_style(self.SD_ico, "FG.SUCCESS")
         if state.hasSmartCard():
-            col = (GREEN_HEX if state.SmartCard_detected() else WHITE_HEX) if state.SmartCard_enabled() else GREY_HEX
-            _add_ico(BTC_ICONS.SMARTCARD, col)
+            self.SmartCard_ico = _add_ico(BTC_ICONS.SMARTCARD)
+            if not state.SmartCard_enabled():
+                apply_style(self.SmartCard_ico, "MODIFIER.MUTED")
+            if state.SmartCard_detected():
+                apply_style(self.SmartCard_ico, "FG.SUCCESS")
 
     def _iface_ico_cb(self, e):
-        if e.get_code() == lv.EVENT.CLICKED:
-            self.gui.navigate_to("interfaces")
+        self.gui.navigate_to("interfaces")
 
     def get_menu_items(self, t, state):
         lang_code = self.i18n.get_language()

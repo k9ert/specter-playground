@@ -6,8 +6,8 @@ navigation controller and menus can be kept stateless and simple.
 
 import json
 from micropython import const
-from .utils.animations import GUIAnimations
-from .utils.ui_consts import MAX_HISTORY_DEPTH
+
+from .utils import GUIAnimations, MAX_HISTORY_DEPTH
 
 CONFIG_FILE = "/flash/ui_state_config.json"
 

@@ -1,6 +1,4 @@
-from ..basic.templates.menu import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets.menu_item import MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem
 
 
 class InterfacesMenu(GenericMenu):

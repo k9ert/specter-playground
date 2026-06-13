@@ -1,21 +1,18 @@
 import lvgl as lv
 
-from .utils.ui_consts import SCREEN_HEIGHT, SCREEN_WIDTH, CONTENT_PCT, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS
-from ..stubs import DeviceState
+from .utils import (
+    SCREEN_WIDTH, CONTENT_H, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS,
+    KeyboardManager,
+    slide_x, slide_y, GUIAnimations,
+    set_scroll, get_size, set_size, set_pos
+)
 from .ui_state import UIState, Context
 from .i18n import I18nManager
-from .theming.theme_manager import ThemeManager
+from .theming import ThemeManager
 from .tour import GuidedTour, INTRO_TOUR_STEPS
-from .utils.keyboard_manager import KeyboardManager
-from .utils.animations import slide_x, slide_y, GUIAnimations
-from .components.navigation_bar import NavigationBar
-from .components.app_screen import AppScreen
-from .utils.ui_utils import configure_as_bare
-
-_CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
-
-
+from .components import NavigationBar, AppScreen
 from .templates.action_screen import ActionScreen
+
 from ..main_screens import (
     MainMenu,
     LockedMenu,
@@ -49,6 +46,7 @@ from ..device_screens import (
     ThemeMenu,
 )
 
+from ..stubs import DeviceState
 
 _VIEW_MAP = {
     "locked":                   LockedMenu,
@@ -79,11 +77,24 @@ _VIEW_MAP = {
 }
 
 
+
+# Global instance (will be initialized by SpecterGui or main app)
+_global_gui = None
+
+def get_gui():
+    """Get the global GUI instance."""
+    global _global_gui
+    if _global_gui is None:
+        _global_gui = SpecterGui()
+    return _global_gui
+
 class SpecterGui(lv.obj):
 
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
+        global _global_gui
+        _global_gui = self
         super().__init__(*args, **kwargs)
-        self.set_scroll_dir(lv.DIR.NONE)
+        set_scroll(self, horizontal=False, vertical=False)
 
         self.on_navigate = self.navigate_to
 
@@ -199,8 +210,8 @@ class SpecterGui(lv.obj):
         """Instantiate and return the correct view class for *menu_id* into *screen*."""
         class_name = _VIEW_MAP.get(menu_id)
         if class_name is not None:
-            return class_name(screen)
-        return ActionScreen(menu_id, screen)
+            return class_name(screen.content)
+        return ActionScreen(menu_id, screen.content)
 
     def _do_transition(self, anim_type):
         """Animate from the current screen to a freshly-built new screen.
@@ -237,15 +248,15 @@ class SpecterGui(lv.obj):
         old_screen = self.screen
         old_view = old_screen.view
         content = old_screen.content
-        content_h = content.get_height()
+        (content_w, content_h) = get_size(content)
         content.set_layout(lv.LAYOUT.NONE)
-        old_view.set_pos(0, 0)
-        old_view.set_size(SCREEN_WIDTH, content_h)
+        set_pos(old_view, 0, 0)
+        set_size(old_view, SCREEN_WIDTH, content_h)
 
         # Build new view into the same screen (added to content as 2nd child)
         new_view = self._build_view(old_screen, self.ui_state.current_menu_id)
         old_screen.view = new_view
-        new_view.set_size(SCREEN_WIDTH, content_h)
+        set_size(new_view, SCREEN_WIDTH, content_h)
 
         anims = []
         W = SCREEN_WIDTH
@@ -282,19 +293,20 @@ class SpecterGui(lv.obj):
         # (480×_CONTENT_H).
         # Both screens are reparented into it so LVGL's default parent-clip
         # prevents them from ever painting over the navigation bar below.
+        
+        
         anim_clip = lv.obj(self)
-        configure_as_bare(anim_clip, width=SCREEN_WIDTH, height=_CONTENT_H,
-                           transparent_bg=True)
-        anim_clip.set_pos(0, 0)
+        set_size(anim_clip, SCREEN_WIDTH, CONTENT_H)
+        set_pos(anim_clip, 0, 0)
+        set_scroll(anim_clip, horizontal=False, vertical=False)
         anim_clip.set_layout(lv.LAYOUT.NONE)
-        anim_clip.set_scroll_dir(lv.DIR.NONE)
 
         # Reparent both screens; their coords were (0,0) relative to
         # SpecterGui which is identical to (0,0) inside anim_clip.
         old_screen.set_parent(anim_clip)
-        old_screen.set_pos(0, 0)
+        set_pos(old_screen, 0, 0)
         new_screen.set_parent(anim_clip)
-        new_screen.set_pos(0, 0)
+        set_pos(new_screen, 0, 0)
 
         # Navigation bar must remain above the clip container.
         self.navigation_bar.move_foreground()
@@ -305,7 +317,7 @@ class SpecterGui(lv.obj):
             # Reparent new_screen back to SpecterGui before deleting the
             # clip (which would otherwise take new_screen with it).
             new_screen.set_parent(self)
-            new_screen.set_pos(0, 0)
+            set_pos(new_screen, 0, 0)
             anim_clip.delete()   # also deletes old_screen
             self.navigation_bar.move_foreground()
             self.refresh_ui()

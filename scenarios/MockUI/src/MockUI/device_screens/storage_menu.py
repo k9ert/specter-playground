@@ -1,6 +1,4 @@
-from ..basic import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets import MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem
 
 class StorageMenu(GenericMenu):
     """Menu to manage storage devices (SD / SmartCard)."""

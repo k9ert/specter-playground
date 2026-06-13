@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SPECTER_STYLES
+from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SpecterStylePalette
 from MockUI.basic.theming.color_palette_compiler import ColorPaletteCompiler, SpecterColorPalette
 from MockUI.basic.theming.font_palette_compiler import FontPaletteCompiler, SpecterFontPalette
 from MockUI.basic.theming.style_palette_compiler import StylePaletteCompiler
@@ -45,7 +45,7 @@ def theme_flash_dir(tmp_path):
 @pytest.fixture
 def specter_binaries(specter_json_path, theme_flash_dir):
     """Compiled (colors, fonts, styles) binaries for the 'specter' theme."""
-    result = _tc.json_to_binary(str(specter_json_path), SPECTER_STYLES, str(theme_flash_dir))
+    result = _tc.json_to_binary(str(specter_json_path), SpecterStylePalette, str(theme_flash_dir))
     assert result is not None, "json_to_binary returned None for default theme"
     colors_path, fonts_path, styles_path = result
     return Path(colors_path), Path(fonts_path), Path(styles_path)
@@ -87,7 +87,7 @@ class TestJsonToBinary:
     """json_to_binary() — compile-time"""
 
     def test_returns_three_paths_on_success(self, specter_json_path, theme_flash_dir):
-        result = _tc.json_to_binary(str(specter_json_path), SPECTER_STYLES, str(theme_flash_dir))
+        result = _tc.json_to_binary(str(specter_json_path), SpecterStylePalette, str(theme_flash_dir))
         assert result is not None
         assert len(result) == 3
 
@@ -104,19 +104,19 @@ class TestJsonToBinary:
         assert styles_path.name == "styles_specter.bin"
 
     def test_returns_none_on_missing_file(self, tmp_path):
-        result = _tc.json_to_binary(str(tmp_path / "nonexistent.json"), SPECTER_STYLES, str(tmp_path))
+        result = _tc.json_to_binary(str(tmp_path / "nonexistent.json"), SpecterStylePalette, str(tmp_path))
         assert result is None
 
     def test_returns_none_on_missing_metadata(self, tmp_path):
         bad = tmp_path / "specter_ui_theme_noname.json"
         bad.write_text(json.dumps({"colors": {}, "fonts": {}, "styles": {}}))
-        result = _tc.json_to_binary(str(bad), SPECTER_STYLES, str(tmp_path))
+        result = _tc.json_to_binary(str(bad), SpecterStylePalette, str(tmp_path))
         assert result is None
 
     def test_strips_bin_suffix_from_output_dir(self, specter_json_path, theme_flash_dir):
         """output_dir is accidentally a full .bin path — should still work."""
         fake_out = str(theme_flash_dir / "styles_specter.bin")
-        result = _tc.json_to_binary(str(specter_json_path), SPECTER_STYLES, fake_out)
+        result = _tc.json_to_binary(str(specter_json_path), SpecterStylePalette, fake_out)
         assert result is not None
 
     def test_colors_binary_has_correct_theme_name(self, specter_binaries):
@@ -178,7 +178,7 @@ class TestReadSettingFromBinary:
         colors_path, fonts_path, styles_path = specter_binaries
         result = _tc.read_setting_from_binary(
             str(colors_path), str(fonts_path), str(styles_path),
-            SPECTER_STYLES.WIDGET.BUTTON, ColorMode.DARK)
+            SpecterStylePalette.WIDGET.BUTTON, ColorMode.DARK)
         assert isinstance(result, tuple)
         assert len(result) == 2
 
@@ -186,20 +186,20 @@ class TestReadSettingFromBinary:
         colors_path, fonts_path, styles_path = specter_binaries
         style, err = _tc.read_setting_from_binary(
             str(colors_path), str(fonts_path), str(styles_path),
-            SPECTER_STYLES.WIDGET.BUTTON, ColorMode.DARK)
+            SpecterStylePalette.WIDGET.BUTTON, ColorMode.DARK)
         assert style is not None
 
     def test_light_mode_returns_style(self, specter_binaries):
         colors_path, fonts_path, styles_path = specter_binaries
         style, err = _tc.read_setting_from_binary(
             str(colors_path), str(fonts_path), str(styles_path),
-            SPECTER_STYLES.WIDGET.BUTTON, ColorMode.LIGHT)
+            SpecterStylePalette.WIDGET.BUTTON, ColorMode.LIGHT)
         assert style is not None
 
     def test_all_widget_styles_readable_dark(self, specter_binaries):
-        """Every SPECTER_STYLES constant must materialise without error in DARK mode."""
+        """Every SpecterStylePalette constant must materialise without error in DARK mode."""
         colors_path, fonts_path, styles_path = specter_binaries
-        all_indices = collect_int_constants(SPECTER_STYLES, recursive=True)
+        all_indices = collect_int_constants(SpecterStylePalette, recursive=True)
         failed = []
         for name, idx in all_indices.items():
             style, err = _tc.read_setting_from_binary(
@@ -210,9 +210,9 @@ class TestReadSettingFromBinary:
         assert failed == [], f"Styles failed to materialise in DARK: {failed}"
 
     def test_all_widget_styles_readable_light(self, specter_binaries):
-        """Every SPECTER_STYLES constant must materialise without error in LIGHT mode."""
+        """Every SpecterStylePalette constant must materialise without error in LIGHT mode."""
         colors_path, fonts_path, styles_path = specter_binaries
-        all_indices = collect_int_constants(SPECTER_STYLES, recursive=True)
+        all_indices = collect_int_constants(SpecterStylePalette, recursive=True)
         failed = []
         for name, idx in all_indices.items():
             style, err = _tc.read_setting_from_binary(

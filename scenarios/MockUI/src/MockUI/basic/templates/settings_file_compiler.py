@@ -51,7 +51,6 @@ def collect_int_constants(cls, recursive=False):
                 result[name + '.' + sub_name] = sub_val
     return result
 
-
 class SettingsFileCompiler:
     """
     Base class for settings file compilers.

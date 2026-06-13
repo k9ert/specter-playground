@@ -1,7 +1,5 @@
 import lvgl as lv
-from ..basic import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets import MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem
 
 
 class LanguageMenu(GenericMenu):

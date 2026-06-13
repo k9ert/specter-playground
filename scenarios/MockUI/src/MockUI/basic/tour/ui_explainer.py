@@ -5,15 +5,16 @@ and displays explanatory text with navigation controls.
 """
 
 import lvgl as lv
-from ..utils.ui_consts import (
-    EXPLAINER_WIDTH_PCT,
-    EXPLAINER_HEIGHT_PCT,
-    DEFAULT_MODAL_BG_OPA,
-    BLACK_HEX,
+
+from ..utils import (
+    EXPLAINER_WIDTH,
+    EXPLAINER_HEIGHT,
+    SCREEN_WIDTH, SCREEN_HEIGHT,
+    get_size, set_size, set_pos, set_scroll
 )
 from ..symbol_lib import BTC_ICONS
-from ..widgets.modal_overlay import ModalOverlay
-from ..widgets import Btn, flex_row, flex_col, body_label, dialog_card
+from ..theming import apply_style
+from ..widgets import Btn, flex_row, flex_col, flex_container, body_label, modal_overlay
 
 
 class UIExplainer:
@@ -45,7 +46,8 @@ class UIExplainer:
     def show(self):
         """Create and display the explainer overlay."""
         cutout = self._get_cutout_area()
-        self._modal = ModalOverlay(bg_opa=lv.OPA.TRANSP)
+        self._modal = modal_overlay()
+        apply_style(self._modal.overlay, ["APPEARANCE.INVISIBLE"])  # we'll create our own dim strips to allow the cutout
         self._overlay = self._modal.overlay
         self._create_dim_strips(cutout)
         self._create_text_box(*self._calculate_text_box_position(cutout))
@@ -80,8 +82,7 @@ class UIExplainer:
             obj.get_coords(coords)
             x = coords.x1
             y = coords.y1
-            width = obj.get_width()
-            height = obj.get_height()
+            width, height = get_size(obj)
             return (x, y, width, height)
     
     def _create_dim_strips(self, cutout):
@@ -100,21 +101,15 @@ class UIExplainer:
         
         If cutout is None, creates a single full-screen dim overlay.
         """
-        disp = lv.display_get_default()
-        screen_width = disp.get_horizontal_resolution()
-        screen_height = disp.get_vertical_resolution()
+        screen_width = SCREEN_WIDTH
+        screen_height = SCREEN_HEIGHT
 
         def add_strip(x, y, w, h):
             """Create a dim strip at the given position and size."""
             strip = lv.obj(self._overlay)
-            strip.set_pos(x, y)
-            strip.set_size(w, h)
-            strip.set_style_bg_color(BLACK_HEX, 0)
-            strip.set_style_bg_opa(DEFAULT_MODAL_BG_OPA, 0)
-            strip.set_style_border_width(0, 0)
-            strip.set_style_pad_all(0, 0)
-            strip.set_style_radius(0, 0)
-            strip.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+            set_pos(strip, x, y)
+            set_size(strip, w, h)
+            apply_style(strip, ["WIDGET.OVERLAY"])
             self._dim_strips.append(strip)
 
         if cutout is None:
@@ -147,43 +142,51 @@ class UIExplainer:
             box_height: Height of the text box
         """
         # Create text box container
-        self._text_box = dialog_card(self._overlay, box_width, box_height, box_x, box_y, pad=10)
-        self._text_box.set_flex_align(lv.FLEX_ALIGN.SPACE_BETWEEN, lv.FLEX_ALIGN.CENTER, lv.FLEX_ALIGN.CENTER)
+        self._text_box = flex_container(self._overlay,
+                                        width=box_width, height=box_height,
+                                        main_align=lv.FLEX_ALIGN.SPACE_BETWEEN,
+                                        scrollable=False)
+        set_pos(self._text_box, box_x, box_y)
+        apply_style(self._text_box, ["WIDGET.MODAL_WINDOW"])
         
         # Create text label (with flex grow to take available space)
-        text_container = flex_col(self._text_box, width=lv.pct(100))
-        text_container.set_flex_grow(1)
-        text_container.set_style_pad_all(5, 0)
-        text_container.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+        self.text_container = flex_col(self._text_box, width=lv.pct(100))
+        self.text_container.set_flex_grow(1)
+        set_scroll(self.text_container, horizontal=False, vertical=False)
         
-        text_label = body_label(text_container, self.text)
-        text_label.center()
+        self.text_label = body_label(self.text_container, self.text)
+        self.text_label.center()
         
         # Create navigation button container
-        nav_container = flex_row(self._text_box, height=60, pad=0)
-        nav_container.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+        self.nav_container = flex_row(self._text_box, height=60, pad=0)
+        set_scroll(self.nav_container, horizontal=False, vertical=False)
         
         # Get position info from tour
         is_first = self.tour.is_first()
         is_last = self.tour.is_last()
         
         # Previous button (or invisible placeholder on first screen)
-        PrevBtn = Btn(nav_container, icon=BTC_ICONS.CARET_LEFT, size=(60, 50),
+        self.PrevBtn = Btn(self.nav_container, icon=BTC_ICONS.CARET_LEFT, size=(60, 50),
             callback=self._on_prev_clicked)
-        PrevBtn.set_visible(not is_first)
+        apply_style(self.PrevBtn, "WIDGET.BUTTON")
+        if is_first:
+            apply_style(self.PrevBtn, "APPEARANCE.INVISIBLE")
         
         # Skip/Complete button (always present)
         if is_last:
-            Btn(nav_container, icon=BTC_ICONS.CHECK, size=(60, 50),
+            self.SkipBtn = Btn(self.nav_container, icon=BTC_ICONS.CHECK, size=(60, 50),
                 callback=self._on_skip_clicked)
         else:
-            Btn(nav_container, text=self.tour.nav.i18n.t("TOUR_SKIP_BTN"),
+            self.SkipBtn = Btn(self.nav_container, text=self.tour.nav.i18n.t("TOUR_SKIP_BTN"),
                 size=(160, 50), callback=self._on_skip_clicked)
+        apply_style(self.SkipBtn, "WIDGET.BUTTON")
         
         # Next button (or invisible placeholder on last screen)
-        NextBtn = Btn(nav_container, icon=BTC_ICONS.CARET_RIGHT, size=(60, 50),
+        self.NextBtn = Btn(self.nav_container, icon=BTC_ICONS.CARET_RIGHT, size=(60, 50),
             callback=self._on_next_clicked)
-        NextBtn.set_visible(not is_last)
+        apply_style(self.NextBtn, "WIDGET.BUTTON")
+        if is_last:
+            apply_style(self.NextBtn, "APPEARANCE.INVISIBLE")
     
     def _calculate_text_box_position(self, cutout):
         """Calculate text box dimensions and position based on text_position setting and cutout.
@@ -199,8 +202,8 @@ class UIExplainer:
         screen_height = disp.get_vertical_resolution()
         
         # Calculate box dimensions
-        box_width = int(screen_width * EXPLAINER_WIDTH_PCT / 100)
-        box_height = int(screen_height * EXPLAINER_HEIGHT_PCT / 100)
+        box_width = EXPLAINER_WIDTH
+        box_height = EXPLAINER_HEIGHT
         
         # Center position (used as default and when no cutout)
         center_x = (screen_width - box_width) // 2

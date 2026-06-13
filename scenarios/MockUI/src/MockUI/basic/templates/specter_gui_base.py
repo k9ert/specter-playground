@@ -3,9 +3,7 @@
 Two classes are provided so each consumer picks the right base:
 
 ``SpecterGuiMixin``
-    Pure-Python base.  Provides ``device_state``/``ui_state``/``i18n``/``t``/``on_navigate`` as
-    properties resolved from ``self.gui``.  Use for controllers that are not
-    LVGL widgets.
+    Pure-Python base.Use for controllers that are not LVGL widgets.
 
 ``SpecterGuiElement``
     ``lv.obj`` subclass with the same properties.  Use for concrete LVGL
@@ -16,7 +14,13 @@ installed onto both classes via the ``_install_gui_properties`` helper rather
 than being declared twice.
 """
 import lvgl as lv
+#provide direct imports for convenience of consumer modules
 
+
+def _resolve_gui():
+    """Resolve the global GUI lazily to avoid import cycles during startup."""
+    from ..specter_gui import get_gui
+    return get_gui()
 
 def _install_gui_properties(cls):
     """Install the shared ``self.gui``-derived properties on *cls*.
@@ -27,6 +31,7 @@ def _install_gui_properties(cls):
     ``self.gui`` / ``self.gui.ui_state`` objects directly.
     """
     accessors = {
+        "gui":              lambda self: _resolve_gui(),
         "device_state":     lambda self: self.gui.device_state,
         "ui_state":         lambda self: self.gui.ui_state,
         "current_menu":     lambda self: self.gui.ui_state.current_menu_id,
@@ -70,16 +75,5 @@ class SpecterGuiElement(lv.obj):
     def refresh(self):
         pass  # optional helper for LVGL components to trigger a UI refresh after changing state
 
-    def ap_st(self, keys, selector=0):
-        """Apply one or more SPECTER_STYLES keys to this widget."""
-        self.gui.theme.apply_style(self, keys, selector)
-
-    def rm_st(self, keys, selector=0):
-        """Remove one or more SPECTER_STYLES keys from this widget."""
-        self.gui.theme.remove_style(self, keys, selector)
-
-    def reset_st(self, selector=0):
-        """Reset one or more SPECTER_STYLES keys on this widget."""
-        self.gui.theme.reset_style(self, selector)
-
 _install_gui_properties(SpecterGuiElement)
+

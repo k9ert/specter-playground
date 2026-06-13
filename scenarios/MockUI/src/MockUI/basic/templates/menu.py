@@ -1,14 +1,20 @@
 import lvgl as lv
-from ..utils.ui_consts import BTN_HEIGHT, BTN_WIDTH, MODAL_HEIGHT_PCT, MODAL_WIDTH_PCT, SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD, SMALL_TEXT_FONT, BTC_ICON_WIDTH, DEFAULT_MODAL_BG_OPA, SCREEN_WIDTH, SCREEN_HEIGHT
 from .titled_screen import TitledScreen
+from ..utils import (
+    BTN_HEIGHT, BTN_WIDTH_PCT,
+    SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD,
+    delete_all_children_of, style_as_flex_container,
+    set_size, set_pos, set_scroll, set_align
+)
 from ..symbol_lib import Icon, BTC_ICONS
-from ..widgets.modal_overlay import ModalOverlay
-from ..widgets.action_modal import ButtonModal
-from ..widgets.btn import Btn
-from ..widgets.containers import flex_col, dialog_card, flex_row
-from ..widgets.labels import body_label, section_header, form_label
-from ..widgets.icon_widgets import make_icon
-from ..utils.ui_utils import configure_flex, delete_all_children_of
+from ..theming import apply_style
+from ..widgets import (
+    button_modal, 
+    Btn, 
+    body_label, menu_label, section_header, 
+    flex_row,
+    make_icon
+)
 
 
 class GenericMenu(TitledScreen):
@@ -29,8 +35,7 @@ class GenericMenu(TitledScreen):
             title = self.get_title(self.t, self.device_state)
             self.title.set_text(title)
 
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        configure_flex(self.body)
+        style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100))
         self.fill_body()
 
     def refresh(self):
@@ -49,43 +54,62 @@ class GenericMenu(TitledScreen):
         self.fill_body()
 
     def _build_menu_items(self, menu_items):
+        self.body.rows=[];
         """Dispatch each MenuItem to the appropriate row builder."""
         for item in menu_items:
             if item.target is None and (item.get_value is None or item.set_value is None):
-                self._build_section_row(item)
+                row = self._build_section_row(item)
             elif item.get_value is not None and item.set_value is not None:
-                self._build_toggle_row(item)
+                row = self._build_toggle_row(item)
             else:
-                self._build_button_row(item)
+                row = self._build_button_row(item)
+            self.body.rows.append(row)
 
     def _build_section_row(self, item):
         """Section header row: optional icon + bold/coloured heading label."""
         row = flex_row(self.body, width=lv.pct(100), main_align=lv.FLEX_ALIGN.START)
         if item.icon and isinstance(item.icon, Icon):
-            make_icon(row, item.icon, color=item.font_color if item.font_color else None)
-        section_header(row, item.text, color=item.font_color).set_flex_grow(1)
+            row.ico = make_icon(row, item.icon)
+            apply_style(row.ico, "WIDGET.MENU_ICON")
+            if item.modifier == "Danger":
+                apply_style(row.ico, "FG.DANGER")
+            elif item.modifier == "Warning":
+                apply_style(row.ico, "FG.WARNING")
+            elif item.modifier == "Highlight":
+                apply_style(row.ico, "FG.HIGHLIGHT")
+
+        row.lbl = section_header(row, item.text)
+        row.lbl.set_flex_grow(1)
+        if item.modifier == "Danger":
+            apply_style(row.lbl, "FG.DANGER")
+        elif item.modifier == "Warning":
+            apply_style(row.lbl, "FG.WARNING")
+        elif item.modifier == "Highlight":
+            apply_style(row.lbl, "FG.HIGHLIGHT")
+
+        return row
 
     def _build_toggle_row(self, item):
         """Switch row: icon + label + optional help + lv.switch wired to get/set_value."""
         row = flex_row(self.body, height=SWITCH_HEIGHT, main_align=lv.FLEX_ALIGN.START)
-        row.set_style_pad_column(PAD, 0)
+        apply_style(row, "WIDGET.MENU_SWITCH")
         if item.icon and isinstance(item.icon, Icon):
-            make_icon(row, item.icon)
-        elif item.icon:
-            body_label(row, item.icon, recolor=True, width=lv.SIZE_CONTENT)
-        lbl = form_label(row, item.text, width=None)
-        lbl.set_flex_grow(1)
+            row.ico = make_icon(row, item.icon)
+            apply_style(row.ico, "WIDGET.MENU_ICON")
+        row.lbl = menu_label(row, item.text, width=None)
+        row.lbl.set_flex_grow(1)
         if item.help_key:
-            self._add_help_btn(row, (SWITCH_HEIGHT, SWITCH_HEIGHT), item.text, item.help_key, item.font_color)
-        sw = lv.switch(row)
-        sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
+            self._add_help_btn(row, (SWITCH_HEIGHT, SWITCH_HEIGHT), item.text, item.help_key)
+        row.switch = lv.switch(row)
+        set_size(row.switch, SWITCH_HEIGHT, SWITCH_WIDTH)
+        apply_style(row.switch, "WIDGET.MENU_SWITCH")
 
         # Set initial state
         current = item.get_value() if callable(item.get_value) else item.get_value
         if current:
-            sw.add_state(lv.STATE.CHECKED)
+            row.switch.add_state(lv.STATE.CHECKED)
         else:
-            sw.remove_state(lv.STATE.CHECKED)
+            row.switch.remove_state(lv.STATE.CHECKED)
 
         def _make_toggle_cb(setter):
             def _cb(e):
@@ -93,7 +117,8 @@ class GenericMenu(TitledScreen):
                 setter(is_on)
                 self.gui.refresh_ui()
             return _cb
-        sw.add_event_cb(_make_toggle_cb(item.set_value), lv.EVENT.VALUE_CHANGED, None)
+        row.switch.add_event_cb(_make_toggle_cb(item.set_value), lv.EVENT.VALUE_CHANGED, None)
+        return row
 
     def _build_button_row(self, item):
         """Full menu button: icon + text + right-side suffixes/help/caret."""
@@ -105,47 +130,73 @@ class GenericMenu(TitledScreen):
         btn = Btn(
             self.body,
             text=item.text,
-            color=item.color if item.color else None,
-            fontcolor=item.font_color,
-            size=(lv.pct(BTN_WIDTH), int(BTN_HEIGHT * size)),
+            size=(lv.pct(BTN_WIDTH_PCT), int(BTN_HEIGHT * size)),
         )
-        # Icon instance (BTC_ICONS.*) — add as image at left edge
+        apply_style(btn._btn, "WIDGET.MENU_BUTTON")
+        apply_style(btn._lbl, "WIDGET.MENU_LABEL")
+        if item.modifier == "Danger":
+            apply_style(btn._btn, "BG.DANGER")
+        elif item.modifier == "Warning":
+            apply_style(btn._btn, "BG.WARNING")
+        elif item.modifier == "Highlight":
+            apply_style(btn._btn, "BG.HIGHLIGHT")
+
         if item.icon and isinstance(item.icon, Icon):
-            make_icon(btn._btn, item.icon, color=item.font_color).align(lv.ALIGN.LEFT_MID, PAD, 0)
-        # String symbols (lv.SYMBOL.*) — add as recolor label at left edge
-        elif item.icon:
-            body_label(btn._btn, item.icon, width=lv.SIZE_CONTENT, color=item.font_color, recolor=True).align(lv.ALIGN.LEFT_MID, PAD, 0)
+            btn.ico = make_icon(btn, item.icon)
+            set_align(btn.ico, lv.ALIGN.LEFT_MID)
+            set_pos(btn.ico, PAD, 0)
+            apply_style(btn.ico, "WIDGET.MENU_ICON")
 
         # Right-side container: [suffixes...] [help?] [caret — always reserved]
-        right_cont = flex_row(
+        btn.right_cont = flex_row(
             btn._btn,
             width=lv.SIZE_CONTENT,
             height=lv.pct(100),
             main_align=lv.FLEX_ALIGN.START,
-            transparent_bg=True,
         )
-        right_cont.set_style_pad_column(SMALL_PAD, 0)
-        right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
-        right_cont.set_scroll_dir(lv.DIR.NONE)
-        right_cont.add_flag(lv.obj.FLAG.FLOATING)
-
+        btn.right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
+        set_scroll(btn.right_cont, horizontal=False, vertical=False)
+        btn.right_cont.add_flag(lv.obj.FLAG.FLOATING)
+        btn.right_cont.suf = []
         for suf in (item.suffix or []):
             if suf.icon is not None:
-                make_icon(right_cont, suf.icon, suf.color)
+                ico = make_icon(btn.right_cont, suf.icon)
+                apply_style(ico, "WIDGET.INFO_ITEM")
+                btn.right_cont.suf.append(ico)
             if suf.text is not None:
-                body_label(right_cont, suf.text, width=lv.SIZE_CONTENT, font=SMALL_TEXT_FONT, color=suf.color)
+                lbl = body_label(btn.right_cont, suf.text, width=lv.SIZE_CONTENT)
+                apply_style(lbl, ["WIDGET.INFO_ITEM", "TEXT.SMALL"])
+                btn.right_cont.suf.append(lbl)
 
         if item.help_key:
-            self._add_help_btn(right_cont, (BTC_ICON_WIDTH, BTC_ICON_WIDTH), item.text, item.help_key, item.font_color)
+            h_btn = Btn(btn.right_cont, icon=BTC_ICONS.QUESTION_CIRCLE)
+            apply_style(h_btn, "WIDGET.HELP_ICON")
+            help_text = item.text + "\n" + self.t(item.help_key)
+            def _on_help_click(e):
+                e.stop_bubbling = 1
+                button_modal(text=help_text)
+            h_btn.add_event_cb(_on_help_click, lv.EVENT.CLICKED, None)
+            btn.right_cont.suf.append(h_btn)
 
         if item.is_submenu:
-            make_icon(right_cont, BTC_ICONS.CARET_RIGHT, item.font_color)
+            sub_men_ind = make_icon(btn.right_cont, BTC_ICONS.CARET_RIGHT)
+            apply_style(sub_men_ind, "WIDGET.SUBMENU_INDICATOR")
+            btn.right_cont.suf.append(sub_men_ind)
 
-        right_cont.update_layout()
-        right_cont.align(lv.ALIGN.RIGHT_MID, -SMALL_PAD, 0)
+        btn.right_cont.update_layout()
+        set_align(btn.right_cont, lv.ALIGN.RIGHT_MID)
+        set_pos(btn.right_cont, x=-SMALL_PAD, y=0)
 
-        btn.add_event_cb(self.make_menu_button_callback(item.target), lv.EVENT.CLICKED, None)
+        btn_click_cb = None
+        if callable(item.target):
+            # If it's already a callable, use it directly
+            btn_click_cb = item.target
+        else:
+            # Otherwise, it's a string menu_id - create navigation callback
+            btn_click_cb = lambda e, target=item.target: self.on_navigate(target)
 
+        btn.add_event_cb(btn_click_cb, lv.EVENT.CLICKED, None)
+        return btn
     # --- template-method hooks -------------------------------------------
 
     TITLE_KEY = None  # set in subclass to avoid overriding get_title
@@ -165,33 +216,3 @@ class GenericMenu(TitledScreen):
     def post_init(self, t, state):
         """Called after all LVGL widgets are built. Override for post-construction work."""
         pass
-
-    # --- internal helpers -------------------------------------------------
-
-    def make_menu_button_callback(self, target_behavior):
-        """Create callback for button - handles both string menu_ids and custom callables."""
-        # If it's already a callable, return it directly
-        if callable(target_behavior):
-            return target_behavior
-        
-        # Otherwise, it's a string menu_id - create navigation callback
-        def callback(e):
-            if e.get_code() == lv.EVENT.CLICKED:
-                if not self.on_navigate:
-                    return
-                self.on_navigate(target_behavior)
-        return callback
-
-    def _add_help_btn(self, parent, size, text, help_key, fontcolor):
-        """Add a transparent help icon button to *parent*."""
-        btn = Btn(parent, icon=BTC_ICONS.QUESTION_CIRCLE, fontcolor=fontcolor, size=size, transparent=True,)
-        btn.add_event_cb(self.make_help_callback(text, help_key), lv.EVENT.CLICKED, None)
-
-    def make_help_callback(self, title_text, help_key):
-        """Create callback for help button - shows a modal overlay with help text."""
-        def callback(e):
-            if e.get_code() == lv.EVENT.CLICKED:
-                ButtonModal(text=title_text + "\n" + self.t(help_key))
-                # stop the underlying button from firing too
-                e.stop_bubbling = 1
-        return callback

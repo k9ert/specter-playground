@@ -1,7 +1,7 @@
-from ..basic import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.components.confirm_modals import confirm_delete_wallet, make_delete_active_handler
-from ..basic.widgets import MenuItem
+from ..basic import (
+    GenericMenu, BTC_ICONS, MenuItem,
+    confirm_delete_wallet, make_delete_active_handler
+)
 
 
 class WalletMenu(GenericMenu):

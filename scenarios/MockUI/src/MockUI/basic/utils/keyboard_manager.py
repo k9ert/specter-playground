@@ -1,7 +1,6 @@
 import lvgl as lv
-from .ui_consts import TEXT_FONT
 from .keyboard_layouts import _full_layout, _alnum_layout
-
+from ..theming import apply_style
 class Layout:
     ALNUM = 0
     FULL = 1
@@ -113,7 +112,8 @@ class KeyboardManager:
 
         self.keyboard = lv.keyboard(self.gui)
         self.keyboard.add_flag(lv.obj.FLAG.HIDDEN)
-        self.keyboard.set_style_text_font(TEXT_FONT, lv.PART.ITEMS)
+        apply_style(self.keyboard, "WIDGET.KEYBOARD", lv.PART.ITEMS)
+        apply_style(self.keyboard, "WIDGET.KEYBOARD", lv.PART.MAIN)
         self.keyboard.add_event_cb(self._commit, lv.EVENT.READY, None)
         self.keyboard.add_event_cb(self._cancel, lv.EVENT.CANCEL, None)
 
