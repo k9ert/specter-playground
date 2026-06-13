@@ -12,6 +12,7 @@ from .theming import ThemeManager
 from .tour import GuidedTour, INTRO_TOUR_STEPS
 from .components import NavigationBar, AppScreen
 from .templates.action_screen import ActionScreen
+from .templates.specter_gui_base import bind_gui
 
 from ..main_screens import (
     MainMenu,
@@ -77,22 +78,13 @@ _VIEW_MAP = {
 }
 
 
-
-# Global instance (will be initialized by SpecterGui or main app)
-_global_gui = None
-
-def get_gui():
-    """Get the global GUI instance."""
-    global _global_gui
-    if _global_gui is None:
-        _global_gui = SpecterGui()
-    return _global_gui
-
 class SpecterGui(lv.obj):
 
     def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
-        global _global_gui
-        _global_gui = self
+        lv.display_get_default().set_theme(None)
+        #register the global GUI instance before calling super().__init__ 
+        # so that any early calls to get_gui() (e.g. from widget constructors) succeed
+        bind_gui(self)
         super().__init__(*args, **kwargs)
         set_scroll(self, horizontal=False, vertical=False)
 
@@ -118,7 +110,7 @@ class SpecterGui(lv.obj):
         self._animating = False   # True while a slide animation is running
         self._anim_refs = None    # holds Python callbacks + anim objects alive
 
-        # Active screen (screen.view holds the active TitledScreen widget)
+        # Active AppScreen (screen.view holds the active TitledScreen widget)
         self.screen = None
 
         # Navigation bar at bottom — always present, owned by SpecterGui

@@ -16,11 +16,20 @@ than being declared twice.
 import lvgl as lv
 #provide direct imports for convenience of consumer modules
 
+_gui_instance = None
 
-def _resolve_gui():
-    """Resolve the global GUI lazily to avoid import cycles during startup."""
-    from ..specter_gui import get_gui
-    return get_gui()
+def get_gui():
+    """Return the bound SpecterGui instance, or raise if not yet bound."""
+    if _gui_instance is None:
+        raise RuntimeError("specter_gui_base.get_gui() called before SpecterGui was bound")
+    return _gui_instance
+
+def bind_gui(gui):
+    """Bind the global GUI instance.  Called by SpecterGui on initialization."""
+    global _gui_instance
+    if _gui_instance is not None:
+        raise RuntimeError("specter_gui_base.set_gui() called more than once")
+    _gui_instance = gui
 
 def _install_gui_properties(cls):
     """Install the shared ``self.gui``-derived properties on *cls*.
@@ -31,7 +40,7 @@ def _install_gui_properties(cls):
     ``self.gui`` / ``self.gui.ui_state`` objects directly.
     """
     accessors = {
-        "gui":              lambda self: _resolve_gui(),
+        "gui":              lambda self: get_gui(),
         "device_state":     lambda self: self.gui.device_state,
         "ui_state":         lambda self: self.gui.ui_state,
         "current_menu":     lambda self: self.gui.ui_state.current_menu_id,
