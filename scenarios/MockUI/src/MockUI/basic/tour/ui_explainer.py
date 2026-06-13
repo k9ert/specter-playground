@@ -38,25 +38,22 @@ class UIExplainer:
         self.text_position = text_position
         
         # LVGL objects (created on show())
-        self._modal = None
-        self._overlay = None  # alias for self._modal.overlay, used internally
+        self._overlay = None
         self._dim_strips = []
         self._text_box = None
     
     def show(self):
         """Create and display the explainer overlay."""
         cutout = self._get_cutout_area()
-        self._modal = modal_overlay()
-        apply_style(self._modal.overlay, ["APPEARANCE.INVISIBLE"])  # we'll create our own dim strips to allow the cutout
-        self._overlay = self._modal.overlay
+        self._overlay = modal_overlay()
+        apply_style(self._overlay, ["APPEARANCE.INVISIBLE"])  # we'll create our own dim strips to allow the cutout
         self._create_dim_strips(cutout)
         self._create_text_box(*self._calculate_text_box_position(cutout))
     
     def hide(self):
         """Remove and destroy all LVGL objects."""
-        if self._modal is not None:
-            self._modal.close()
-            self._modal = None
+        if self._overlay is not None:
+            self._overlay.close()
             self._overlay = None
         self._dim_strips = []
         self._text_box = None
