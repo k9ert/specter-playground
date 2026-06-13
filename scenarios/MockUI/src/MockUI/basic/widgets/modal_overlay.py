@@ -25,5 +25,5 @@ def modal_overlay(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, x=0, y=0):
     set_size(overlay, width, height)
     set_pos(overlay, x, y)
     set_scroll(overlay, horizontal=False, vertical=False)
-    apply_style(overlay, "WIDGETS.OVERLAY")
+    apply_style(overlay, "WIDGET.OVERLAY")
     return overlay
