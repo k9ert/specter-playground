@@ -133,7 +133,7 @@ class GenericMenu(TitledScreen):
             size=(BTN_WIDTH, int(BTN_HEIGHT * size)),
         )
         apply_style(btn._btn, "WIDGET.MENU_BUTTON")
-        apply_style(btn._lbl, "WIDGET.MENU_LABEL")
+        apply_style(btn._lbl, "WIDGET.MENU_BUTTON_LABEL")
         if item.modifier == "Danger":
             apply_style(btn._btn, "BG.DANGER")
         elif item.modifier == "Warning":

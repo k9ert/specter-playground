@@ -35,6 +35,7 @@ class Btn(SpecterGuiElement):
     def __init__(self, parent, icon=None, text=None, size=None,
                  callback=None):
         super().__init__(parent)
+        set_size(self, lv.SIZE_CONTENT, lv.SIZE_CONTENT)  # container auto-sizes to content by default
         self._btn = lv.button(self)
 
         if size is not None:
