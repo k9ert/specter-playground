@@ -4,7 +4,7 @@ from .utils import (
     SCREEN_WIDTH, CONTENT_H, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS,
     KeyboardManager,
     slide_x, slide_y, GUIAnimations,
-    set_scroll, get_size, set_size, set_pos
+    set_scroll, get_size, set_size, set_pos, set_align
 )
 from .ui_state import UIState, Context
 from .i18n import I18nManager
@@ -115,7 +115,7 @@ class SpecterGui(lv.obj):
 
         # Navigation bar at bottom — always present, owned by SpecterGui
         self.navigation_bar = NavigationBar(self)
-        self.navigation_bar.align(lv.ALIGN.BOTTOM_MID, 0, 0)
+        set_align(self.navigation_bar, lv.ALIGN.BOTTOM_MID)
 
         self.navigate_to(self.ui_state.current_menu_id)
 
