@@ -33,13 +33,13 @@ class AppScreen(SpecterGuiElement):
             or (ctx == Context.WALLET and gui.ui_state.active_wallet is not None)
         )
 
-        content_y = TITLE_HEIGHT if needs_bar else 0
-        content_h = CONTENT_H - content_y
+        context_bar_h = TITLE_HEIGHT if needs_bar else 0
+        content_h = CONTENT_H - context_bar_h
         context_bar_width = SCREEN_WIDTH - BATTERY_WIDTH
 
         # ── 1. Content (painted first = behind everything) ────────────────────
         self.content = flex_col(self, width=lv.pct(100), height=content_h)
-        set_pos(self.content, x=0, y=content_y)
+        set_pos(self.content, x=0, y=context_bar_h)
         set_scroll(self.content, horizontal=False, vertical=False)
 
         # ── 2. Context bar (painted over content top area) ────────────────────
