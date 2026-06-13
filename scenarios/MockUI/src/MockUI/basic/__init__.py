@@ -23,7 +23,7 @@ from .widgets import (
     make_icon, 
     MenuItem, 
     Btn, 
-    body_label, menu_label, form_label, title_label, section_header, 
+    body_label, menu_label, form_label, title_label, info_label, section_header, 
     flex_row, flex_col, 
     form_textarea,
     ACCEPTED_CHARS,

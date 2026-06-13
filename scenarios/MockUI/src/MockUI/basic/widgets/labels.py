@@ -16,16 +16,19 @@ def make_label(parent, text, width=lv.pct(100), styles = None):
     return lbl
 
 def body_label(parent, text, width=lv.pct(100)):
-    return make_label(parent, text, width, ["TEXT.DEFAULT", "TEXT.BODY"])
+    return make_label(parent, text, width, ["TEXT.DEFAULT", "TEXT.BODY", "FG.DEFAULT"])
+
+def info_label(parent, text, width=lv.pct(100)):
+    return make_label(parent, text, width, ["TEXT.SMALL", "FG.DEFAULT"])
 
 def form_label(parent, text, width=lv.pct(30)):
-    return make_label(parent, text, width, ["TEXT.DEFAULT"])
+    return make_label(parent, text, width, ["TEXT.DEFAULT", "FG.DEFAULT"])
 
 def section_header(parent, text):
     return make_label(parent, text, lv.pct(100), ["WIDGET.MENU_SECTION_HEADER"]) 
 
 def menu_label(parent, text, width=lv.pct(100)):
-    return make_label(parent, text, width, ["WIDGET.MENU_LABEL"])
+    return make_label(parent, text, width, ["WIDGET.MENU_LABEL", "FG.DEFAULT"])
 
 def title_label(parent, text, width=lv.pct(100)):
     lbl = make_label(parent, text, width, ["WIDGET.SCREEN_TITLE"])
