@@ -11,7 +11,7 @@ import lvgl as lv
 
 from .context_bar import ContextBar
 from ..utils import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, CONTENT_PCT, TITLE_ROW_HEIGHT_PCT, BATTERY_WIDTH,
+    SCREEN_WIDTH, CONTENT_H, TITLE_HEIGHT, BATTERY_WIDTH,
     set_pos, set_scroll, set_align,
     style_as_screen_backdrop,
 )
@@ -19,15 +19,13 @@ from ..templates.specter_gui_base import SpecterGuiElement
 from ..widgets import flex_col, Battery
 from ..ui_state import Context
 
-_CONTENT_H = SCREEN_HEIGHT * CONTENT_PCT // 100
-_TITLE_ROW_H = SCREEN_HEIGHT * TITLE_ROW_HEIGHT_PCT // 100
 
 class AppScreen(SpecterGuiElement):
     """Self-contained screen unit: content + optional context_bar + battery."""
 
     def __init__(self, gui):
         super().__init__(gui)
-        style_as_screen_backdrop(self, width=SCREEN_WIDTH, height=_CONTENT_H, x=0, y=0)
+        style_as_screen_backdrop(self, width=SCREEN_WIDTH, height=CONTENT_H, x=0, y=0)
 
         ctx = gui.ui_state.active_context
         needs_bar = (
@@ -35,8 +33,8 @@ class AppScreen(SpecterGuiElement):
             or (ctx == Context.WALLET and gui.ui_state.active_wallet is not None)
         )
 
-        content_y = _TITLE_ROW_H if needs_bar else 0
-        content_h = _CONTENT_H - content_y
+        content_y = TITLE_HEIGHT if needs_bar else 0
+        content_h = CONTENT_H - content_y
         context_bar_width = SCREEN_WIDTH - BATTERY_WIDTH
 
         # ── 1. Content (painted first = behind everything) ────────────────────
@@ -46,13 +44,13 @@ class AppScreen(SpecterGuiElement):
 
         # ── 2. Context bar (painted over content top area) ────────────────────
         if needs_bar:
-            self.context_bar = ContextBar(self, width=context_bar_width, height=_TITLE_ROW_H)
+            self.context_bar = ContextBar(self, width=context_bar_width, height=TITLE_HEIGHT)
         else:
             self.context_bar = None
 
         # ── 3. Battery (painted last = always on top) ─────────────────────────
         if gui.device_state.has_battery:
-            self.battery = Battery(self, width=BATTERY_WIDTH, height=_TITLE_ROW_H)
+            self.battery = Battery(self, width=BATTERY_WIDTH, height=TITLE_HEIGHT)
             set_align(self.battery, lv.ALIGN.TOP_RIGHT)
             set_pos(self.battery, x=0, y=0)
             self.battery.update(gui.device_state.battery_pct, gui.device_state.is_charging)

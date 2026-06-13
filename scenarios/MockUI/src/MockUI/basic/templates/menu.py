@@ -1,7 +1,7 @@
 import lvgl as lv
 from .titled_screen import TitledScreen
 from ..utils import (
-    BTN_HEIGHT, BTN_WIDTH_PCT,
+    BTN_HEIGHT, BTN_WIDTH,
     SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD,
     delete_all_children_of, style_as_flex_container,
     set_size, set_pos, set_scroll, set_align
@@ -130,7 +130,7 @@ class GenericMenu(TitledScreen):
         btn = Btn(
             self.body,
             text=item.text,
-            size=(lv.pct(BTN_WIDTH_PCT), int(BTN_HEIGHT * size)),
+            size=(BTN_WIDTH, int(BTN_HEIGHT * size)),
         )
         apply_style(btn._btn, "WIDGET.MENU_BUTTON")
         apply_style(btn._lbl, "WIDGET.MENU_LABEL")

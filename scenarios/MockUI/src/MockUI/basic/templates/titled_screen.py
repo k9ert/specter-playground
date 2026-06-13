@@ -27,8 +27,8 @@ import lvgl as lv
 from .specter_gui_base import SpecterGuiElement
 from ..theming import apply_style
 from ..utils import (
-    TITLE_HEIGHT, TITLE_PADDING, SCREEN_HEIGHT, CONTENT_H,
-    SMALL_PAD, TITLE_ROW_HEIGHT_PCT,
+    TITLE_HEIGHT, TITLE_PADDING, CONTENT_H,
+    SMALL_PAD,
     style_as_screen_backdrop, set_pos, set_scroll, set_align
 )
 from ..widgets import title_label, Btn, flex_row, screen_backdrop

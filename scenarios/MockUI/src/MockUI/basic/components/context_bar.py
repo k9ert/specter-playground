@@ -4,7 +4,7 @@
 import lvgl as lv
 
 from ..utils import (
-    TITLE_ROW_HEIGHT_PCT,
+    TITLE_HEIGHT,
     SCREEN_WIDTH,
     delete_all_children_of, set_size, set_scroll, set_align, get_size,
     Layout
@@ -32,7 +32,7 @@ class ContextBar(SpecterGuiElement):
         grey = inactive; tap to toggle ``passphrase_active``.
     """
 
-    def __init__(self, parent, width=SCREEN_WIDTH, height=TITLE_ROW_HEIGHT_PCT, context=None):
+    def __init__(self, parent, width=SCREEN_WIDTH, height=TITLE_HEIGHT, context=None):
         super().__init__(parent)
 
         set_size(self, width, height)
