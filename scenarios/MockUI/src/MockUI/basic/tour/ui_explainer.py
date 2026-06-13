@@ -158,7 +158,7 @@ class UIExplainer:
         self.text_label.center()
         
         # Create navigation button container
-        self.nav_container = flex_row(self._text_box, height=60, pad=0)
+        self.nav_container = flex_row(self._text_box, height=60)
         set_scroll(self.nav_container, horizontal=False, vertical=False)
         
         # Get position info from tour

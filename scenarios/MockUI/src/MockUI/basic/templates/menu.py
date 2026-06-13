@@ -123,7 +123,7 @@ class GenericMenu(TitledScreen):
     def _build_button_row(self, item):
         """Full menu button: icon + text + right-side suffixes/help/caret."""
         # Normalize size: default to 1, ensure minimum of 1
-        size = item.size if item.size and item.size >= 1 else 1
+        size = item.height_scaling if item.height_scaling and item.height_scaling >= 1 else 1
 
         # Btn: icon is positioned manually at LEFT_MID so it stays left-aligned
         # regardless of text length (not using flex).
