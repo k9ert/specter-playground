@@ -35,7 +35,7 @@ class Btn(SpecterGuiElement):
     def __init__(self, parent, icon=None, text=None, size=None,
                  callback=None):
         super().__init__(parent)
-        self._btn = lv.button(parent)
+        self._btn = lv.button(self)
 
         if size is not None:
             w, h = size
