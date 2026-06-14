@@ -52,7 +52,7 @@ def build_name_slot(row, text, name_w, height, on_name_click, editable=True):
         The ``lv.textarea`` widget, or None when rendered as a static label.
     """
     font_key, display_text = best_fonttype_for_size(text, name_w, height)
-    font = get_font(font_key)
+    font, err = get_font(font_key)
     if editable and on_name_click is not None:
         text_edit = title_textarea(row)
         text_edit.set_width(name_w)

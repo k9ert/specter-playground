@@ -75,28 +75,30 @@ def best_fonttype_for_size(text, max_w, max_h):
     the available height allows two lines.  Always returns a valid pair.
     """
     for font_key in get_palette_entries(SpecterFontPalette):
-        font = get_font(font_key)
-        if font.get_line_height() <= max_h and text_width(text, font) <= max_w:
-            return font_key, text
+        font, err = get_font(font_key)
+        if font is not None:
+            if font.get_line_height() <= max_h and text_width(text, font) <= max_w:
+                return font_key, text
 
     font_key = SpecterFontPalette.SMALL
-    f_small = get_font(font_key)
-    if f_small.get_line_height() * 2 <= max_h:
-        words = text.split()
-        best_split = None
-        best_balance = None
-        for i in range(1, len(words)):
-            left = " ".join(words[:i])
-            right = " ".join(words[i:])
-            lw = text_width(left, f_small)
-            rw = text_width(right, f_small)
-            if lw <= max_w and rw <= max_w:
-                balance = max(lw, rw)
-                if best_balance is None or balance < best_balance:
-                    best_split = left + "\n" + right
-                    best_balance = balance
-        if best_split is not None:
-            return font_key, best_split
+    f_small, err = get_font(font_key)
+    if f_small is not None:
+        if f_small.get_line_height() * 2 <= max_h:
+            words = text.split()
+            best_split = None
+            best_balance = None
+            for i in range(1, len(words)):
+                left = " ".join(words[:i])
+                right = " ".join(words[i:])
+                lw = text_width(left, f_small)
+                rw = text_width(right, f_small)
+                if lw <= max_w and rw <= max_w:
+                    balance = max(lw, rw)
+                    if best_balance is None or balance < best_balance:
+                        best_split = left + "\n" + right
+                        best_balance = balance
+            if best_split is not None:
+                return font_key, best_split
 
     return font_key, text
 
