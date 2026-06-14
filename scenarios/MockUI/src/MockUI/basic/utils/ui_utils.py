@@ -6,7 +6,7 @@ without risk of circular imports.
 import lvgl as lv
 import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
 
-from .ui_consts import SCREEN_WIDTH, SCREEN_HEIGHT
+from .ui_consts import SCREEN_WIDTH, CONTENT_H
 from ..theming import apply_style, get_font, get_palette_entries, SpecterFontPalette
 
 # ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ def best_fonttype_for_size(text, max_w, max_h):
 
     return font_key, text
 
-def style_as_screen_backdrop(obj, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, x=None, y=None):
+def style_as_screen_backdrop(obj, width=SCREEN_WIDTH, height=CONTENT_H, x=None, y=None):
     obj.set_layout(lv.LAYOUT.NONE)
     set_pos(obj, x=x, y=y)
     set_size(obj, width=width, height=height)
@@ -113,6 +113,7 @@ def style_as_flex_container(obj, flow=lv.FLEX_FLOW.COLUMN,
                    scrollable=True):
     set_size(obj, width, height)
     configure_flex(obj, flow=flow, main=main_align, cross=cross_align, track=track_align)
+    apply_style(obj, "LAYOUT.BARE")
     if not scrollable:
         set_scroll(obj, horizontal=False, vertical=False)
 
