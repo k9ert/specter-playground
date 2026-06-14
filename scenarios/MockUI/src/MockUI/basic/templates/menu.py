@@ -35,7 +35,7 @@ class GenericMenu(TitledScreen):
             title = self.get_title(self.t, self.device_state)
             self.title.set_text(title)
 
-        style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100))
+        style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100), scrollable=True)
         self.fill_body()
 
     def refresh(self):
@@ -58,16 +58,17 @@ class GenericMenu(TitledScreen):
         """Dispatch each MenuItem to the appropriate row builder."""
         for item in menu_items:
             if item.target is None and (item.get_value is None or item.set_value is None):
-                row = self._build_section_row(item)
+                row = self._build_section_title_row(item)
             elif item.get_value is not None and item.set_value is not None:
-                row = self._build_toggle_row(item)
+                row = self._build_toggle_select_row(item)
             else:
                 row = self._build_button_row(item)
             self.body.rows.append(row)
 
-    def _build_section_row(self, item):
+    def _build_section_title_row(self, item):
         """Section header row: optional icon + bold/coloured heading label."""
         row = flex_row(self.body, width=lv.pct(100), main_align=lv.FLEX_ALIGN.START)
+
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
             apply_style(row.ico, "WIDGET.MENU_ICON")
@@ -89,7 +90,7 @@ class GenericMenu(TitledScreen):
 
         return row
 
-    def _build_toggle_row(self, item):
+    def _build_toggle_select_row(self, item):
         """Switch row: icon + label + optional help + lv.switch wired to get/set_value."""
         row = flex_row(self.body, height=SWITCH_HEIGHT, main_align=lv.FLEX_ALIGN.START)
         apply_style(row, "WIDGET.MENU_SWITCH")
