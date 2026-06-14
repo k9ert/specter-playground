@@ -1,34 +1,42 @@
 import lvgl as lv
 from ..basic import (
     TitledScreen, BTC_ICONS,
-    PIN_BTN_WIDTH, PIN_BTN_HEIGHT, SCREEN_WIDTH,
+    PIN_BTN_WIDTH, PIN_BTN_HEIGHT,
+    SCREEN_WIDTH, CONTENT_H, TITLE_HEIGHT,
     shuffle,
-    Btn,  flex_row, body_label, title_label, style_as_flex_container,
-    apply_style
+    Btn,  flex_container, style_as_flex_container,
+    body_label, info_label, title_label,
+    apply_style,
+    set_align
 )
 
 class LockedMenu(TitledScreen):
     """Simple lock screen that accepts a numeric PIN to unlock the device."""
 
     def __init__(self, parent):
-        super().__init__(parent.i18n.t("LOCKED_MENU_TITLE"), parent)
+        super().__init__(parent.t("LOCKED_MENU_TITLE"), parent)
 
         self.pin_buf = ""
+        h = CONTENT_H - TITLE_HEIGHT
         style_as_flex_container(self.body, flow=lv.FLEX_FLOW.COLUMN,
+                                height=h,  width=lv.pct(100),
                                 main_align = lv.FLEX_ALIGN.CENTER,
+                                cross_align = lv.FLEX_ALIGN.CENTER,
                                 scrollable=False
                                 )
 
         # Firmware version – shown as a subtitle directly under the title bar,
         # inside the TITLE_PADDING gap so it doesn't push body content down.
-        self.fw_ver = body_label(self, self.t("LOCKED_MENU_FW_VERSION") + str(self.device_state.fw_version))
+        self.fw_ver = info_label(self, self.t("LOCKED_MENU_FW_VERSION") + str(self.device_state.fw_version))
         self.fw_ver.align_to(self.title_bar, lv.ALIGN.OUT_BOTTOM_MID, 0, 1)
 
         # Instruction label
         self.instr = title_label(self.body, self.t("LOCKED_MENU_ENTER_PIN"), width=int(4*SCREEN_WIDTH/5))
 
         # masked PIN display
-        self.mask_lbl = body_label(self.body, "", width=int(4*SCREEN_WIDTH/5))
+        self.mask_lbl = title_label(self.body, "", width=int(4*SCREEN_WIDTH/5))
+        apply_style(self.mask_lbl, "FG.DEFAULT")
+        apply_style(self.mask_lbl, "WIDGET.PIN_DISPLAY")
 
         # keypad layout (3x4): digits in randomised order, Del, and OK
         chars = list("0123456789")
@@ -42,11 +50,14 @@ class LockedMenu(TitledScreen):
         ]
 
         for row in keys:
-            row_cont = flex_row(
+            row_cont = flex_container(
                 self.body,
+                flow=lv.FLEX_FLOW.ROW,
                 width=lv.pct(100),
                 height=lv.SIZE_CONTENT,
                 main_align=lv.FLEX_ALIGN.CENTER,
+                cross_align=lv.FLEX_ALIGN.CENTER,
+                scrollable=False
             )
             for k in row:
                 if k == "Del":
