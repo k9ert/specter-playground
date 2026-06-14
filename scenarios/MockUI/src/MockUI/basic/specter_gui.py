@@ -335,11 +335,11 @@ class SpecterGui(lv.obj):
             anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.vertical_slide_in:
-            anims.append(slide_y(new_screen, _CONTENT_H, 0, ANIM_MS_VERTICAL,
+            anims.append(slide_y(new_screen, CONTENT_H, 0, ANIM_MS_VERTICAL,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.vertical_slide_out:
             old_screen.move_foreground()   # old on top within anim_clip
-            anims.append(slide_y(old_screen, 0, _CONTENT_H, ANIM_MS_VERTICAL,
+            anims.append(slide_y(old_screen, 0, CONTENT_H, ANIM_MS_VERTICAL,
                                 on_done_cb=lambda a: _cleanup_whole()))
 
         for a in anims:
