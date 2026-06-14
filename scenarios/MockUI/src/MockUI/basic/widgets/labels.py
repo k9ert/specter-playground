@@ -15,8 +15,10 @@ def make_label(parent, text, width=lv.SIZE_CONTENT, styles = None):
         apply_style(lbl, styles)
     return lbl
 
-def body_label(parent, text, width=None):
-    return make_label(parent, text, width, ["TEXT.DEFAULT", "TEXT.BODY", "FG.DEFAULT"])
+def body_label(parent, text, width=lv.pct(100)):
+    lbl = make_label(parent, text, width=width, styles=["TEXT.DEFAULT", "TEXT.BODY", "TEXT.CENTER", "FG.DEFAULT"])
+    lbl.set_long_mode(lv.label.LONG_MODE.WRAP)
+    return lbl
 
 def info_label(parent, text, width=None):
     return make_label(parent, text, width, ["TEXT.SMALL", "FG.DEFAULT"])
