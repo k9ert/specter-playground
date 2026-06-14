@@ -46,14 +46,16 @@ class UIExplainer:
         """Create and display the explainer overlay."""
         cutout = self._get_cutout_area()
         self._overlay = modal_overlay()
-        apply_style(self._overlay, ["APPEARANCE.INVISIBLE"])  # we'll create our own dim strips to allow the cutout
+        # don't use invisible as this will also make all content on top
+        # (cutouts, text box) invisible
+        apply_style(self._overlay, ["APPEARANCE.TRANSPARENT"])
         self._create_dim_strips(cutout)
         self._create_text_box(*self._calculate_text_box_position(cutout))
     
     def hide(self):
         """Remove and destroy all LVGL objects."""
         if self._overlay is not None:
-            self._overlay.close()
+            self._overlay.delete()
             self._overlay = None
         self._dim_strips = []
         self._text_box = None
