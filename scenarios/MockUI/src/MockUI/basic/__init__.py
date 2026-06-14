@@ -24,7 +24,7 @@ from .widgets import (
     MenuItem, 
     Btn, 
     body_label, menu_label, form_label, title_label, info_label, section_header, 
-    flex_row, flex_col, 
+    flex_row, flex_col, flex_container, screen_backdrop,
     form_textarea,
     ACCEPTED_CHARS,
     WalletCard,
@@ -35,7 +35,9 @@ from .specter_gui import SpecterGui
 __all__ = [
     "BTC_ICONS",
      # widgets
-    "Btn", "MenuItem", "make_icon", "body_label", "menu_label", "title_label", "section_header", "flex_row", "flex_col",
+    "Btn", "MenuItem", "make_icon", 
+    "body_label", "menu_label", "title_label", "section_header",
+    "flex_row", "flex_col", "flex_container", "screen_backdrop",
     "form_label", "form_textarea",
     "WalletCard",
     "confirm_delete_wallet", "make_delete_active_handler",
