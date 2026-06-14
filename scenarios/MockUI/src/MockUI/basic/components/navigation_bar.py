@@ -210,6 +210,8 @@ class NavigationBar(SpecterGuiElement):
     def _back_cb(self, event=None):
         if self._any_animation_ongoing():
             return
+        if (self.buttons["Back"].get_state() & lv.STATE.DISABLED) != 0:
+            return  # ignore clicks when Back button is disabled
         # If a drop-up is open, close it first, then navigate back
         self.close_dropups()
         self.on_navigate(None)
@@ -217,11 +219,15 @@ class NavigationBar(SpecterGuiElement):
     def _seed_cb(self, event=None):
         if self._any_animation_ongoing():
             return
+        if (self.buttons["Seed"].get_state() & lv.STATE.DISABLED) != 0:
+            return  # ignore clicks when Seed button is disabled
         self._dropup_button_cb(self._seed_dropup, self._wallet_dropup)
 
     def _home_cb(self, event=None):
         if self._any_animation_ongoing():
             return
+        if (self.buttons["Home"].get_state() & lv.STATE.DISABLED) != 0:
+            return  # ignore clicks when Home button is disabled
         # History clearing is handled inside on_navigate/show_menu for target="main"
         self.close_dropups()
         self.gui.on_navigate("main")
@@ -229,12 +235,17 @@ class NavigationBar(SpecterGuiElement):
     def _wallet_cb(self, event=None):
         if self._any_animation_ongoing():
             return
+        if (self.buttons["Wallet"].get_state() & lv.STATE.DISABLED) != 0:
+            return  # ignore clicks when Wallet button is disabled
         self._dropup_button_cb(self._wallet_dropup, self._seed_dropup)
 
     def _device_cb(self, event=None):
         if self._any_animation_ongoing():
             return
-
+        
+        if (self.buttons["Device"].get_state() & lv.STATE.DISABLED) != 0:
+            return  # ignore clicks when Device button is disabled
+        
         #always close drop ups if they are open
         self.close_dropups()
         
