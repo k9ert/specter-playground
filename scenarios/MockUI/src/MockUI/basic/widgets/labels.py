@@ -28,7 +28,7 @@ def section_header(parent, text):
     return make_label(parent, text, lv.pct(100), ["WIDGET.MENU_SECTION_HEADER"]) 
 
 def menu_label(parent, text, width=None):
-    return make_label(parent, text, width, ["WIDGET.MENU_LABEL", "FG.DEFAULT"])
+    return make_label(parent, text, width, ["WIDGET.MENU_BUTTON_LABEL", "FG.DEFAULT"])
 
 def title_label(parent, text, width=None):
     lbl = make_label(parent, text, width, ["WIDGET.SCREEN_TITLE"])

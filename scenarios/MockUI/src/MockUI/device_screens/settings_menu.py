@@ -13,7 +13,7 @@ class SettingsMenu(GenericMenu):
 
         def _add_ico(icon):
             img = make_icon(self.row, icon)
-            apply_style(img, "WIDGET.INFO_ICON")
+            apply_style(img, "WIDGET.INFO_ITEM")
             img.add_flag(lv.obj.FLAG.CLICKABLE)
             img.add_event_cb(self._iface_ico_cb, lv.EVENT.CLICKED, None)
             return img
