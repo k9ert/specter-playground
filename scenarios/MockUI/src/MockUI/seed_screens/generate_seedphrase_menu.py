@@ -28,12 +28,13 @@ class GenerateSeedMenu(TitledScreen):
         style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100))
     
         # Key name row
-        self.name_row = flex_row(self.body, height=70, main_align=lv.FLEX_ALIGN.START)
+        self.name_row = flex_row(self.body, width=lv.pct(100), height=70, main_align=lv.FLEX_ALIGN.START)
 
         form_label(self.name_row, t("COMMON_NAME"))
 
-        # editable text area
-        self.name_ta = form_textarea(self.name_row)
+        # editable text area — fills remaining width after the label
+        self.name_ta = form_textarea(self.name_row, width=lv.pct(100))
+        self.name_ta.set_flex_grow(1)
         self.name_ta.set_text("Key " + str(urandom.randint(1, 99)))
 
         keyboard_binder = lambda e: self.gui.keyboard_manager.bind(self.name_ta, Layout.FULL)

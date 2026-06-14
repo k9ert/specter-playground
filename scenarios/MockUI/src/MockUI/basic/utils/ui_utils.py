@@ -40,13 +40,13 @@ def set_align(obj, align):
 
 def set_scroll(obj, horizontal=True, vertical=True):
     if horizontal and vertical:
-        obj.set_scroll_dir(lv.DIR.BOTH)
+        obj.set_scroll_dir(lv.DIR.ALL)
         obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
     elif horizontal:
-        obj.set_scroll_dir(lv.DIR.HORIZONTAL)
+        obj.set_scroll_dir(lv.DIR.HOR)
         obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
     elif vertical:
-        obj.set_scroll_dir(lv.DIR.VERTICAL)
+        obj.set_scroll_dir(lv.DIR.VER)
         obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
     else:
         obj.set_scroll_dir(lv.DIR.NONE)
