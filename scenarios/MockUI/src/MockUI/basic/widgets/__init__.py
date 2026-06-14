@@ -18,7 +18,7 @@ __all__ = [
     "flex_container", "flex_col", "flex_row", "screen_backdrop",
     "make_icon",
     "title_textarea", "form_textarea", "confirmation_slider", "ACCEPTED_CHARS",
-    "make_label", "body_label", "form_label", "section_header", "menu_label", "title_label",
+    "make_label", "body_label", "form_label", "section_header", "menu_label", "title_label", "info_label",
     "MenuItem", "MenuItemSuffix",
     "modal_overlay",
     "fingerprint_badge", "passphrase_toggle", "SeedCard",

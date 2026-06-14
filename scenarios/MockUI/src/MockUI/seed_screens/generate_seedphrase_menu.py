@@ -3,11 +3,11 @@ import lvgl as lv
 import urandom
 from ..basic import (
     TitledScreen, 
-    Btn, BTN_HEIGHT, BTN_WIDTH_PCT, 
+    Btn, BTN_HEIGHT, BTN_WIDTH, 
     Layout, 
     flex_row, style_as_flex_container,
     form_label, form_textarea, 
-    body_label,
+    body_label, info_label,
 )
 from ..stubs import Seed
 
@@ -45,8 +45,9 @@ class GenerateSeedMenu(TitledScreen):
                    t("GENERATE_SEED_FINGERPRINT") + self.generated_fp)
 
         # Info text
-        body_label(self.body, t("GENERATE_SEED_INFO"),
+        self.info_label = info_label(self.body, t("GENERATE_SEED_INFO"),
                    width=lv.pct(90))
+        self.info_label.set_long_mode(lv.label.LONG_MODE.WRAP)
 
         # Create button row
         create_row = flex_row(self.body, height=80)
@@ -54,7 +55,7 @@ class GenerateSeedMenu(TitledScreen):
         self.create_btn = Btn(
             create_row,
             text=t("COMMON_CREATE"),
-            size=(lv.pct(BTN_WIDTH_PCT), BTN_HEIGHT),
+            size=(BTN_WIDTH, BTN_HEIGHT),
             callback=lambda e: self._on_create(e),
         )
 

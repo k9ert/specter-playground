@@ -36,7 +36,7 @@ __all__ = [
     "BTC_ICONS",
      # widgets
     "Btn", "MenuItem", "make_icon", 
-    "body_label", "menu_label", "title_label", "section_header",
+    "body_label", "menu_label", "title_label", "section_header", "form_label", "info_label",
     "flex_row", "flex_col", "flex_container", "screen_backdrop",
     "form_label", "form_textarea",
     "WalletCard",
