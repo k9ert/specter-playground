@@ -187,6 +187,8 @@ class SpecterGui(lv.obj):
 
         if self.ui_state.current_menu_id == "start_intro_tour":
             self.ui_state.current_menu_id = "main"
+            if self.navigation_bar:
+                self.navigation_bar.refresh()
             GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
 
     def _make_screen(self):
