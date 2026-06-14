@@ -69,7 +69,7 @@ def button_modal(text, buttons=None):
         modal.btn_row.buttons.append(btn)
 
         def _handler(ev, cb=callback):
-            modal.close()
+            modal.delete()
             if callable(cb):
                 cb()
 
