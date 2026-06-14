@@ -37,6 +37,7 @@ class Btn(SpecterGuiElement):
         super().__init__(parent)
         set_size(self, lv.SIZE_CONTENT, lv.SIZE_CONTENT)  # container auto-sizes to content by default
         self._btn = lv.button(self)
+        self._btn.add_flag(lv.obj.FLAG.EVENT_BUBBLE)  # bubble CLICKED up to Btn so external add_event_cb works
 
         if size is not None:
             w, h = size
