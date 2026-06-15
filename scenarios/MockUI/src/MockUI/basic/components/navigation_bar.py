@@ -28,11 +28,12 @@ import lvgl as lv
 from .seed_dropup import SeedDropUp
 from .wallet_dropup import WalletDropUp
 from ..utils import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BTN_HEIGHT, STATUS_BAR_PCT,
-    style_as_screen_backdrop
+    SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BTN_HEIGHT, STATUS_BAR_H,
+    BTC_ICON_WIDTH,
+    style_as_flex_container
 )
 from ..symbol_lib import BTC_ICONS
-from ..widgets import Btn, modal_overlay, make_icon
+from ..widgets import Btn, modal_overlay
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..templates.dropup import DropUpState
 from ..theming import apply_style
@@ -53,7 +54,11 @@ class NavigationBar(SpecterGuiElement):
         self._wallet_dropup._on_closed = self._on_any_panel_closed
 
         # ── Screen backdrop style ───────────────────────────────────────────────
-        style_as_screen_backdrop(self, height=SCREEN_HEIGHT * STATUS_BAR_PCT // 100)
+        style_as_flex_container(self, flow=lv.FLEX_FLOW.ROW, 
+                                width=SCREEN_WIDTH, height=STATUS_BAR_H,
+                                main_align=lv.FLEX_ALIGN.SPACE_AROUND,
+                                cross_align=lv.FLEX_ALIGN.CENTER,
+                                scrollable=False)
         apply_style(self, "WIDGET.NAVBAR")
         apply_style(self, "WIDGET.SCREEN", lv.STATE.DISABLED)
 
@@ -69,9 +74,12 @@ class NavigationBar(SpecterGuiElement):
         cbs = [self._back_cb, self._seed_cb, self._home_cb, self._wallet_cb, self._device_cb]
 
         self.buttons = {}
-        for i, (name, icon, cb) in enumerate(zip(names, icons, cbs)):
-            self.buttons[name] = Btn(self, icon=icon, size=(w, h), callback=cb)
-            self.buttons[name].align(lv.ALIGN.LEFT_MID, i * w, 0)
+        for (name, icon, cb) in zip(names, icons, cbs):
+            self.buttons[name] = Btn(self, 
+                                     icon=icon, 
+                                     size=(BTC_ICON_WIDTH, BTC_ICON_WIDTH), 
+                                     callback=cb,
+                                     foreground_style="WIDGET.NAVBAR_BUTTON_FG")
             apply_style(self.buttons[name], "WIDGET.NAVBAR_BUTTON")
             apply_style(self.buttons[name], "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
 
@@ -81,7 +89,7 @@ class NavigationBar(SpecterGuiElement):
         """Create shared backdrop if not already present; return its container."""
         if self._backdrop is not None:
             return self._backdrop
-        _panel_max_h = SCREEN_HEIGHT - SCREEN_HEIGHT * STATUS_BAR_PCT // 100
+        _panel_max_h = SCREEN_HEIGHT - STATUS_BAR_H
         self._backdrop = modal_overlay(width=SCREEN_WIDTH, height=_panel_max_h)
         self._backdrop.add_event_cb(self._backdrop_tap_cb, lv.EVENT.CLICKED, None)
         return self._backdrop
@@ -92,7 +100,7 @@ class NavigationBar(SpecterGuiElement):
             return
         if (self._seed_dropup.get_state() == DropUpState.CLOSED
                 and self._wallet_dropup.get_state() == DropUpState.CLOSED):
-            self._backdrop.close()
+            self._backdrop.delete()
             self._backdrop = None
 
     def _on_any_panel_closed(self):

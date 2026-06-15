@@ -33,7 +33,7 @@ class Btn(SpecterGuiElement):
     """
 
     def __init__(self, parent, icon=None, text=None, size=None,
-                 callback=None):
+                 callback=None, foreground_style=None):
         super().__init__(parent)
         set_size(self, lv.SIZE_CONTENT, lv.SIZE_CONTENT)  # container auto-sizes to content by default
         self._btn = lv.button(self)
@@ -43,8 +43,6 @@ class Btn(SpecterGuiElement):
             w, h = size
             set_size(self._btn, w, h)
 
-        apply_style(self._btn, ["WIDGET.BUTTON"])
-
         # If both icon and text: flex row so they sit side by side
         if icon is not None and text is not None:
             configure_flex(self._btn, flow=lv.FLEX_FLOW.ROW, main=lv.FLEX_ALIGN.CENTER)
@@ -53,7 +51,9 @@ class Btn(SpecterGuiElement):
             self._ico = make_icon(self._btn, icon)
             if text is None:
                 self._ico.center()
-            apply_style(self._ico, ["WIDGET.BUTTON"])
+            apply_style(self._ico, ["WIDGET.BUTTON_FG"])
+            if foreground_style is not None:
+                apply_style(self._ico, foreground_style)
         else:
             self._ico = None
 
@@ -62,9 +62,13 @@ class Btn(SpecterGuiElement):
             self._lbl.set_text(text)
             if icon is None:
                 self._lbl.center()
-            apply_style(self._lbl, ["WIDGET.BUTTON"])
+            apply_style(self._lbl, ["WIDGET.BUTTON_FG"])
+            if foreground_style is not None:
+                apply_style(self._lbl, foreground_style)
         else:
             self._lbl = None
+
+        apply_style(self._btn, ["WIDGET.BUTTON"])
 
         if callback is not None:
             self._btn.add_event_cb(callback, lv.EVENT.CLICKED, None)
