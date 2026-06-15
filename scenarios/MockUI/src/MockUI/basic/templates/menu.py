@@ -13,7 +13,7 @@ from ..widgets import (
     Btn, 
     body_label, menu_label, section_header, 
     flex_row,
-    make_icon
+    make_icon, make_switch
 )
 
 
@@ -92,7 +92,7 @@ class GenericMenu(TitledScreen):
 
     def _build_toggle_select_row(self, item):
         """Switch row: icon + label + optional help + lv.switch wired to get/set_value."""
-        row = flex_row(self.body, height=SWITCH_HEIGHT, main_align=lv.FLEX_ALIGN.START)
+        row = flex_row(self.body, width=lv.pct(100), height=SWITCH_HEIGHT, main_align=lv.FLEX_ALIGN.START)
         apply_style(row, "WIDGET.MENU_SWITCH")
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
@@ -100,25 +100,18 @@ class GenericMenu(TitledScreen):
         row.lbl = menu_label(row, item.text, width=None)
         row.lbl.set_flex_grow(1)
         if item.help_key:
-            self._add_help_btn(row, (SWITCH_HEIGHT, SWITCH_HEIGHT), item.text, item.help_key)
-        row.switch = lv.switch(row)
-        set_size(row.switch, SWITCH_HEIGHT, SWITCH_WIDTH)
-        apply_style(row.switch, "WIDGET.MENU_SWITCH")
+            row.h_btn = self._add_help_btn(row, item.text, item.help_key)
+        
+        current_value = item.get_value() if callable(item.get_value) else item.get_value
+        def setter_cb(is_on):
+            if callable(item.set_value):
+                item.set_value(is_on)
+            else:
+                item.set_value = is_on
+            self.gui.refresh_ui()
 
-        # Set initial state
-        current = item.get_value() if callable(item.get_value) else item.get_value
-        if current:
-            row.switch.add_state(lv.STATE.CHECKED)
-        else:
-            row.switch.remove_state(lv.STATE.CHECKED)
+        row.switch = make_switch(row, init_value=current_value, setter_cb=setter_cb)
 
-        def _make_toggle_cb(setter):
-            def _cb(e):
-                is_on = bool(e.get_target_obj().has_state(lv.STATE.CHECKED))
-                setter(is_on)
-                self.gui.refresh_ui()
-            return _cb
-        row.switch.add_event_cb(_make_toggle_cb(item.set_value), lv.EVENT.VALUE_CHANGED, None)
         return row
 
     def _build_button_row(self, item):
@@ -170,16 +163,7 @@ class GenericMenu(TitledScreen):
                 btn.right_cont.suf.append(lbl)
 
         if item.help_key:
-            h_btn = Btn(btn.right_cont, 
-                        icon=BTC_ICONS.QUESTION_CIRCLE,
-                        background_style="APPEARANCE.TRANSPARENT",
-                        foreground_style="WIDGET.HELP_ICON",
-                    )
-            help_text = item.text + "\n" + self.t(item.help_key)
-            def _on_help_click(e):
-                e.stop_bubbling = 1
-                button_modal(text=help_text)
-            h_btn.add_event_cb(_on_help_click, lv.EVENT.CLICKED, None)
+            h_btn = self._add_help_btn(btn.right_cont, item.text, item.help_key)
             btn.right_cont.suf.append(h_btn)
 
         if item.is_submenu:
@@ -201,6 +185,20 @@ class GenericMenu(TitledScreen):
 
         btn.add_event_cb(btn_click_cb, lv.EVENT.CLICKED, None)
         return btn
+    
+    def _add_help_btn(self, parent, item_text, help_key):
+        h_btn = Btn(parent, 
+                    icon=BTC_ICONS.QUESTION_CIRCLE,
+                    background_style="APPEARANCE.TRANSPARENT",
+                    foreground_style="WIDGET.HELP_ICON",
+                )
+        help_text = item_text + "\n" + self.t(help_key)
+        def _on_help_click(e):
+            e.stop_bubbling = 1
+            button_modal(text=help_text)
+        h_btn.add_event_cb(_on_help_click, lv.EVENT.CLICKED, None)
+        return h_btn
+        
     # --- template-method hooks -------------------------------------------
 
     TITLE_KEY = None  # set in subclass to avoid overriding get_title

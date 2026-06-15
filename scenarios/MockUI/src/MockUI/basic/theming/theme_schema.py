@@ -125,5 +125,11 @@ class SpecterStylePalette:
         KNOB      = 112   # apply with lv.PART.KNOB
         # reserved till 120
 
+    class SWITCH:
+        TRACK     = 120   # apply with lv.PART.MAIN
+        INDICATOR = 121   # apply with lv.PART.INDICATOR
+        KNOB      = 122   # apply with lv.PART.KNOB
+        # reserved till 130
+
     class MODIFIER:
-        MUTED = 120   # disabled/unusable widgets
+        MUTED = 130   # disabled/unusable widgets

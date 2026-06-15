@@ -4,6 +4,7 @@ import lvgl as lv
 from ..utils import (
     CONFIRMATION_SLIDER_HEIGHT,
     FORM_TA_HEIGHT,
+    SWITCH_HEIGHT, SWITCH_WIDTH,
     set_size
 )
 from ..theming import apply_style
@@ -33,6 +34,29 @@ def password_textarea(parent, width=lv.pct(60)):
     ta = title_textarea(parent, width)
     ta.set_password_mode(True)
     return ta
+
+def make_switch(parent, init_value=False, setter_cb=None):
+    switch = lv.switch(parent)
+    set_size(switch, SWITCH_HEIGHT, SWITCH_WIDTH)
+    apply_style(switch, "SWITCH.TRACK", lv.PART.MAIN)
+    apply_style(switch, "SWITCH.KNOB", lv.PART.KNOB)
+    apply_style(switch, "SWITCH.INDICATOR", lv.PART.INDICATOR)
+    apply_style(switch, "BG.SUCCESS", lv.PART.INDICATOR | lv.STATE.CHECKED)
+
+    # Set initial state
+    if init_value:
+        switch.add_state(lv.STATE.CHECKED)
+    else:
+        switch.remove_state(lv.STATE.CHECKED)
+
+    def _make_toggle_cb(setter_cb):
+        def _cb(e):
+            is_on = bool(e.get_target_obj().has_state(lv.STATE.CHECKED))
+            if setter_cb is not None:
+                setter_cb(is_on)
+        return _cb
+    switch.add_event_cb(_make_toggle_cb(setter_cb), lv.EVENT.VALUE_CHANGED, None)
+    return switch
 
 def confirmation_slider(parent,
                         width=lv.pct(100), height=CONFIRMATION_SLIDER_HEIGHT,
