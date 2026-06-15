@@ -107,7 +107,7 @@ def slider_confirm_modal(text,
     modal = _action_modal(text)
 
     def _on_user_decision(callback):
-        modal.close()
+        modal.delete()
         if callback is not None and callable(callback):
             callback()
 
