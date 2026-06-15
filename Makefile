@@ -198,7 +198,7 @@ mockui: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-flash-image $(MPY_DI
 	@ls -lh $(TARGET_DIR)/mockui.bin
 
 # unixport (simulator)
-unix: $(TARGET_DIR) mpy-cross build-i18n build-themes $(MPY_DIR)/ports/unix
+unix: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-themes $(MPY_DIR)/ports/unix
 	@echo Building binary with frozen files
 	make -C $(MPY_DIR)/ports/unix \
 		USER_C_MODULES=$(USER_C_MODULES) \
