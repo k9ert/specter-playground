@@ -16,7 +16,9 @@ def make_add_seed_items(t, state, sizes=None, generate_size=1):
     items = [
         MenuItem(text=t("ADD_SEED_GENERATE_SECTION")),
         MenuItem(BTC_ICONS.DICE, t("ADD_SEED_GENERATE_SEED"), "generate_seedphrase",
-                 height_scaling=generate_size, is_submenu=True),
+                 height_scaling=generate_size,
+                 help_key="HELP_GENERATE_SEED",
+                 is_submenu=True),
         MenuItem(text=t("ADD_SEED_IMPORT_SECTION")),
     ]
     if state.SmartCard_hasSeed():

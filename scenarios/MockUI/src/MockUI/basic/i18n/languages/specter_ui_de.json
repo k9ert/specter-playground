@@ -154,6 +154,10 @@
       "text": "Neue Seed",
       "ref_en": "New Seed"
     },
+    "HELP_GENERATE_SEED": {
+      "text": "Dies erstellt eine neue zufällige Seed für dich.",
+      "ref_en": "This will create a new random seed for you."
+    },
     "ADD_SEED_IMPORT_SECTION": {
       "text": "Importieren bestehende Seed von",
       "ref_en": "Import existing Seed from"

@@ -51,6 +51,7 @@
     
     "ADD_SEED_GENERATE_SECTION": "Generate",
     "ADD_SEED_GENERATE_SEED": "New Seed",
+    "HELP_GENERATE_SEED": "This will create a new random seed for you.",
     "ADD_SEED_IMPORT_SECTION": "Import existing Seed from",
     
     "MANAGE_SW_SEED_SECTION_TITLE": "Seed",

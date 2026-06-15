@@ -47,11 +47,8 @@ class UIExplainer(SpecterGuiMixin):
         """Create and display the explainer overlay."""
         cutout = self._get_cutout_area()
         self._overlay = modal_overlay()
-        # don't use invisible as this will also make all content on top
-        # (cutouts, text box) invisible
-        apply_style(self._overlay, ["APPEARANCE.TRANSPARENT"])
         self._create_dim_strips(cutout)
-        self._create_text_box(*self._calculate_text_box_position(cutout))
+        self._create_text_box()
     
     def hide(self):
         """Remove and destroy all LVGL objects."""
@@ -71,9 +68,6 @@ class UIExplainer(SpecterGuiMixin):
         if self.highlighted_element is None:
             # No element to highlight - full overlay
             return None
-        elif isinstance(self.highlighted_element, tuple):
-            # Manual positioning
-            return self.highlighted_element
         else:
             # Get absolute screen coordinates from lv.obj via get_coords()
             # (LVGL 9.x: area.x1/y1 are absolute screen coordinates)
@@ -132,7 +126,7 @@ class UIExplainer(SpecterGuiMixin):
             if right_x < screen_width:
                 add_strip(right_x, cut_y, screen_width - right_x, cut_h)
     
-    def _create_text_box(self, box_x, box_y, box_width, box_height):
+    def _create_text_box(self):
         """Create the text box with explanation and navigation buttons.
         
         Args:
@@ -140,22 +134,23 @@ class UIExplainer(SpecterGuiMixin):
             box_y: Y position for the text box
             box_width: Width of the text box
             box_height: Height of the text box
+            highlighted_element: The UI element being highlighted, or None
         """
         # Create text box container
         self._text_box = flex_container(self._overlay,
-                                        width=box_width, height=box_height,
-                                        main_align=lv.FLEX_ALIGN.SPACE_BETWEEN,
+                                        width=EXPLAINER_WIDTH, height=lv.SIZE_CONTENT,
+                                        main_align=lv.FLEX_ALIGN.CENTER,
                                         scrollable=False)
-        set_pos(self._text_box, box_x, box_y)
+        
+        #set_pos(self._text_box, box_x, box_y)
         apply_style(self._text_box, ["WIDGET.MODAL_WINDOW"])
         
         # Create text label (with flex grow to take available space)
-        self.text_container = flex_col(self._text_box, width=lv.pct(100))
-        self.text_container.set_flex_grow(1)
+        self.text_container = flex_row(self._text_box, width=lv.pct(100))
         set_scroll(self.text_container, horizontal=False, vertical=False)
         
         self.text_label = body_label(self.text_container, self.text)
-        self.text_label.center()
+        #self.text_label.center()
         
         # Create navigation button container
         self.nav_container = flex_row(self._text_box, height=60)
@@ -193,65 +188,18 @@ class UIExplainer(SpecterGuiMixin):
                            callback=self._on_next_clicked)
         if is_last:
             apply_style(self.NextBtn, "APPEARANCE.INVISIBLE")
-    
-    def _calculate_text_box_position(self, cutout):
-        """Calculate text box dimensions and position based on text_position setting and cutout.
-        
-        Args:
-            cutout: Tuple (x, y, w, h) of cutout area, or None for full overlay
-            
-        Returns:
-            tuple: (x, y, width, height) for the text box
-        """
-        disp = lv.display_get_default()
-        screen_width = disp.get_horizontal_resolution()
-        screen_height = disp.get_vertical_resolution()
-        
-        # Calculate box dimensions
-        box_width = EXPLAINER_WIDTH
-        box_height = EXPLAINER_HEIGHT
-        
-        # Center position (used as default and when no cutout)
-        center_x = (screen_width - box_width) // 2
-        center_y = (screen_height - box_height) // 2
-        
-        # If no cutout or center position requested, return centered
-        if cutout is None or self.text_position == "center" or self.text_position not in ("above", "below", "left", "right"):
-            return (center_x, center_y, box_width, box_height)
-        
-        cut_x, cut_y, cut_w, cut_h = cutout
-        margin = 10  # Margin from cutout/screen edges
-        
-        if self.text_position == "above":
-            # Above the cutout, centered horizontally
-            x = center_x
-            y = cut_y - box_height - margin
-            # Ensure it stays on screen
-            if y < margin:
-                y = margin
-        elif self.text_position == "below":
-            # Below the cutout, centered horizontally
-            x = center_x
-            y = cut_y + cut_h + margin
-            # Ensure it stays on screen
-            if y + box_height > screen_height - margin:
-                y = screen_height - box_height - margin
-        elif self.text_position == "left":
-            # Left of the cutout, centered vertically
-            x = cut_x - box_width - margin
-            y = center_y
-            # Ensure it stays on screen
-            if x < margin:
-                x = margin
+
+        align_enum = lv.ALIGN.CENTER
+        if self.text_position == "left":
+            align_enum = lv.ALIGN.OUT_LEFT_MID
         elif self.text_position == "right":
-            # Right of the cutout, centered vertically
-            x = cut_x + cut_w + margin
-            y = center_y
-            # Ensure it stays on screen
-            if x + box_width > screen_width - margin:
-                x = screen_width - box_width - margin
-        
-        return (x, y, box_width, box_height)
+            align_enum = lv.ALIGN.OUT_RIGHT_MID
+        elif self.text_position == "above":
+            align_enum = lv.ALIGN.OUT_TOP_MID
+        elif self.text_position == "below":
+            align_enum = lv.ALIGN.OUT_BOTTOM_MID
+
+        self._text_box.align_to(self.highlighted_element, align_enum, 0, 0)
     
     def _on_prev_clicked(self, e):
         """Handle previous button click - delegate to tour."""
