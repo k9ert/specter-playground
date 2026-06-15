@@ -42,9 +42,11 @@ if '.' in __name__:
     )
     from .color_palette_compiler import to_lv_color, shade, color_ref_to_palette_idx
     from .font_palette_compiler import font_ref_to_palette_idx
+    from ..utils.generic_utils import resolve_obj
 else:
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "templates"))
+    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "utils"))
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
     from theme_section_compiler import ThemeSectionCompiler
     from theme_schema import SpecterStylePalette, SpecterColorPalette, SpecterFontPalette
@@ -54,6 +56,7 @@ else:
     )
     from color_palette_compiler import to_lv_color, shade, color_ref_to_palette_idx
     from font_palette_compiler import font_ref_to_palette_idx
+    from generic_utils import resolve_obj
 
 try:
     import lvgl as lv
@@ -219,15 +222,12 @@ def _attr_to_prop_id(attr_name):
 def style_ref_to_palette_idx(name):
     """Map a style palette name like 'WIDGET.BUTTON' to SpecterStylePalette int.
     Returns None if unknown."""
-    parts = name.split(".")
-    obj = SpecterStylePalette
-    for part in parts:
-        obj = getattr(obj, part.upper(), None)
-        if obj is None:
-            print("Warning: unknown style palette ref '{}'".format(name))
-            return None
-    if isinstance(obj, int):
-        return obj
+    result = resolve_obj(name, SpecterStylePalette)
+    if result is None:
+        print("Warning: unknown style palette ref '{}'".format(name))
+        return None
+    if isinstance(result, int):
+        return result
 
 def _lit_index(lit_builder, s):
     """Return the index of string *s* in *lit_builder*, appending if not present."""
@@ -510,20 +510,6 @@ def read_lit_dict_from_binary(file_path):
 
 
 
-def key_to_style_index(key_str):
-    """Map a theme JSON key string like 'WIDGET.BUTTON' to its SPECTER_STYLES int constant.
-    Returns None if the key is not known."""
-    parts = key_str.split(".")
-    obj = SpecterStylePalette
-    for part in parts:
-        obj = getattr(obj, part, None)
-        if obj is None:
-            return None
-    if isinstance(obj, int):
-        return obj
-    return None
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # StylePaletteCompiler
 # ─────────────────────────────────────────────────────────────────────────────
@@ -559,7 +545,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
                     if not isinstance(ref, str) or not ref.startswith("@"):
                         print("Warning: 'style' value must start with '@', got: " + str(ref))
                         continue
-                    style_idx = key_to_style_index(ref[1:])
+                    style_idx = style_ref_to_palette_idx(ref[1:])
                     if style_idx is None:
                         print("Warning: unknown style ref '{}' — skipping".format(ref))
                         continue

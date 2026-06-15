@@ -9,12 +9,15 @@ Generates color key mappings for runtime lookups.
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler, read_cstring
     from .theme_schema import SpecterColorPalette
+    from ..utils.generic_utils import resolve_obj
 else:
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))  # basic/
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))         # theming/
+    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "utils"))  # utils/
     from theme_section_compiler import ThemeSectionCompiler, read_cstring
     from theme_schema import SpecterColorPalette
+    from generic_utils import resolve_obj
 
 try:
     import lvgl as lv
@@ -84,11 +87,11 @@ class ColorMode:
 
 
 def color_ref_to_palette_idx(name):
-    """Map a colour palette name like 'primary' to SpecterColorPalette int.
+    """Map a colour palette name like 'PRIMARY' to SpecterColorPalette int.
     Returns None if unknown."""
-    val = getattr(SpecterColorPalette, name.upper(), None)
-    if isinstance(val, int):
-        return val
+    result = resolve_obj(name, SpecterColorPalette)
+    if isinstance(result, int):
+        return result
     return None
 
 class ColorPaletteCompiler(ThemeSectionCompiler):

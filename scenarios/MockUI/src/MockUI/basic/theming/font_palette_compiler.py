@@ -9,12 +9,15 @@ Generates font key mappings for runtime lookups.
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler
     from .theme_schema import SpecterFontPalette
+    from ..utils.generic_utils import resolve_obj
 else:
     import sys as _sys, pathlib as _pathlib
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent))  # basic/
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))          # theming/
+    _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "utils"))  # utils/
     from theme_section_compiler import ThemeSectionCompiler
     from theme_schema import SpecterFontPalette
+    from generic_utils import resolve_obj
 
 try:
     import lvgl as lv
@@ -30,11 +33,11 @@ except ImportError:
 
 
 def font_ref_to_palette_idx(name):
-    """Map a font palette name like 'text' to SpecterFontPalette int.
+    """Map a font palette name like 'TEXT' to SpecterFontPalette int.
     Returns None if unknown."""
-    val = getattr(SpecterFontPalette, name.upper(), None)
-    if isinstance(val, int):
-        return val
+    result = resolve_obj(name, SpecterFontPalette)
+    if isinstance(result, int):
+        return result
     return None
 
 class FontPaletteCompiler(ThemeSectionCompiler):

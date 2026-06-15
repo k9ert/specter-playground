@@ -5,6 +5,7 @@ highlighting key interface elements and explaining their purpose.
 """
 
 from .ui_explainer import UIExplainer
+from ..utils.generic_utils import resolve_obj
 
 # Static tour step definitions: (element_spec, i18n_key, position)
 # element_spec is None, a dotted attribute-path string, or a (x, y, w, h) tuple.
@@ -70,10 +71,13 @@ class GuidedTour:
                     )
                 element = element_spec
             elif isinstance(element_spec, str):
-                # Resolve dotted attribute path on nav (e.g. "device_bar.lock_btn")
-                element = nav
-                for part in element_spec.split("."):
-                    element = getattr(element, part)
+                # Resolve dotted path on nav, supporting attr[key] subscripts
+                # e.g. "navigation_bar.buttons[Home]" or "navigation_bar"
+                element = resolve_obj(element_spec, nav)
+                if element is None:
+                    raise ValueError(
+                        "Could not resolve element_spec '{}'".format(element_spec)
+                    )
             else:
                 raise TypeError(
                     "Invalid element_spec {!r}: expected None, tuple, or str".format(element_spec)
