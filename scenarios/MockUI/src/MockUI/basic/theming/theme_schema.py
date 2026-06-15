@@ -39,35 +39,42 @@ class SpecterStylePalette:
         OVERLAY               =  2
         NAVBAR                =  3
         NAVBAR_BUTTON         =  4
-        MODAL_WINDOW          =  5
-        BUTTON                =  6
-        TEXT_EDIT             =  7
-        INFO_ITEM             =  8
-        HELP_ICON             =  9
-        MENU_SECTION_HEADER   = 10
-        MENU_BUTTON           = 11
-        MENU_ICON             = 12
-        MENU_BUTTON_LABEL     = 13
-        MENU_SWITCH           = 14
-        SUBMENU_INDICATOR     = 15
-        DROPUP                = 16
-        DROP_UP_ROW           = 17
-        DROP_UP_ADDBTN        = 18
-        CONTEXT_BAR           = 21
-        KEYBOARD              = 22
-        BATTERY               = 23
-        PIN_BUTTON            = 24
+        NAVBAR_BUTTON_FG      =  5
+        MODAL_WINDOW          =  6
+        BUTTON                =  7
+        BUTTON_FG             =  8
+        TEXT_EDIT             =  9
+        INFO_ITEM             = 10
+        HELP_ICON             = 11
+        MENU_SECTION_HEADER   = 12
+        MENU_BUTTON           = 13
+        MENU_ICON             = 15
+        MENU_BUTTON_LABEL     = 16
+        MENU_SWITCH           = 17
+        SUBMENU_INDICATOR     = 18
+        DROPUP                = 19
+        DROP_UP_ROW           = 20
+        DROP_UP_ADDBTN        = 21
+        CONTEXT_BAR           = 22
+        KEYBOARD              = 23
+        BATTERY               = 24
+        PIN_BUTTON            = 25
+        PIN_DISPLAY           = 26
         # reserved till 40
 
     class TEXT:
         DEFAULT = 40    # TEXT font
         TITLE   = 41    # TITLE font
         SMALL   = 42    # SMALL font
-        BODY    = 43    # enables wrapping
+        LEFT    = 43    # left-aligned text (default is centered)
+        CENTER  = 44    # centered text
+        RIGHT   = 45    # right-aligned text
+        BODY    = 49    # enables wrapping
         # reserved till 50
 
     class LAYOUT:
         BARE        = 50   # no padding/border/radius, transparent bg
+        BORDERLESS  = 51   # zero border width, keep other layout defaults
 
     class APPEARANCE:
         VISIBLE     = 60   # full opacity for FG and BG
