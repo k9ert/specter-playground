@@ -49,13 +49,12 @@ class PassphraseMenu(TitledScreen):
         buttons_row = flex_col(self.body, height=lv.pct(50), pad=SMALL_PAD)
 
         # Clear button
-        self.clear_btn = Btn(
-            buttons_row,
-            icon=BTC_ICONS.CROSS,
-            text=t("PASSPHRASE_MENU_CLEAR"),
-            size=(BTN_WIDTH, BTN_HEIGHT),
-            callback=self._on_clear,
-        )
+        self.clear_btn = Btn(buttons_row,
+                             icon=BTC_ICONS.CROSS,
+                             text=t("PASSPHRASE_MENU_CLEAR"),
+                             size=(BTN_WIDTH, BTN_HEIGHT),
+                             callback=self._on_clear,
+                             )
 
     def _on_clear(self, e):
         """Clear passphrase and update state."""

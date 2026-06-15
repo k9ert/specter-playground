@@ -128,13 +128,13 @@ class GenericMenu(TitledScreen):
 
         # Btn: icon is positioned manually at LEFT_MID so it stays left-aligned
         # regardless of text length (not using flex).
-        btn = Btn(
-            self.body,
-            text=item.text,
-            size=(BTN_WIDTH, int(BTN_HEIGHT * size)),
-        )
-        apply_style(btn._btn, "WIDGET.MENU_BUTTON")
-        apply_style(btn._lbl, "WIDGET.MENU_BUTTON_LABEL")
+        btn = Btn(self.body,
+                  text=item.text,
+                  size=(BTN_WIDTH, int(BTN_HEIGHT * size)),
+                  background_style="WIDGET.MENU_BUTTON",
+                  foreground_style="WIDGET.MENU_BUTTON_FG",
+                )
+
         if item.modifier == "Danger":
             apply_style(btn._btn, "BG.DANGER")
         elif item.modifier == "Warning":
@@ -170,8 +170,11 @@ class GenericMenu(TitledScreen):
                 btn.right_cont.suf.append(lbl)
 
         if item.help_key:
-            h_btn = Btn(btn.right_cont, icon=BTC_ICONS.QUESTION_CIRCLE)
-            apply_style(h_btn, "WIDGET.HELP_ICON")
+            h_btn = Btn(btn.right_cont, 
+                        icon=BTC_ICONS.QUESTION_CIRCLE,
+                        background_style="APPEARANCE.TRANSPARENT",
+                        foreground_style="WIDGET.HELP_ICON",
+                    )
             help_text = item.text + "\n" + self.t(item.help_key)
             def _on_help_click(e):
                 e.stop_bubbling = 1

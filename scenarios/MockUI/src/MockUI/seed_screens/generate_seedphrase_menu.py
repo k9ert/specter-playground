@@ -53,12 +53,11 @@ class GenerateSeedMenu(TitledScreen):
         # Create button row
         create_row = flex_row(self.body, height=80)
 
-        self.create_btn = Btn(
-            create_row,
-            text=t("COMMON_CREATE"),
-            size=(BTN_WIDTH, BTN_HEIGHT),
-            callback=lambda e: self._on_create(e),
-        )
+        self.create_btn = Btn(create_row,
+                              text=t("COMMON_CREATE"),
+                              size=(BTN_WIDTH, BTN_HEIGHT),
+                              callback=lambda e: self._on_create(e),
+                              )
 
     def _on_create(self, e):
         if e.get_code() != lv.EVENT.CLICKED:

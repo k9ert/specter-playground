@@ -128,14 +128,13 @@ class TitledScreen(SpecterGuiElement):
             The created ``Btn`` widget (stored as ``self.delete_btn``).
         """
         btn_size = TITLE_HEIGHT - 10
-        self.delete_btn = Btn(
-            self.title_bar,
-            icon=BTC_ICONS.TRASH,
-            size=(btn_size, btn_size),
-        )
+        self.delete_btn = Btn(self.title_bar,
+                              icon=BTC_ICONS.TRASH,
+                              size=(btn_size, btn_size),
+                              background_style=["WIDGET.BUTTON", "BG.DANGER"],
+                              )
         set_align(self.delete_btn, lv.ALIGN.RIGHT_MID)
         set_pos(self.delete_btn, x=-SMALL_PAD)
-        apply_style(self.delete_btn, ["WIDGET.BUTTON", "BG.DANGER"])
 
         self.delete_btn.add_event_cb(on_click, lv.EVENT.CLICKED, None)
         return self.delete_btn

@@ -79,8 +79,8 @@ class NavigationBar(SpecterGuiElement):
                                      icon=icon, 
                                      size=(BTC_ICON_WIDTH, BTC_ICON_WIDTH), 
                                      callback=cb,
+                                     background_style="WIDGET.NAVBAR_BUTTON",
                                      foreground_style="WIDGET.NAVBAR_BUTTON_FG")
-            apply_style(self.buttons[name], "WIDGET.NAVBAR_BUTTON")
             apply_style(self.buttons[name], "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
 
     # ── Drop-up management ────────────────────────────────────────────────────────

@@ -81,7 +81,8 @@ class LockedMenu(TitledScreen):
                         size=(PIN_BTN_WIDTH, PIN_BTN_HEIGHT),
                         callback=lambda e, d=k: self._on_digit(e, d),
                     )
-                apply_style(b, "WIDGET.PIN_BUTTON")
+                b.apply_style(background_style="WIDGET.PIN_BUTTON", 
+                              foreground_style="WIDGET.PIN_BUTTON")
 
     def _update_mask(self):
         self.mask_lbl.set_text("*" * len(self.pin_buf))

@@ -160,8 +160,9 @@ class DropUp(SpecterGuiMixin):
             text=self._add_button_label(),
             size=(None, _ADD_BTN_H),
             callback=self._add_cb,
+            background_style="WIDGET.DROP_UP_ADDBTN",
+            foreground_style="WIDGET.DROP_UP_ADDBTN_FG",
         )
-        apply_style(self._add_button, "WIDGET.DROP_UP_ADDBTN")
 
         set_size(self._panel, SCREEN_WIDTH, panel_h)
         set_pos(self._panel, 0, _PANEL_MAX_H - panel_h)

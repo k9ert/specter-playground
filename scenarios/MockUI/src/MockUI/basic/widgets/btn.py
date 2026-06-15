@@ -16,7 +16,7 @@ import lvgl as lv
 from .icon_widgets import apply_icon, make_icon
 from .labels import make_label
 from ..templates.specter_gui_base import SpecterGuiElement
-from ..theming import apply_style
+from ..theming import apply_style as t_apply_style
 from ..utils.ui_utils import configure_flex, set_size
 
 
@@ -33,7 +33,7 @@ class Btn(SpecterGuiElement):
     """
 
     def __init__(self, parent, icon=None, text=None, size=None,
-                 callback=None, foreground_style=None):
+                 callback=None, background_style="WIDGET.BUTTON", foreground_style="WIDGET.BUTTON_FG"):
         super().__init__(parent)
         set_size(self, lv.SIZE_CONTENT, lv.SIZE_CONTENT)  # container auto-sizes to content by default
         self._btn = lv.button(self)
@@ -51,9 +51,6 @@ class Btn(SpecterGuiElement):
             self._ico = make_icon(self._btn, icon)
             if text is None:
                 self._ico.center()
-            apply_style(self._ico, ["WIDGET.BUTTON_FG"])
-            if foreground_style is not None:
-                apply_style(self._ico, foreground_style)
         else:
             self._ico = None
 
@@ -62,16 +59,24 @@ class Btn(SpecterGuiElement):
             self._lbl.set_text(text)
             if icon is None:
                 self._lbl.center()
-            apply_style(self._lbl, ["WIDGET.BUTTON_FG"])
-            if foreground_style is not None:
-                apply_style(self._lbl, foreground_style)
         else:
             self._lbl = None
 
-        apply_style(self._btn, ["WIDGET.BUTTON"])
+        if background_style is not None or foreground_style is not None:
+            self.apply_style(background_style, foreground_style)
 
         if callback is not None:
             self._btn.add_event_cb(callback, lv.EVENT.CLICKED, None)
+
+
+    def apply_style(self, background_style=None, foreground_style=None):
+        if background_style is not None:
+            t_apply_style(self._btn, background_style)
+        if foreground_style is not None:
+            if self._ico is not None:
+                t_apply_style(self._ico, foreground_style)
+            if self._lbl is not None:
+                t_apply_style(self._lbl, foreground_style)
 
     def update_icon(self, icon):
         if self._ico is None:

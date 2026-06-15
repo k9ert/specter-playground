@@ -13,11 +13,12 @@ from ..utils import (
     get_size, set_size, set_pos, set_scroll
 )
 from ..symbol_lib import BTC_ICONS
+from ..templates.specter_gui_base import SpecterGuiMixin
 from ..theming import apply_style
 from ..widgets import Btn, flex_row, flex_col, flex_container, body_label, modal_overlay
 
 
-class UIExplainer:
+class UIExplainer(SpecterGuiMixin):
     """
     A spotlight-style explainer that highlights a UI element with a dimmed overlay
     and displays explanatory text with navigation buttons.
@@ -165,25 +166,31 @@ class UIExplainer:
         is_last = self.tour.is_last()
         
         # Previous button (or invisible placeholder on first screen)
-        self.PrevBtn = Btn(self.nav_container, icon=BTC_ICONS.CARET_LEFT, size=(60, 50),
-            callback=self._on_prev_clicked)
-        apply_style(self.PrevBtn, "WIDGET.BUTTON")
+        self.PrevBtn = Btn(self.nav_container, 
+                           icon=BTC_ICONS.CARET_LEFT, 
+                           size=(60, 50),
+                           callback=self._on_prev_clicked)
+
         if is_first:
             apply_style(self.PrevBtn, "APPEARANCE.INVISIBLE")
         
         # Skip/Complete button (always present)
         if is_last:
-            self.SkipBtn = Btn(self.nav_container, icon=BTC_ICONS.CHECK, size=(60, 50),
-                callback=self._on_skip_clicked)
+            self.SkipBtn = Btn(self.nav_container, 
+                               icon=BTC_ICONS.CHECK, 
+                               size=(60, 50),
+                               callback=self._on_skip_clicked)
         else:
-            self.SkipBtn = Btn(self.nav_container, text=self.tour.nav.i18n.t("TOUR_SKIP_BTN"),
-                size=(160, 50), callback=self._on_skip_clicked)
-        apply_style(self.SkipBtn, "WIDGET.BUTTON")
+            self.SkipBtn = Btn(self.nav_container, 
+                               text=self.t("TOUR_SKIP_BTN"),
+                               size=(160, 50),
+                               callback=self._on_skip_clicked)
         
         # Next button (or invisible placeholder on last screen)
-        self.NextBtn = Btn(self.nav_container, icon=BTC_ICONS.CARET_RIGHT, size=(60, 50),
-            callback=self._on_next_clicked)
-        apply_style(self.NextBtn, "WIDGET.BUTTON")
+        self.NextBtn = Btn(self.nav_container,
+                           icon=BTC_ICONS.CARET_RIGHT, 
+                           size=(60, 50),
+                           callback=self._on_next_clicked)
         if is_last:
             apply_style(self.NextBtn, "APPEARANCE.INVISIBLE")
     

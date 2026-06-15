@@ -60,12 +60,11 @@ def button_modal(text, buttons=None):
         label = getattr(item, 'text', None)
         callback = getattr(item, 'target', None)
 
-        btn = Btn(
-            modal.btn_row,
-            icon=icon,
-            text=label,
-            size=(None, BTN_HEIGHT),
-        )
+        btn = Btn(modal.btn_row,
+                  icon=icon,
+                  text=label,
+                  size=(None, BTN_HEIGHT)
+                  )
         modal.btn_row.buttons.append(btn)
 
         def _handler(ev, cb=callback):
