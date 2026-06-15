@@ -48,7 +48,7 @@ class WalletDropUp(DropUp):
                                             "target_wallet"),
             on_delete=on_delete,
         )
-        apply_style(card, "CONTEXT.WALLET")
+        apply_style(card, ["WIDGET.DROP_UP_ROW", "CONTEXT.WALLET"])
         return card
 
     def _do_delete_wallet(self, wallet):

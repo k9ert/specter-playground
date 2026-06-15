@@ -151,7 +151,7 @@ class DropUp(SpecterGuiMixin):
         # Add button row
         row = flex_row(self._panel, width=SCREEN_WIDTH, height=_ADD_BTN_H,
                        main_align=lv.FLEX_ALIGN.CENTER)
-        apply_style(row, "WIDGET.DROPUP_ROW")
+        apply_style(row, "WIDGET.DROP_UP_ROW")
         self._panel.rows.append(row)
 
         self._add_button = Btn(
@@ -161,7 +161,7 @@ class DropUp(SpecterGuiMixin):
             size=(None, _ADD_BTN_H),
             callback=self._add_cb,
         )
-        apply_style(self._add_button, "WIDGET.DROPUP_ADD_BTN")
+        apply_style(self._add_button, "WIDGET.DROP_UP_ADDBTN")
 
         set_size(self._panel, SCREEN_WIDTH, panel_h)
         set_pos(self._panel, 0, _PANEL_MAX_H - panel_h)
