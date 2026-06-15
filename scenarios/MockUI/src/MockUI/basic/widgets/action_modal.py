@@ -12,6 +12,7 @@ from ..utils import (
     MODAL_WIDTH,
     MODAL_HEIGHT,
     BTN_HEIGHT,
+    style_as_flex_container,
 )
 
 
@@ -21,19 +22,21 @@ def _action_modal(text):
     Args:
         text:    Main message displayed in the dialog.
     """
-    modal = modal_overlay()
+    overlay = modal_overlay()
+    style_as_flex_container(overlay, 
+                            lv.FLEX_FLOW.COLUMN, 
+                            width=lv.pct(100), height=lv.pct(100), 
+                            main_align=lv.FLEX_ALIGN.CENTER,
+                            cross_align=lv.FLEX_ALIGN.CENTER
+                            )
+    overlay.dialog = flex_container(overlay, 
+                                    lv.FLEX_FLOW.COLUMN, 
+                                    width=MODAL_WIDTH, height=MODAL_HEIGHT, 
+                                    main_align=lv.FLEX_ALIGN.CENTER)
+    apply_style(overlay.dialog, "WIDGET.MODAL_WINDOW")
+    overlay.dialog.body_text = body_label(overlay.dialog, text)
 
-    dw = MODAL_WIDTH
-    dh = MODAL_HEIGHT
-    modal.dialog = flex_container(modal, 
-                                  lv.FLEX_FLOW.COLUMN, 
-                                  width=dw, height=dh, 
-                                  main_align=lv.FLEX_ALIGN.CENTER)
-    apply_style(modal.dialog, "WIDGET.MODAL_WINDOW")
-
-    modal.dialog.body_text = body_label(modal.dialog, text)
-
-    return modal
+    return overlay
 
 def button_modal(text, buttons=None):
     """Generic choice modal where the user options are given by buttons.
