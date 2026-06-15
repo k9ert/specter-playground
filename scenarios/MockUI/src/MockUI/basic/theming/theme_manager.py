@@ -155,10 +155,10 @@ class ThemeManager(SettingFileManager):
             keys = [keys]
         if isinstance(keys, str):
             # resolve e.g. "BG.INVISIBLE" to the corresponding integer key
-            keys = [self.COMPILER.str_to_style(keys)]
+            keys = [self.COMPILER.str_to_style_ind(keys)]
         for key in keys:
             if isinstance(key, str):
-                key = self.COMPILER.str_to_style(key)
+                key = self.COMPILER.str_to_style_ind(key)
             style = self.get_style(key)
             if style is not None:
                 obj.remove_style(style, selector)
