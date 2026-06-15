@@ -29,6 +29,11 @@ def form_textarea(parent, width=lv.pct(60)):
     ta.set_one_line(True)
     return ta
 
+def password_textarea(parent, width=lv.pct(60)):
+    ta = title_textarea(parent, width)
+    ta.set_password_mode(True)
+    return ta
+
 def confirmation_slider(parent,
                         width=lv.pct(100), height=CONFIRMATION_SLIDER_HEIGHT,
                         on_max=None, max_value=100, max_style="FG.SUCCESS", 
@@ -91,7 +96,7 @@ def confirmation_slider(parent,
     state = {"value": 0, "min_triggered": False, "max_triggered": False}
     
     apply_style(slider, "SLIDER.INDICATOR", lv.PART.INDICATOR)
-    apply_style(slider, "SLIDER.TRACK", lv.PART.TRACK)
+    apply_style(slider, "SLIDER.TRACK", lv.PART.MAIN)
     apply_style(slider, "SLIDER.KNOB", lv.PART.KNOB)
     
     # Knob is only draggable, not clickable (prevents accidental taps)
