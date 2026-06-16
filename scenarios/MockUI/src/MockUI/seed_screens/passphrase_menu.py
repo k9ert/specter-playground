@@ -5,7 +5,7 @@ from ..basic import (
     Btn,
     BTC_ICONS,
     flex_row, flex_col, style_as_flex_container,
-    form_label, form_textarea
+    form_label, password_textarea
 )
 
 class PassphraseMenu(TitledScreen):
@@ -26,7 +26,7 @@ class PassphraseMenu(TitledScreen):
         form_label(pa_row, t("PASSPHRASE_MENU_LABEL"))
 
         # editable textarea
-        self.pa_ta = form_textarea(pa_row)
+        self.pa_ta = password_textarea(pa_row)
         val = ""
         if self.ui_state.active_seed and self.ui_state.active_seed.passphrase is not None:
             val = self.ui_state.active_seed.passphrase

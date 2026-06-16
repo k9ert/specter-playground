@@ -3,7 +3,7 @@ from .battery import Battery
 from .btn import Btn
 from .containers import flex_container, flex_col, flex_row, screen_backdrop
 from .icon_widgets import make_icon
-from .inputs import title_textarea, form_textarea, confirmation_slider, ACCEPTED_CHARS
+from .inputs import title_textarea, form_textarea, password_textarea, make_switch, confirmation_slider, ACCEPTED_CHARS
 from .labels import make_label, body_label, form_label, section_header, menu_label, title_label, info_label
 from .menu_item import MenuItem, MenuItemSuffix
 from .modal_overlay import modal_overlay
@@ -16,8 +16,8 @@ __all__ = [
     "Battery",
     "Btn",
     "flex_container", "flex_col", "flex_row", "screen_backdrop",
-    "make_icon",
-    "title_textarea", "form_textarea", "confirmation_slider", "ACCEPTED_CHARS",
+    "make_icon", "make_switch",
+    "title_textarea", "form_textarea", "password_textarea", "confirmation_slider", "ACCEPTED_CHARS",
     "make_label", "body_label", "form_label", "section_header", "menu_label", "title_label", "info_label",
     "MenuItem", "MenuItemSuffix",
     "modal_overlay",

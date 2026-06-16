@@ -26,7 +26,7 @@ __all__ = [
     # ui_utils
     "delete_all_children_of",
     "style_as_flex_container", "style_as_screen_backdrop",
-    "set_size", "get_size", "set_pos", "set_align",
+    "set_size", "get_size", "set_pos", "get_pos", "set_align",
     "set_scroll", "set_propagate_events", "set_scale",
     "text_width", "best_fonttype_for_size",
     "shuffle",

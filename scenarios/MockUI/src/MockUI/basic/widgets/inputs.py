@@ -7,7 +7,7 @@ from ..utils import (
     SWITCH_HEIGHT, SWITCH_WIDTH,
     set_size
 )
-from ..theming import apply_style
+from ..theming import apply_style, remove_style
 
 ACCEPTED_CHARS = (
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -59,9 +59,9 @@ def make_switch(parent, init_value=False, setter_cb=None):
     return switch
 
 def confirmation_slider(parent,
-                        width=lv.pct(100), height=CONFIRMATION_SLIDER_HEIGHT,
-                        on_max=None, max_value=100, max_style="FG.SUCCESS", 
-                        on_min=None, min_value=-100, min_style="FG.DANGER",
+                        width=lv.pct(80), height=CONFIRMATION_SLIDER_HEIGHT,
+                        on_max=None, max_value=100, max_style="BG.SUCCESS", 
+                        on_min=None, min_value=-100, min_style="BG.DANGER",
                         ):
     """Bidirectional confirmation slider.
     
@@ -81,8 +81,8 @@ def confirmation_slider(parent,
         on_min:         Zero-argument callable invoked when slider reaches min threshold.
         on_max:         Zero-argument callable invoked when slider reaches max threshold .
         
-        min_style:      Style string for min direction (defaults to "FG.DANGER").
-        max_style:      Style string for max direction (defaults to "FG.SUCCESS").
+        min_style:      Style string for min direction (defaults to "BG.DANGER").
+        max_style:      Style string for max direction (defaults to "BG.SUCCESS").
     
     The range is normalized so the larger absolute value becomes ±100. Start value is always at 0.
     
@@ -108,21 +108,21 @@ def confirmation_slider(parent,
 
     # Create slider
     slider = lv.slider(parent)
-    slider.set_width(width)
-    slider.set_height(height)
+    set_size(slider, width, height)
     slider.set_range(min_value, max_value)
     slider.set_mode(lv.slider.MODE.SYMMETRICAL)
-    
-    # Start at 0
-    slider.set_value(0, False)
-
-    # Mutable closure state (can't set arbitrary attrs on C extension objects)
-    state = {"value": 0, "min_triggered": False, "max_triggered": False}
     
     apply_style(slider, "SLIDER.INDICATOR", lv.PART.INDICATOR)
     apply_style(slider, "SLIDER.TRACK", lv.PART.MAIN)
     apply_style(slider, "SLIDER.KNOB", lv.PART.KNOB)
     
+    # Start at 0
+    slider.set_value(0, False)
+    apply_style(slider, max_style, lv.PART.INDICATOR)
+
+    # Mutable closure state (can't set arbitrary attrs on C extension objects)
+    state = {"value": 0, "min_triggered": False, "max_triggered": False}
+
     # Knob is only draggable, not clickable (prevents accidental taps)
     slider.add_flag(lv.obj.FLAG.ADV_HITTEST)
 
@@ -130,6 +130,8 @@ def confirmation_slider(parent,
 
     def _update_styling(value):
         new_style = max_style if value >= 0 else min_style
+        old_style = min_style if value >= 0 else max_style
+        remove_style(slider, old_style, lv.PART.INDICATOR)
         apply_style(slider, new_style, lv.PART.INDICATOR)
 
     def _on_value_changed(event):

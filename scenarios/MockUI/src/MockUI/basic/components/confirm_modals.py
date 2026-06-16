@@ -14,10 +14,10 @@ def confirm_delete_seed(t, label, on_confirm):
     slider_confirm_modal(
         text=t("MODAL_DELETE_SEED_TEXT") % label,
         on_confirm=on_confirm,
-        confirm_style="FG.DANGER",
+        confirm_style="BG.DANGER",
         confirm_icon=BTC_ICONS.TRASH,
         on_reject=None,
-        reject_style="FG.SUCCESS",
+        reject_style="BG.SUCCESS",
         reject_icon=BTC_ICONS.CARET_LEFT,
     )
 
@@ -33,10 +33,10 @@ def confirm_delete_wallet(t, label, on_confirm):
     slider_confirm_modal(
         text=t("MODAL_DELETE_WALLET_TEXT") % label,
         on_confirm=on_confirm,
-        confirm_style="FG.DANGER",
+        confirm_style="BG.DANGER",
         confirm_icon=BTC_ICONS.TRASH,
         on_reject=None,
-        reject_style="FG.SUCCESS",
+        reject_style="BG.SUCCESS",
         reject_icon=BTC_ICONS.CARET_LEFT,
     )
 

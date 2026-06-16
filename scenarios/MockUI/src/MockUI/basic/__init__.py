@@ -8,7 +8,9 @@ from .utils import (
     shuffle,
     style_as_flex_container,
     Layout,
-    delete_all_children_of, set_size, set_pos, set_scroll, set_align, set_propagate_events,
+    delete_all_children_of, 
+    set_size, get_size, set_pos, get_pos, 
+    set_scroll, set_align, set_propagate_events,
 )
 # Backward compatibility: many screens still import assorted constants/helpers
 # from `MockUI.basic` directly.
@@ -25,7 +27,7 @@ from .widgets import (
     Btn, 
     body_label, menu_label, form_label, title_label, info_label, section_header, 
     flex_row, flex_col, flex_container, screen_backdrop,
-    form_textarea,
+    form_textarea, password_textarea, make_switch,
     ACCEPTED_CHARS,
     WalletCard,
 )
@@ -38,13 +40,14 @@ __all__ = [
     "Btn", "MenuItem", "make_icon", 
     "body_label", "menu_label", "title_label", "section_header", "form_label", "info_label",
     "flex_row", "flex_col", "flex_container", "screen_backdrop",
-    "form_label", "form_textarea",
+    "form_label", "form_textarea", "password_textarea",
     "WalletCard",
     "confirm_delete_wallet", "make_delete_active_handler",
     # utils
     "shuffle", "style_as_flex_container",
     "delete_all_children_of", 
-    "set_size", "set_pos", "set_scroll", "set_align", "set_propagate_events",
+    "set_size", "get_size", "set_pos", "get_pos", 
+    "set_scroll", "set_align", "set_propagate_events",
      # theming API
     # ui_consts re-exports used outside basic/
     "BTN_HEIGHT", "BTN_WIDTH",

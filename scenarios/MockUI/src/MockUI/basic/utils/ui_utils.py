@@ -32,6 +32,9 @@ def set_pos(obj, x=None, y=None):
     if y is not None:
         obj.set_y(y)
 
+def get_pos(obj):
+    return obj.get_x(), obj.get_y()
+
 def set_scale(obj, scale):
     obj.set_scale(scale)
 

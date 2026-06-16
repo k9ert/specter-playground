@@ -10,9 +10,9 @@ from ..theming import apply_style
 from ..utils import (
     CONFIRMATION_SLIDER_HEIGHT,
     MODAL_WIDTH,
-    MODAL_HEIGHT,
     BTN_HEIGHT,
     style_as_flex_container,
+    set_align, set_pos, set_size, set_scroll
 )
 
 
@@ -31,7 +31,7 @@ def _action_modal(text):
                             )
     overlay.dialog = flex_container(overlay, 
                                     lv.FLEX_FLOW.COLUMN, 
-                                    width=MODAL_WIDTH, height=MODAL_HEIGHT, 
+                                    width=MODAL_WIDTH, height=lv.SIZE_CONTENT, 
                                     main_align=lv.FLEX_ALIGN.CENTER)
     apply_style(overlay.dialog, "WIDGET.MODAL_WINDOW")
     overlay.dialog.body_text = body_label(overlay.dialog, text)
@@ -123,12 +123,12 @@ def slider_confirm_modal(text,
     if confirm_icon is not None:
         modal.confirm_icon = make_icon(modal._slider, confirm_icon)
         apply_style(modal.confirm_icon, "WIDGET.INFO_ITEM")
-        apply_style(modal.confirm_icon, "APPEARENCE.TRANSPARENT")
-        modal.confirm_icon.add_flag(lv.obj.FLAG.IGNORE_LAYOUT)
-        modal.confirm_icon.align(lv.ALIGN.RIGHT_MID, CONFIRMATION_SLIDER_HEIGHT//3, 0)
+        apply_style(modal.confirm_icon, "APPEARANCE.TRANSPARENT")
+        set_align(modal.confirm_icon, lv.ALIGN.RIGHT_MID)
+        
+        #modal.confirm_icon.align(lv.ALIGN.RIGHT_MID, CONFIRMATION_SLIDER_HEIGHT//3, 0)
     if reject_icon is not None:
         modal.reject_icon = make_icon(modal._slider, reject_icon)
         apply_style(modal.reject_icon, "WIDGET.INFO_ITEM")
-        apply_style(modal.reject_icon, "APPEARENCE.TRANSPARENT")
-        modal.reject_icon.add_flag(lv.obj.FLAG.IGNORE_LAYOUT)
-        modal.reject_icon.align(lv.ALIGN.LEFT_MID, -CONFIRMATION_SLIDER_HEIGHT//3, 0)
+        apply_style(modal.reject_icon, "APPEARANCE.TRANSPARENT")
+        set_align(modal.reject_icon, lv.ALIGN.LEFT_MID)
