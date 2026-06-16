@@ -77,11 +77,20 @@ def best_fonttype_for_size(text, max_w, max_h):
     Falls back to a balanced two-line word split at smallest font when
     the available height allows two lines.  Always returns a valid pair.
     """
-    for font_key in get_palette_entries(SpecterFontPalette):
+    # Fetch all palette fonts and filter out any that failed to load
+    all_font_keys = get_palette_entries(SpecterFontPalette).values()
+    loaded_fonts = []
+    for font_key in all_font_keys:
         font, err = get_font(font_key)
         if font is not None:
-            if font.get_line_height() <= max_h and text_width(text, font) <= max_w:
-                return font_key, text
+            loaded_fonts.append((font_key, font))
+
+    # Sort largest-first by actual line height (theme-driven, not by index)
+    loaded_fonts.sort(key=lambda item: item[1].get_line_height(), reverse=True)
+
+    for font_key, font in loaded_fonts:
+        if font.get_line_height() <= max_h and text_width(text, font) <= max_w:
+            return font_key, text
 
     font_key = SpecterFontPalette.SMALL
     f_small, err = get_font(font_key)

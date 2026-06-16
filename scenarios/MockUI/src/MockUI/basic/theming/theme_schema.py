@@ -24,9 +24,11 @@ class SpecterColorPalette:
 
 
 class SpecterFontPalette:
-    """Minimum set of font slots a theme JSON must define."""
-    TEXT  = 0
-    TITLE = 1
+    """Minimum set of font slots a theme JSON must define.
+       The fonts need to be sorted in descending size.
+    """
+    TITLE = 0
+    TEXT  = 1
     SMALL = 2
 
 

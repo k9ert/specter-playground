@@ -3,9 +3,9 @@
 
 import lvgl as lv
 from .icon_widgets import make_icon
-from .containers import flex_row
-from .labels import make_label
-from .card_helpers import build_name_slot, build_delete_slot, compute_name_width
+from .inputs import title_textarea
+from .labels import make_label, menu_label, optimize_font_size
+from .card_helpers import build_delete_slot
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style, remove_style, get_style
 from ..utils.ui_consts import BTC_ICON_WIDTH, SCREEN_WIDTH, CARD_H
@@ -17,7 +17,7 @@ WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "ne
 
 # Fixed width budgets
 _ICON_W    = BTC_ICON_WIDTH
-_THRESH_W  = 40
+_THRESH_W  = 42
 _ACC_W     = 36
 _NET_W     = 42
 
@@ -143,9 +143,13 @@ class WalletCard(SpecterGuiElement):
 
         super().__init__(parent)
         if height is None:
-            height = CARD_H
+            height = lv.SIZE_CONTENT
 
-        style_as_flex_container(self, width=width, height=height, scrollable=False)
+        style_as_flex_container(self,
+                                flow=lv.FLEX_FLOW.ROW,
+                                main_align=lv.FLEX_ALIGN.START,
+                                width=width, height=height, 
+                                scrollable=False)
         # ── Input validation ──────────────────────────────────────────────────
         for s in slots:
             if s not in WALLET_SLOTS:
@@ -176,7 +180,6 @@ class WalletCard(SpecterGuiElement):
             "net":          _NET_W   if show_net       else 0,
             "delete":       _ICON_W  if show_delete    else 0,
         }
-        name_w = compute_name_width(width, slots, slot_widths)
 
         # ── Build row ─────────────────────────────────────────────────────────
         self.text_edit = None
@@ -192,17 +195,26 @@ class WalletCard(SpecterGuiElement):
                 self.wallet_type_ico = wallet_type_icon(self, wallet, device_state)
 
             elif slot == "name":
-                editable = on_name_click is not None and not wallet.is_default_wallet()
-                self.name_widget, is_edit = build_name_slot(self, wallet.label, name_w, height, on_name_click, editable=editable)
-                if is_edit:
+                if on_name_click is not None and not wallet.is_default_wallet():
+                    self.name_widget = title_textarea(self)
+                    self.name_widget.set_text(wallet.label)
+                    self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
                     self.text_edit = self.name_widget
+                else:
+                    self.name_widget = menu_label(self, wallet.label)
+                
+                self.name_widget.set_flex_grow(1)
+                # when all slots are builtcthe actual width of the name widget
+                # will be set and we can set its font optimally for the content
+                def _on_name_resized(e):
+                    optimize_font_size(self.name_widget)
+                self.name_widget.add_event_cb(_on_name_resized, lv.EVENT.SIZE_CHANGED, None)
 
             elif slot == "threshold" and show_threshold:
                 n = len(wallet.required_fingerprints)
                 self.thresh_lbl = make_label(
                     self,
                     str(wallet.threshold) + "/" + str(n),
-                    width=_THRESH_W
                 )
                 apply_style(self.thresh_lbl, ["WIDGET.INFO_ITEM", "TEXT.BODY", "TEXT.SMALL"])
                 mod = wallet_signing_status_modifier(wallet, device_state)
@@ -210,12 +222,12 @@ class WalletCard(SpecterGuiElement):
                     apply_style(self.thresh_lbl, "MODIFIER.MUTED")
 
             elif slot == "account" and show_account:
-                self.acc_lbl = make_label(self, wallet_account_text(wallet), width=_ACC_W)
+                self.acc_lbl = make_label(self, wallet_account_text(wallet))
                 apply_style(self.acc_lbl, ["WIDGET.INFO_ITEM", "TEXT.SMALL"])
 
             elif slot == "net" and show_net:
-                self.net_lbl = make_label(self, wallet_net_text(wallet), width=_NET_W)
+                self.net_lbl = make_label(self, wallet_net_text(wallet))
                 apply_style(self.net_lbl, ["WIDGET.INFO_ITEM", "TEXT.SMALL"])
 
             elif slot == "delete":
-                self.del_btn = build_delete_slot(self, _ICON_W, height, on_delete)
+                self.del_btn = build_delete_slot(self, BTC_ICON_WIDTH, BTC_ICON_WIDTH, on_delete)

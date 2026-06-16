@@ -1,10 +1,17 @@
 """Label helpers — lv.label wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..utils import set_size, set_align
-from ..theming import apply_style
+from ..utils import set_size, get_size, best_fonttype_for_size
+from ..theming import apply_style, get_font
 
 # ── Font selection helpers ────────────────────────────────────────────────────
+
+def optimize_font_size(label):
+    w, h = get_size(label)
+    font_key, display_text = best_fonttype_for_size(label.get_text(), w, h)
+    font, err = get_font(font_key)
+    label.set_text(display_text)
+    label.set_style_text_font(font, 0)
 
 def make_label(parent, text, width=lv.SIZE_CONTENT, styles = None):
     """Base label factory: create, size, font, align, colour."""
@@ -33,6 +40,4 @@ def menu_label(parent, text, width=None):
     return make_label(parent, text, width, ["WIDGET.MENU_BUTTON_FG", "FG.DEFAULT", "TEXT.TITLE"])
 
 def title_label(parent, text, width=None):
-    lbl = make_label(parent, text, width, ["WIDGET.SCREEN_TITLE"])
-    set_align(lbl, lv.ALIGN.CENTER)
-    return lbl
+    return make_label(parent, text, width, ["WIDGET.SCREEN_TITLE"])

@@ -19,9 +19,10 @@ class SeedDropUp(DropUp):
     def _navigate_add(self):
         self.on_navigate("add_seed", target_seed=None)
 
-    def _build_card(self, panel, seed):
+    def _build_card(self, panel, seed, width):
         card = SeedCard(
             panel, seed,
+            width=width,
             slots=("name", "backup_warning", "passphrase", "fingerprint", "delete"),
             on_card_click=self._make_on_row_click_cb(seed,
                                             Context.SEED,

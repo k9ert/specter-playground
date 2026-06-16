@@ -55,16 +55,19 @@ def build_name_slot(row, text, name_w, height, on_name_click, editable=True):
     font, err = get_font(font_key)
     if editable and on_name_click is not None:
         text_edit = title_textarea(row)
-        text_edit.set_width(name_w)
-        text_edit.set_style_text_font(font, 0)
+        #text_edit.set_width(name_w)
+        #text_edit.set_style_text_font(font, 0)
         text_edit.set_text(display_text)
+        text_edit.set_flex_grow(1)
 
         text_edit.add_event_cb(lambda e: on_name_click(text_edit), lv.EVENT.CLICKED, None)
         return (text_edit, True)
     else:
-        lbl = make_label(row, display_text, width=name_w)
+        #lbl = make_label(row, display_text, width=name_w)
+        lbl = make_label(row, display_text)
         apply_style(lbl, ["TEXT.TITLE", "TEXT.BODY"])
         lbl.set_style_text_font(font, 0)
+        lbl.set_flex_grow(1)
         return (lbl, False)
 
 
@@ -82,6 +85,10 @@ def build_delete_slot(row, icon_w, height, on_delete):
     def _del_cb(e):
         e.stop_bubbling = 1
         on_delete()
-    btn = Btn(row, icon=BTC_ICONS.TRASH, size=(icon_w, height), callback=_del_cb)
+    btn = Btn(row, 
+              icon=BTC_ICONS.TRASH, 
+              size=(icon_w, height),
+              background_style="APPEARANCE.TRANSPARENT",
+              callback=_del_cb)
     apply_style(btn, ["WIDGET.INFO_ITEM"])
     return btn
