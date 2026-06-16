@@ -2,7 +2,8 @@ import lvgl as lv
 from .titled_screen import TitledScreen
 from ..utils import (
     BTN_HEIGHT, BTN_WIDTH,
-    SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD,
+    SWITCH_HEIGHT,
+    CONTENT_H, TITLE_HEIGHT,
     delete_all_children_of, style_as_flex_container,
     set_size, set_pos, set_scroll, set_align,
     AUTO_GROW_MENU_BUTTONS
@@ -75,7 +76,7 @@ class GenericMenu(TitledScreen):
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
             apply_style(row.ico, "WIDGET.MENU_ICON")
-            
+
             if item.modifier == "Danger":
                 apply_style(row.ico, "FG.DANGER")
             elif item.modifier == "Warning":
@@ -133,28 +134,24 @@ class GenericMenu(TitledScreen):
             btn.set_flex_grow(int(size*10))
 
         if item.modifier == "Danger":
-            apply_style(btn._btn, "BG.DANGER")
+            btn.apply_style(background_style="BG.DANGER")
         elif item.modifier == "Warning":
-            apply_style(btn._btn, "BG.WARNING")
+            btn.apply_style(background_style="BG.WARNING")
         elif item.modifier == "Highlight":
-            apply_style(btn._btn, "BG.HIGHLIGHT")
+            btn.apply_style(background_style="BG.HIGHLIGHT")
 
-        if item.icon and isinstance(item.icon, Icon):
+        if item.icon:
             btn.ico = make_icon(btn, item.icon)
-            set_align(btn.ico, lv.ALIGN.LEFT_MID)
-            set_pos(btn.ico, PAD, 0)
             apply_style(btn.ico, "WIDGET.MENU_ICON")
 
         # Right-side container: [suffixes...] [help?] [caret — always reserved]
         btn.right_cont = flex_row(
-            btn._btn,
+            btn,
             width=lv.SIZE_CONTENT,
             height=lv.pct(100),
             main_align=lv.FLEX_ALIGN.START,
         )
         btn.right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
-        set_scroll(btn.right_cont, horizontal=False, vertical=False)
-        btn.right_cont.add_flag(lv.obj.FLAG.FLOATING)
         btn.right_cont.suf = []
         for suf in (item.suffix or []):
             if suf.icon is not None:
@@ -167,17 +164,13 @@ class GenericMenu(TitledScreen):
                 btn.right_cont.suf.append(lbl)
 
         if item.help_key:
-            h_btn = self._add_help_btn(btn.right_cont, item.text, item.help_key)
-            btn.right_cont.suf.append(h_btn)
+            btn.right_cont.h_btn = self._add_help_btn(btn.right_cont, item.text, item.help_key)
 
         if item.is_submenu:
-            sub_men_ind = make_icon(btn.right_cont, BTC_ICONS.CARET_RIGHT)
-            apply_style(sub_men_ind, "WIDGET.SUBMENU_INDICATOR")
-            btn.right_cont.suf.append(sub_men_ind)
+            btn.right_cont.sub_men_ind = make_icon(btn.right_cont, BTC_ICONS.CARET_RIGHT)
+            apply_style(btn.right_cont.sub_men_ind, "WIDGET.SUBMENU_INDICATOR")        
 
-        btn.right_cont.update_layout()
         set_align(btn.right_cont, lv.ALIGN.RIGHT_MID)
-        set_pos(btn.right_cont, x=-SMALL_PAD, y=0)
 
         btn_click_cb = None
         if callable(item.target):
