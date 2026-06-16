@@ -35,6 +35,7 @@ from .theming import apply_style, remove_style, reset_style, ColorMode, to_lv_co
 from .specter_gui import SpecterGui
 
 __all__ = [
+    "AUTO_GROW_MENU_BUTTONS",
     "BTC_ICONS",
      # widgets
     "Btn", "MenuItem", "make_icon", 

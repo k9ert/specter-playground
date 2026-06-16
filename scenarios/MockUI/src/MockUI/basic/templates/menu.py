@@ -4,7 +4,8 @@ from ..utils import (
     BTN_HEIGHT, BTN_WIDTH,
     SWITCH_HEIGHT, SWITCH_WIDTH, PAD, SMALL_PAD,
     delete_all_children_of, style_as_flex_container,
-    set_size, set_pos, set_scroll, set_align
+    set_size, set_pos, set_scroll, set_align,
+    AUTO_GROW_MENU_BUTTONS
 )
 from ..symbol_lib import Icon, BTC_ICONS
 from ..theming import apply_style
@@ -35,7 +36,6 @@ class GenericMenu(TitledScreen):
             title = self.get_title(self.t, self.device_state)
             self.title.set_text(title)
 
-        style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100), scrollable=True)
         self.fill_body()
 
     def refresh(self):
@@ -43,6 +43,7 @@ class GenericMenu(TitledScreen):
         super().refresh()
 
     def fill_body(self):
+        style_as_flex_container(self.body, width=lv.pct(100), height=CONTENT_H-TITLE_HEIGHT, scrollable=True)
         menu_items = self.get_menu_items(self.t, self.device_state)
         self.pre_init(self.t, self.device_state)
         self._build_menu_items(menu_items)
@@ -55,6 +56,7 @@ class GenericMenu(TitledScreen):
 
     def _build_menu_items(self, menu_items):
         self.body.rows=[];
+
         """Dispatch each MenuItem to the appropriate row builder."""
         for item in menu_items:
             if item.target is None and (item.get_value is None or item.set_value is None):
@@ -68,10 +70,12 @@ class GenericMenu(TitledScreen):
     def _build_section_title_row(self, item):
         """Section header row: optional icon + bold/coloured heading label."""
         row = flex_row(self.body, width=lv.pct(100), main_align=lv.FLEX_ALIGN.START)
+        apply_style(row, "WIDGET.MENU_SECTION_HEADER")
 
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
             apply_style(row.ico, "WIDGET.MENU_ICON")
+            
             if item.modifier == "Danger":
                 apply_style(row.ico, "FG.DANGER")
             elif item.modifier == "Warning":
@@ -119,14 +123,14 @@ class GenericMenu(TitledScreen):
         # Normalize size: default to 1, ensure minimum of 1
         size = item.height_scaling if item.height_scaling and item.height_scaling >= 1 else 1
 
-        # Btn: icon is positioned manually at LEFT_MID so it stays left-aligned
-        # regardless of text length (not using flex).
         btn = Btn(self.body,
                   text=item.text,
-                  size=(BTN_WIDTH, int(BTN_HEIGHT * size)),
+                  size=(BTN_WIDTH, int(BTN_HEIGHT*size)),
                   background_style="WIDGET.MENU_BUTTON",
                   foreground_style="WIDGET.MENU_BUTTON_FG",
                 )
+        if AUTO_GROW_MENU_BUTTONS:
+            btn.set_flex_grow(int(size*10))
 
         if item.modifier == "Danger":
             apply_style(btn._btn, "BG.DANGER")

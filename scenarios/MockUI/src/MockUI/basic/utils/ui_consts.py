@@ -2,6 +2,8 @@ from micropython import const
 import lvgl as lv
 
 
+AUTO_GROW_MENU_BUTTONS = const(0)
+
 SCREEN_WIDTH = const(480)
 SCREEN_HEIGHT = const(800)
 

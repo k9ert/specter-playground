@@ -6,6 +6,7 @@ from .animations import GUIAnimations, slide_x, slide_y, create_anims_for_transi
 
 __all__ = [
     # ui_consts
+    "AUTO_GROW_MENU_BUTTONS",
     "SCREEN_WIDTH", "SCREEN_HEIGHT",
     "BTN_HEIGHT", "BTN_WIDTH",
     "PIN_BTN_HEIGHT", "PIN_BTN_WIDTH",
