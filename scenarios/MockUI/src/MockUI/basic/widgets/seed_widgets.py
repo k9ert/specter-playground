@@ -53,13 +53,13 @@ def passphrase_toggle(parent, seed):
     img = make_icon(parent, BTC_ICONS.PASSWORD)
     img.add_flag(lv.obj.FLAG.CLICKABLE)
     apply_style(img, "WIDGET.INFO_ITEM")
-    apply_style(img, "MUTED", lv.STATE.DISABLED)
-    img.set_state(lv.STATE.DISABLED, not seed.passphrase_active)
+    apply_style(img, "MODIFIER.MUTED", lv.STATE.CHECKED)
+    img.set_state(lv.STATE.CHECKED, not seed.passphrase_active)
 
     def _cb(e):
         e.stop_bubbling = 1
         seed.passphrase_active = not seed.passphrase_active
-        img.set_state(lv.STATE.DISABLED, not seed.passphrase_active)
+        img.set_state(lv.STATE.CHECKED, not seed.passphrase_active)
         parent.gui.refresh_ui()
 
     img.add_event_cb(_cb, lv.EVENT.CLICKED, None)
