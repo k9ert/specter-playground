@@ -66,7 +66,6 @@ def button_modal(text, buttons=None):
         btn = Btn(modal.btn_row,
                   icon=icon,
                   text=label,
-                  size=(None, BTN_HEIGHT)
                   )
         modal.btn_row.buttons.append(btn)
 
