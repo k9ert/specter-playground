@@ -16,10 +16,11 @@ from .specter_gui_base import SpecterGuiMixin
 from ..widgets import Btn, flex_col, flex_row
 from ..utils import (
     STATUS_BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
-    STATUS_BAR_PCT, CARD_H,
+    STATUS_BAR_PCT,
     ANIM_MS_VERTICAL,
     slide_y, delete_all_children_of,
-    set_size, set_pos, set_scroll, set_propagate_events,
+    set_pos, set_scroll, set_propagate_events,
+    get_size, get_pos,
 )
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style
@@ -77,7 +78,6 @@ class DropUp(SpecterGuiMixin):
         self._panel = flex_col(
             backdrop_overlay,
             width=SCREEN_WIDTH,
-            height=_PANEL_MAX_H,
             main_align=lv.FLEX_ALIGN.START,
         )
         set_scroll(self._panel, horizontal=False, vertical=True)
@@ -94,7 +94,10 @@ class DropUp(SpecterGuiMixin):
                 self._animating = False
                 self._anim = None
 
-            panel_y = _PANEL_MAX_H - self._compute_panel_h()
+            #needed to finish the flex layout
+            self._panel.update_layout() 
+            pan_w, pan_h = get_size(self._panel)
+            panel_y = _PANEL_MAX_H - pan_h
             self._anim = slide_y(self._panel, _PANEL_MAX_H, panel_y, ANIM_MS_VERTICAL, on_done_cb=_on_open_done)
             self._anim.start()
 
@@ -119,7 +122,7 @@ class DropUp(SpecterGuiMixin):
         if self.ui_state.are_animations_enabled:
             self._animating = True
             self._closing = True
-            panel_y_now = self._panel.get_y()
+            panel_x_now, panel_y_now = get_pos(self._panel)
             panel_y_end = _PANEL_MAX_H  # slide off-screen down
             self._anim = slide_y(self._panel, panel_y_now, panel_y_end, ANIM_MS_VERTICAL, on_done_cb=_on_close_done)
             self._anim.start()
@@ -139,17 +142,16 @@ class DropUp(SpecterGuiMixin):
     def _fill_panel(self):
         """Clear, repopulate, and resize/reposition the panel."""
         delete_all_children_of(self._panel)
-        panel_h = self._compute_panel_h()
 
         self._panel.rows = []
         for item in self._get_items():
             #styling is done in _build_card
-            row = self._build_card(self._panel, item)
+            row = self._build_card(self._panel, item, width=SCREEN_WIDTH)
             self._panel.rows.append(row)
             apply_style(row, "BORDER.BOTTOM")
 
         # Add button row
-        row = flex_row(self._panel, width=SCREEN_WIDTH, height=_ADD_BTN_H,
+        row = flex_row(self._panel, width=SCREEN_WIDTH,
                        main_align=lv.FLEX_ALIGN.CENTER)
         apply_style(row, "WIDGET.DROP_UP_ROW")
         self._panel.rows.append(row)
@@ -158,18 +160,13 @@ class DropUp(SpecterGuiMixin):
             row,
             icon=BTC_ICONS.PLUS,
             text=self._add_button_label(),
-            size=(None, _ADD_BTN_H),
             callback=self._add_cb,
             background_style="WIDGET.DROP_UP_ADDBTN",
             foreground_style="WIDGET.DROP_UP_ADDBTN_FG",
         )
 
-        set_size(self._panel, SCREEN_WIDTH, panel_h)
-        set_pos(self._panel, 0, _PANEL_MAX_H - panel_h)
-
-    def _compute_panel_h(self):
-        content_h = len(self._get_items()) * CARD_H + _ADD_BTN_H
-        return min(content_h, _PANEL_MAX_H)
+        w, h = get_size(self._panel)
+        set_pos(self._panel, 0, max(_PANEL_MAX_H - h, 0))
 
     def _add_cb(self, event=None):
         self.close()
@@ -194,7 +191,7 @@ class DropUp(SpecterGuiMixin):
         """Return list of items (seeds or wallets) to display."""
         raise NotImplementedError
 
-    def _build_card(self, parent, item):
+    def _build_card(self, parent, item, width):
         """Build one item card inside *parent* and return the row widget."""
         raise NotImplementedError
 
