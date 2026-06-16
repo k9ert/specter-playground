@@ -47,6 +47,8 @@ class UIExplainer(SpecterGuiMixin):
         """Create and display the explainer overlay."""
         cutout = self._get_cutout_area()
         self._overlay = modal_overlay()
+        #make transparent as we will add our own dim strips on top
+        apply_style(self._overlay, "APPEARANCE.TRANSPARENT")
         self._create_dim_strips(cutout)
         self._create_text_box()
     
