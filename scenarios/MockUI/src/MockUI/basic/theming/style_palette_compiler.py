@@ -25,7 +25,7 @@ PROP_ID ranges (device side uses range checks, not a dict):
   0x01-0x0B  COLOR attrs
   0x10       FONT attr (text_font)
   0x20-0x2E  OPA attrs
-  0x30-0x58  INT attrs
+  0x30-0x5A  INT attrs
   0x60-0x69  ENUM attrs
   0x70-0x74  BOOL attrs
   0xFF       STYLE_INHERIT (special)
@@ -38,7 +38,7 @@ if '.' in __name__:
     from .theme_schema import SpecterStylePalette, SpecterColorPalette, SpecterFontPalette
     from ..templates.settings_file_compiler import (
         MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, HEADER_SIZE, OFFSET_SIZE,
-        read_cstring, collect_int_constants
+        read_cstring
     )
     from .color_palette_compiler import to_lv_color, shade, color_ref_to_palette_idx
     from .font_palette_compiler import font_ref_to_palette_idx
@@ -159,6 +159,8 @@ _INT_ATTRS = (
     "margin_right",      # 0x56
     "margin_top",        # 0x57
     "margin_bottom",     # 0x58
+    "x",                 # 0x59
+    "y",                 # 0x5A
 )
 
 _ENUM_BASE = 0x60
@@ -282,7 +284,7 @@ def _group_from_prop_id(prop_id):
         return _GRP_FONT
     if 0x20 <= prop_id <= 0x2E:
         return _GRP_OPA
-    if 0x30 <= prop_id <= 0x58:
+    if 0x30 <= prop_id <= 0x5A:
         return _GRP_INT
     if 0x60 <= prop_id <= 0x69:
         return _GRP_ENUM
@@ -299,7 +301,7 @@ def _attr_name_from_prop_id(prop_id):
         return "text_font"
     if 0x20 <= prop_id <= 0x2E:
         return _OPA_ATTRS[prop_id - _OPA_BASE]
-    if 0x30 <= prop_id <= 0x58:
+    if 0x30 <= prop_id <= 0x5A:
         return _INT_ATTRS[prop_id - _INT_BASE]
     if 0x60 <= prop_id <= 0x69:
         return _ENUM_ATTRS[prop_id - _ENUM_BASE]
