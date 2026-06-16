@@ -16,7 +16,7 @@ from ..utils.generic_utils import resolve_obj
 INTRO_TOUR_STEPS = [
     (None,                                                  "TOUR_INTRO",          "center"),
     ("navigation_bar",                                      "TOUR_WALLET_BAR",     "above"),
-    ("screen.view.body.rows[1].right_cont.suf[0]",          "TOUR_HELP_ICON",      "left"),
+    ("screen.view.body.rows[1].right_cont.h_btn",          "TOUR_HELP_ICON",      "left"),
 ]
 
 
