@@ -82,7 +82,6 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                 width=SCREEN_WIDTH,
                 height=BTN_HEIGHT,
             )
-            set_propagate_events(card.row, True)
             set_propagate_events(card, True)
 
         self._configure_scroll()
