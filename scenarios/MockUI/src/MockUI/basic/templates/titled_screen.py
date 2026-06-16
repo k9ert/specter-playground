@@ -1,25 +1,23 @@
 """Base class for all views (menus, action screens, etc.) that have a title.
 
-Provides an optional fixed-height title bar at the top (containing a centred title
+Provides a fixed-height title bar at the top (optionally containing a centred title
 label) and a body area below that fills the remaining space.
 
 Layout variants (absolute, no flex on root):
 
   Default (show_title=True):
-    ┌────────────────────────────────────────┐
-    │  title_bar  (TITLE_ROW_HEIGHT px)      │
-    ├────────────────────────────────────────┤
-    │  (TITLE_PADDING gap)                   │
-    ├────────────────────────────────────────┤
-    │  body  (fills remaining height)        │
-    └────────────────────────────────────────┘
+    ┌─────────────────────────────────────────────────────────────┐
+    │  title_bar  (TITLE_ROW_HEIGHT px), include title label      │
+    ├─────────────────────────────────────────────────────────────┤
+    │  body  (fills remaining height)                             │
+    └─────────────────────────────────────────────────────────────┘
 
   show_title=False:
-    ┌────────────────────────────────────────┐
-    │  (transparent spacer TITLE_ROW_HEIGHT) │
-    ├────────────────────────────────────────┤
-    │  body  (fills remaining height)        │
-    └────────────────────────────────────────┘
+    ┌─────────────────────────────────────────────────────────────┐
+    │  title_bar  (TITLE_ROW_HEIGHT px), no title label           │
+    ├─────────────────────────────────────────────────────────────┤
+    │  body  (fills remaining height)                             │
+    └─────────────────────────────────────────────────────────────┘
 
 """
 
@@ -27,9 +25,8 @@ import lvgl as lv
 from .specter_gui_base import SpecterGuiElement
 from ..theming import apply_style
 from ..utils import (
-    TITLE_HEIGHT, TITLE_PADDING, CONTENT_H,
-    SMALL_PAD,
-    style_as_screen_backdrop, set_pos, set_scroll, set_align
+    TITLE_HEIGHT, CONTENT_H,
+    style_as_flex_container, set_pos, set_align
 )
 from ..widgets import title_label, Btn, flex_row, screen_backdrop
 from ..symbol_lib import BTC_ICONS
@@ -44,40 +41,32 @@ class TitledScreen(SpecterGuiElement):
                             or None when show_title=False
         self.body         - lv.obj below the title bar; put content here
 
-    Subclasses must guard before accessing self.title / self.title_bar
-    self.title and self.title_bar might be None
+    Subclasses must guard before accessing self.title
+    self.title might be None
     """
 
     def __init__(self, title, parent, *, show_title=True):
         super().__init__(parent)
 
         # Root: fill parent completely, no decoration.
-        style_as_screen_backdrop(self, width=lv.pct(100), height=lv.pct(100))
-
-        y_body = 0  # accumulated y-offset for the body widget
+        style_as_flex_container(self,
+                                flow=lv.FLEX_FLOW.COLUMN, 
+                                width=lv.pct(100), height=lv.pct(100),
+                                main_align = lv.FLEX_ALIGN.START, 
+                                scrollable=False)
+        apply_style(self, "WIDGET.SCREEN")
 
         # ── 1. Title bar ──────────────────────────────────────────────────────
-        self.title_bar = None
         self.title = None
+        self.title_bar = flex_row(self, 
+                                  width=lv.pct(100),
+                                  height=TITLE_HEIGHT)
         if show_title:
-            self.title_bar = flex_row(self, 
-                                      width=lv.pct(100),
-                                      height=TITLE_HEIGHT)
-            set_pos(self.title_bar, x=0, y=0)
             self.title = title_label(self.title_bar, title)
-            y_body = TITLE_HEIGHT + TITLE_PADDING
-        else:
-            # No title strip — place an invisible spacer so the battery widget
-            # (floating above content at y=0) doesn't overlap body content.
-            self.spacer = flex_row(self,
-                                   width=lv.pct(100),
-                                   height=TITLE_HEIGHT)
-            y_body = TITLE_HEIGHT
 
         # ── 2. Body ───────────────────────────────────────────────────────────
         content_h = CONTENT_H
-        self.body = screen_backdrop(self, width=lv.pct(100), height=content_h - y_body)
-        set_pos(self.body, x=0, y=y_body)
+        self.body = screen_backdrop(self, width=lv.pct(100), height=content_h - TITLE_HEIGHT)
 
     def refresh(self):
         """Refresh dynamic content (override in subclasses as needed)."""
@@ -134,7 +123,6 @@ class TitledScreen(SpecterGuiElement):
                               background_style=["WIDGET.BUTTON", "BG.DANGER"],
                               )
         set_align(self.delete_btn, lv.ALIGN.RIGHT_MID)
-        set_pos(self.delete_btn, x=-SMALL_PAD)
 
         self.delete_btn.add_event_cb(on_click, lv.EVENT.CLICKED, None)
         return self.delete_btn
