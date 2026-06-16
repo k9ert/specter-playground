@@ -30,8 +30,8 @@ def form_textarea(parent, width=lv.pct(60)):
     ta.set_one_line(True)
     return ta
 
-def password_textarea(parent, width=lv.pct(60)):
-    ta = title_textarea(parent, width)
+def password_textarea(parent):
+    ta = title_textarea(parent)
     ta.set_password_mode(True)
     return ta
 
