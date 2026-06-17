@@ -2,7 +2,7 @@
 """
 
 import lvgl as lv
-from .icon_widgets import make_icon,
+from .icon_widgets import make_icon
 from .containers import flex_row
 from .inputs import title_textarea
 from .labels import make_label, menu_label, optimize_font_size
