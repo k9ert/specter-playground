@@ -20,6 +20,11 @@ class ThemeMenu(GenericMenu):
                 self._make_select_cb(name),
             ))
 
+        if state.SD_detected():
+            items.append(MenuItem(
+                BTC_ICONS.PLUS, t("MENU_LOAD_NEW_THEME"), "load_theme",
+            ))
+
         return items
 
     def _make_select_cb(self, name):

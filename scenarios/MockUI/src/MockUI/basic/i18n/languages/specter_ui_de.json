@@ -490,6 +490,10 @@
       "text": "Neue Sprache laden",
       "ref_en": "Load New Language"
     },
+    "MENU_LOAD_NEW_THEME": {
+      "text": "Neues Theme laden",
+      "ref_en": "Load New Theme"
+    },
     "HARDWARE_SMARTCARD": {
       "text": "SmartCard",
       "ref_en": "SmartCard"

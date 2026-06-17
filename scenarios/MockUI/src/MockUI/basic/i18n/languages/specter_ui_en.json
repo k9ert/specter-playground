@@ -148,6 +148,7 @@
     "MENU_SETTINGS_SECURITY": "Security Settings",
     "MENU_LANGUAGE": "Select Language",
     "MENU_LOAD_NEW_LANGUAGE": "Load New Language",
+    "MENU_LOAD_NEW_THEME": "Load New Theme",
     
     "HARDWARE_SMARTCARD": "SmartCard",
     "HARDWARE_SD_CARD": "SD Card",
