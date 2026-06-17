@@ -48,21 +48,22 @@ class SpecterStylePalette:
         TEXT_EDIT             =  9
         INFO_ITEM             = 10
         HELP_ICON             = 11
-        MENU_SECTION_HEADER   = 12
-        MENU_BUTTON           = 13
-        MENU_BUTTON_FG        = 14        
-        MENU_ICON             = 15
-        MENU_SWITCH           = 16
-        SUBMENU_INDICATOR     = 17
-        DROPUP                = 18
-        DROP_UP_ROW           = 19
-        DROP_UP_ADDBTN        = 20
-        DROP_UP_ADDBTN_FG     = 21
-        CONTEXT_BAR           = 22
-        KEYBOARD              = 23
-        BATTERY               = 24
-        PIN_BUTTON            = 25
-        PIN_DISPLAY           = 26
+        MENU_CONTAINER        = 12
+        MENU_SECTION_HEADER   = 13
+        MENU_BUTTON           = 14
+        MENU_BUTTON_FG        = 15        
+        MENU_ICON             = 16
+        MENU_SWITCH           = 17
+        SUBMENU_INDICATOR     = 18
+        DROPUP                = 19
+        DROP_UP_ROW           = 20
+        DROP_UP_ADDBTN        = 21
+        DROP_UP_ADDBTN_FG     = 22
+        CONTEXT_BAR           = 23
+        KEYBOARD              = 24
+        BATTERY               = 25
+        PIN_BUTTON            = 26
+        PIN_DISPLAY           = 27
         # reserved till 40
 
     class TEXT:
