@@ -55,7 +55,7 @@ def make_delete_active_handler(menu, t, confirm_fn, attr, remove_method):
         attr:          Name of the ui_state attribute holding the active entity.
         remove_method: Name of the device_state method that removes the entity.
     """
-    def _on_delete():
+    def _on_delete(e=None):
         entity = getattr(menu.ui_state, attr)
 
         def _do_delete():
