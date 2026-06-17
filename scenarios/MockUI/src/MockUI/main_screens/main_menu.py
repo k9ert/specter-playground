@@ -48,14 +48,14 @@ class MainMenu(GenericMenu):
         if has_seed_that_is_not_backed_up:
             menu_items += [
                 MenuItem(text=t("MAIN_MENU_BACKUP_SECTION")),
-                MenuItem(BTC_ICONS.MNEMONIC, t("MAIN_MENU_BACKUP_SEED"), "backup_seed", height_scaling=1.5, modifier="Warning", help_key="HELP_BACKUP_SEED"),
+                MenuItem(BTC_ICONS.MNEMONIC, t("MAIN_MENU_BACKUP_SEED"), "backup_seed", height_scaling=1.3, modifier="Warning", help_key="HELP_BACKUP_SEED"),
             ]
 
 
         if has_controlled_input:
             menu_items.append(MenuItem(text=t("MAIN_MENU_PROCESS_INPUT")))
             if state.QR_enabled():
-                menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("MAIN_MENU_SCAN_QR"), "scan_qr", height_scaling=1.5, help_key="HELP_SCAN_QR"))
+                menu_items.append(MenuItem(BTC_ICONS.QR_CODE, t("MAIN_MENU_SCAN_QR"), "scan_qr", height_scaling=1.3, help_key="HELP_SCAN_QR"))
             if state.SD_detected():
                 menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("MAIN_MENU_LOAD_FROM_SD"), "load_sd"))
 
