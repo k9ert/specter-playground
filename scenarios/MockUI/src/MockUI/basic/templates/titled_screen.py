@@ -123,6 +123,7 @@ class TitledScreen(SpecterGuiElement):
                               background_style=["WIDGET.BUTTON", "BG.DANGER"],
                               )
         set_align(self.delete_btn, lv.ALIGN.RIGHT_MID)
+        self.delete_btn.add_flag(lv.obj.FLAG.FLOATING)
 
         self.delete_btn.add_event_cb(on_click, lv.EVENT.CLICKED, None)
         return self.delete_btn
