@@ -117,7 +117,7 @@ from .icons.menu import MENU
 # from .icons.mining import MINING
 # from .icons.mining_device import MINING_DEVICE
 # from .icons.mining_pool import MINING_POOL
-# from .icons.minus import MINUS
+from .icons.minus import MINUS
 # from .icons.mixed import MIXED
 from .icons.mnemonic import MNEMONIC
 from .icons.moon import MOON
@@ -305,7 +305,7 @@ class BTC_ICONS:
 #     MINING = MINING
 #     MINING_DEVICE = MINING_DEVICE
 #     MINING_POOL = MINING_POOL
-#     MINUS = MINUS
+    MINUS = MINUS
 #     MIXED = MIXED
     MNEMONIC = MNEMONIC
     MOON = MOON
