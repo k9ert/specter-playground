@@ -12,8 +12,8 @@ def make_icon(parent, icon, width=None, height=None):
     Args:
         parent: LVGL parent object.
         icon:   Icon factory (e.g. ``BTC_ICONS.RELAY``) or an ``Icon`` instance.
-        width:  Widget width in pixels.  Defaults to ``BTC_ICON_WIDTH``.
-        height: Widget height in pixels.  Defaults to ``BTC_ICON_WIDTH``.
+        width:  Targeted width in pixels.  Defaults to ``BTC_ICON_WIDTH``.
+        height: Targeted height in pixels.  Defaults to ``BTC_ICON_WIDTH``.
         zoom:   Zoom factor for the icon.  Defaults to ``BTC_ICON_ZOOM``.
 
     Returns:
@@ -33,7 +33,6 @@ def make_icon(parent, icon, width=None, height=None):
 
     img = lv.image(parent)
     apply_icon(img, icon)
-    set_size(img, target_size, target_size)
     set_scale(img, scale)
 
     return img
