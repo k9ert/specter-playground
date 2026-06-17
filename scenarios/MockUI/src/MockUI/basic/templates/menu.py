@@ -5,7 +5,7 @@ from ..utils import (
     SWITCH_HEIGHT,
     CONTENT_H, TITLE_HEIGHT,
     delete_all_children_of, style_as_flex_container,
-    set_size, set_pos, set_scroll, set_align,
+    set_align,
     AUTO_GROW_MENU_BUTTONS
 )
 from ..symbol_lib import Icon, BTC_ICONS
@@ -189,7 +189,7 @@ class GenericMenu(TitledScreen):
                     background_style="APPEARANCE.TRANSPARENT",
                     foreground_style="WIDGET.HELP_ICON",
                 )
-        help_text = item_text + "\n" + self.t(help_key)
+        help_text = item_text + "\n\n" + self.t(help_key)
         def _on_help_click(e):
             e.stop_bubbling = 1
             button_modal(text=help_text)
