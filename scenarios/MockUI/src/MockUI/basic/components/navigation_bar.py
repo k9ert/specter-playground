@@ -30,6 +30,7 @@ from .wallet_dropup import WalletDropUp
 from ..utils import (
     SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BAR_H,
     BTC_ICON_WIDTH,
+    delete_all_children_of,
     style_as_flex_container
 )
 from ..symbol_lib import BTC_ICONS
@@ -46,7 +47,9 @@ class NavigationBar(SpecterGuiElement):
         super().__init__(gui)
         # Shared semi-transparent backdrop (one modal_overlay for both drop-ups)
         self._backdrop = None
+        self._build()
 
+    def _build(self):
         # Create drop-ups — NavigationBar owns their lifecycle
         self._seed_dropup = SeedDropUp()
         self._seed_dropup._on_closed = self._on_any_panel_closed
@@ -79,6 +82,8 @@ class NavigationBar(SpecterGuiElement):
                                      background_style="WIDGET.NAVBAR_BUTTON",
                                      foreground_style="WIDGET.NAVBAR_BUTTON_FG")
             apply_style(self.buttons[name], "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
+
+        self.refresh()  # initial state
 
     # ── Drop-up management ────────────────────────────────────────────────────────
 
@@ -125,6 +130,25 @@ class NavigationBar(SpecterGuiElement):
         """Close any open drop-ups."""
         self._close_dropup(self._seed_dropup)
         self._close_dropup(self._wallet_dropup)
+    
+    def rebuild(self):
+        """Rebuild the navigation bar and its drop-ups from scratch."""
+        if self._seed_dropup and self._seed_dropup._anim:
+            self._seed_dropup._anim = None
+        if self._wallet_dropup and self._wallet_dropup._anim:
+            self._wallet_dropup._anim = None
+        # Delete existing buttons and drop-ups (if any)
+        if self._backdrop is not None:
+            self._backdrop.delete()
+            self._backdrop = None
+        
+        self._seed_dropup = None
+        self._wallet_dropup = None
+        
+        delete_all_children_of(self)  # deletes the nav bar buttons
+        
+        # Rebuild everything
+        self._build()
 
     def refresh(self):
         """Update filled/outline icons and Back button visibility.

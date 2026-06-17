@@ -129,17 +129,24 @@ class SpecterGui(lv.obj):
     def change_language(self, lang_code):
         """Change the active language and rebuild the current screen."""
         self.i18n.set_language(lang_code)
-        self.refresh_ui()
+        self.rebuild_ui()
 
     def change_theme(self, theme_name, mode=None):
         """Change the active theme (and optionally mode) and rebuild the current screen."""
         self.theme.set_theme(theme_name, mode)
-        self.refresh_ui()
+        self.rebuild_ui()
 
     def change_mode(self, mode):
         """Toggle dark/light mode and rebuild the current screen."""
         self.theme.set_mode(mode)
-        self.refresh_ui()
+        self.rebuild_ui()
+
+    def rebuild_ui(self):
+        """Rebuild the entire UI from scratch, keeping the current menu and context."""
+        if self.screen:
+            self.screen.delete()
+        self.screen = self._make_screen()
+        self.navigation_bar.rebuild()
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
