@@ -20,15 +20,22 @@ val_type constants:
   0x02 FONT_PAL   — index into SpecterFontPalette
   0x03 STYLE_PAL  — SPECTER_STYLES int value (STYLE_INHERIT op only, prop_id 0xFF)
   0x04 LIT        — index into LIT dict
+  0x05 ARRAY      — index = array length N; next N ops are elements (same 3-byte format)
 
 PROP_ID ranges (device side uses range checks, not a dict):
-  0x01-0x0B  COLOR attrs
-  0x10       FONT attr (text_font)
-  0x20-0x2E  OPA attrs
-  0x30-0x5A  INT attrs
-  0x60-0x69  ENUM attrs
-  0x70-0x74  BOOL attrs
+  0x01-0x1F  COLOR attrs  (31 slots)
+  0x20       FONT attr    (text_font)
+  0x40-0x5F  OPA attrs    (32 slots)
+  0x60-0x9F  INT attrs    (64 slots)
+  0xA0-0xBF  ENUM attrs   (32 slots)
+  0xC0-0xCF  BOOL attrs   (16 slots)
+  0xD0-0xDF  ARRAY attrs  (16 slots, e.g. grid track descriptors)
   0xFF       STYLE_INHERIT (special)
+
+INT attrs accept special string values:
+  "SIZE_CONTENT"  — resolves to lv.SIZE_CONTENT
+  "pct(N)"        — resolves to lv.pct(N)
+  "FR(N)"         — resolves to lv.grid_fr(N) (grid track descriptors)
 """
 
 import struct
@@ -71,119 +78,143 @@ VAL_COLOR_PAL = 0x01
 VAL_FONT_PAL  = 0x02
 VAL_STYLE_PAL = 0x03
 VAL_LIT       = 0x04
+VAL_ARRAY     = 0x05
 
 PROP_STYLE_INHERIT = 0xFF
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PROP_ID tables — tuples live in code flash when frozen; no heap for the
 # structure itself (only for temporaries during a call).
+#
+# Ranges are spaced generously to allow future expansion without breaking.
 # ─────────────────────────────────────────────────────────────────────────────
 
 _COLOR_BASE = 0x01
 _COLOR_ATTRS = (
-    "bg_color",          # 0x01
-    "bg_grad_color",     # 0x02
-    "text_color",        # 0x03
-    "border_color",      # 0x04
-    "shadow_color",      # 0x05
-    "outline_color",     # 0x06
-    "arc_color",         # 0x07
-    "line_color",        # 0x08
-    "image_recolor",     # 0x09
-    "bg_image_recolor",  # 0x0A
-    "recolor",           # 0x0B
+    "bg_color",                    # 0x01
+    "bg_grad_color",               # 0x02
+    "text_color",                  # 0x03
+    "border_color",                # 0x04
+    "shadow_color",                # 0x05
+    "outline_color",               # 0x06
+    "arc_color",                   # 0x07
+    "line_color",                  # 0x08
+    "image_recolor",               # 0x09
+    "bg_image_recolor",            # 0x0A
+    "recolor",                     # 0x0B
+    "text_outline_stroke_color",   # 0x0C
 )
 
-_FONT_BASE = 0x10
+_FONT_BASE = 0x20
 # text_font is the only FONT attr; handled directly by range check.
 
-_OPA_BASE = 0x20
+_OPA_BASE = 0x40
 _OPA_ATTRS = (
-    "bg_opa",                # 0x20
-    "bg_grad_opa",           # 0x21
-    "bg_main_opa",           # 0x22
-    "border_opa",            # 0x23
-    "text_opa",              # 0x24
-    "shadow_opa",            # 0x25
-    "outline_opa",           # 0x26
-    "arc_opa",               # 0x27
-    "line_opa",              # 0x28
-    "image_opa",             # 0x29
-    "bg_image_opa",          # 0x2A
-    "bg_image_recolor_opa",  # 0x2B
-    "opa",                   # 0x2C
-    "opa_layered",           # 0x2D
-    "color_filter_opa",      # 0x2E
+    "bg_opa",                # 0x40
+    "bg_grad_opa",           # 0x41
+    "bg_main_opa",           # 0x42
+    "border_opa",            # 0x43
+    "text_opa",              # 0x44
+    "shadow_opa",            # 0x45
+    "outline_opa",           # 0x46
+    "arc_opa",               # 0x47
+    "line_opa",              # 0x48
+    "image_opa",             # 0x49
+    "bg_image_opa",          # 0x4A
+    "bg_image_recolor_opa",  # 0x4B
+    "opa",                   # 0x4C
+    "opa_layered",           # 0x4D
+    "color_filter_opa",      # 0x4E
+    "text_outline_stroke_opa",  # 0x4F
 )
 
-_INT_BASE = 0x30
+_INT_BASE = 0x60
 _INT_ATTRS = (
-    "border_width",      # 0x30
-    "radius",            # 0x31
-    "pad_all",           # 0x32
-    "pad_top",           # 0x33
-    "pad_bottom",        # 0x34
-    "pad_left",          # 0x35
-    "pad_right",         # 0x36
-    "pad_hor",           # 0x37
-    "pad_ver",           # 0x38
-    "pad_row",           # 0x39
-    "pad_column",        # 0x3A
-    "pad_gap",           # 0x3B
-    "shadow_width",      # 0x3C
-    "shadow_spread",     # 0x3D
-    "shadow_offset_x",   # 0x3E
-    "shadow_offset_y",   # 0x3F
-    "outline_width",     # 0x40
-    "outline_pad",       # 0x41
-    "arc_width",         # 0x42
-    "line_width",        # 0x43
-    "line_dash_width",   # 0x44
-    "line_dash_gap",     # 0x45
-    "text_letter_space", # 0x46
-    "text_line_space",   # 0x47
-    "width",             # 0x48
-    "height",            # 0x49
-    "min_width",         # 0x4A
-    "max_width",         # 0x4B
-    "min_height",        # 0x4C
-    "max_height",        # 0x4D
-    "transform_rotation",# 0x4E
-    "transform_scale_x", # 0x4F
-    "transform_scale_y", # 0x50
-    "transform_skew_x",  # 0x51
-    "transform_skew_y",  # 0x52
-    "translate_x",       # 0x53
-    "translate_y",       # 0x54
-    "margin_left",       # 0x55
-    "margin_right",      # 0x56
-    "margin_top",        # 0x57
-    "margin_bottom",     # 0x58
-    "x",                 # 0x59
-    "y",                 # 0x5A
+    "border_width",          # 0x60
+    "radius",                # 0x61
+    "pad_all",               # 0x62
+    "pad_top",               # 0x63
+    "pad_bottom",            # 0x64
+    "pad_left",              # 0x65
+    "pad_right",             # 0x66
+    "pad_hor",               # 0x67
+    "pad_ver",               # 0x68
+    "pad_row",               # 0x69
+    "pad_column",            # 0x6A
+    "pad_gap",               # 0x6B
+    "pad_radial",            # 0x6C
+    "shadow_width",          # 0x6D
+    "shadow_spread",         # 0x6E
+    "shadow_offset_x",       # 0x6F
+    "shadow_offset_y",       # 0x70
+    "outline_width",         # 0x71
+    "outline_pad",           # 0x72
+    "arc_width",             # 0x73
+    "line_width",            # 0x74
+    "line_dash_width",       # 0x75
+    "line_dash_gap",         # 0x76
+    "text_letter_space",     # 0x77
+    "text_line_space",       # 0x78
+    "text_outline_stroke_width",  # 0x79
+    "width",                 # 0x7A
+    "height",                # 0x7B
+    "min_width",             # 0x7C
+    "max_width",             # 0x7D
+    "min_height",            # 0x7E
+    "max_height",            # 0x7F
+    "transform_rotation",    # 0x80
+    "transform_scale_x",    # 0x81
+    "transform_scale_y",    # 0x82
+    "transform_skew_x",     # 0x83
+    "transform_skew_y",     # 0x84
+    "translate_x",           # 0x85
+    "translate_y",           # 0x86
+    "margin_left",           # 0x87
+    "margin_right",          # 0x88
+    "margin_top",            # 0x89
+    "margin_bottom",         # 0x8A
+    "x",                     # 0x8B
+    "y",                     # 0x8C
+    "flex_grow",             # 0x8D
+    "grid_cell_column_pos",  # 0x8E
+    "grid_cell_row_pos",     # 0x8F
+    "grid_cell_column_span", # 0x90
+    "grid_cell_row_span",    # 0x91
 )
 
-_ENUM_BASE = 0x60
+_ENUM_BASE = 0xA0
 _ENUM_ATTRS = (
-    "border_side",       # 0x60
-    "align",             # 0x61
-    "text_align",        # 0x62
-    "text_decor",        # 0x63
-    "blend_mode",        # 0x64
-    "bg_grad_dir",       # 0x65
-    "flex_flow",         # 0x66
-    "flex_cross_place",  # 0x67
-    "flex_main_place",   # 0x68
-    "flex_track_place",  # 0x69
+    "border_side",           # 0xA0
+    "align",                 # 0xA1
+    "text_align",            # 0xA2
+    "text_decor",            # 0xA3
+    "blend_mode",            # 0xA4
+    "bg_grad_dir",           # 0xA5
+    "flex_flow",             # 0xA6
+    "flex_cross_place",      # 0xA7
+    "flex_main_place",       # 0xA8
+    "flex_track_place",      # 0xA9
+    "layout",                # 0xAA
+    "base_dir",              # 0xAB
+    "grid_column_align",     # 0xAC
+    "grid_row_align",        # 0xAD
+    "grid_cell_x_align",     # 0xAE
+    "grid_cell_y_align",     # 0xAF
 )
 
-_BOOL_BASE = 0x70
+_BOOL_BASE = 0xC0
 _BOOL_ATTRS = (
-    "arc_rounded",       # 0x70
-    "border_post",       # 0x71
-    "clip_corner",       # 0x72
-    "bg_image_tiled",    # 0x73
-    "line_rounded",      # 0x74
+    "arc_rounded",           # 0xC0
+    "border_post",           # 0xC1
+    "clip_corner",           # 0xC2
+    "bg_image_tiled",        # 0xC3
+    "line_rounded",          # 0xC4
+)
+
+_ARRAY_BASE = 0xD0
+_ARRAY_ATTRS = (
+    "grid_column_dsc_array", # 0xD0
+    "grid_row_dsc_array",    # 0xD1
 )
 
 # Group constants (int, no dict needed)
@@ -193,6 +224,7 @@ _GRP_OPA   = 3
 _GRP_INT   = 4
 _GRP_ENUM  = 5
 _GRP_BOOL  = 6
+_GRP_ARRAY = 7
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -219,6 +251,9 @@ def _attr_to_prop_id(attr_name):
     for i, a in enumerate(_BOOL_ATTRS):
         if a == attr_name:
             return (_BOOL_BASE + i, _GRP_BOOL)
+    for i, a in enumerate(_ARRAY_ATTRS):
+        if a == attr_name:
+            return (_ARRAY_BASE + i, _GRP_ARRAY)
     return (None, None)
 
 def style_ref_to_palette_idx(name):
@@ -245,6 +280,7 @@ def _encode_value(attr_name, group, raw_val, lit_builder):
 
     *lit_builder* is a list used to accumulate unique LIT strings.
     Returns (val_type, index) tuple or None on error.
+    For ARRAY group, returns list of (val_type, index) tuples for elements.
     """
     val_str = str(raw_val) if not isinstance(raw_val, str) else raw_val
 
@@ -268,6 +304,20 @@ def _encode_value(attr_name, group, raw_val, lit_builder):
         print("Warning: non-palette font value '{}' for '{}' — skipping".format(raw_val, attr_name))
         return None
 
+    if group == _GRP_ARRAY:
+        if not isinstance(raw_val, list):
+            print("Warning: ARRAY attr '{}' requires a list value, got: {}".format(attr_name, type(raw_val).__name__))
+            return None
+        if len(raw_val) > 255:
+            print("Warning: ARRAY attr '{}' has {} elements, max 255".format(attr_name, len(raw_val)))
+            return None
+        # Return a list of (val_type, index) for each element
+        elements = []
+        for elem in raw_val:
+            elem_str = str(elem) if not isinstance(elem, str) else elem
+            elements.append((VAL_LIT, _lit_index(lit_builder, elem_str)))
+        return elements
+
     # OPA, INT, ENUM, BOOL — all stored as LIT strings
     return (VAL_LIT, _lit_index(lit_builder, val_str))
 
@@ -278,56 +328,72 @@ def _encode_value(attr_name, group, raw_val, lit_builder):
 
 def _group_from_prop_id(prop_id):
     """Return group constant for *prop_id*, or None if unknown."""
-    if 0x01 <= prop_id <= 0x0B:
+    if 0x01 <= prop_id <= 0x1F:
         return _GRP_COLOR
-    if prop_id == 0x10:
+    if prop_id == 0x20:
         return _GRP_FONT
-    if 0x20 <= prop_id <= 0x2E:
+    if 0x40 <= prop_id <= 0x5F:
         return _GRP_OPA
-    if 0x30 <= prop_id <= 0x5A:
+    if 0x60 <= prop_id <= 0x9F:
         return _GRP_INT
-    if 0x60 <= prop_id <= 0x69:
+    if 0xA0 <= prop_id <= 0xBF:
         return _GRP_ENUM
-    if 0x70 <= prop_id <= 0x74:
+    if 0xC0 <= prop_id <= 0xCF:
         return _GRP_BOOL
+    if 0xD0 <= prop_id <= 0xDF:
+        return _GRP_ARRAY
     return None
 
 
 def _attr_name_from_prop_id(prop_id):
     """Return the LVGL attribute name for *prop_id*, or None."""
-    if 0x01 <= prop_id <= 0x0B:
-        return _COLOR_ATTRS[prop_id - _COLOR_BASE]
-    if prop_id == 0x10:
+    if 0x01 <= prop_id <= 0x1F:
+        idx = prop_id - _COLOR_BASE
+        return _COLOR_ATTRS[idx] if idx < len(_COLOR_ATTRS) else None
+    if prop_id == 0x20:
         return "text_font"
-    if 0x20 <= prop_id <= 0x2E:
-        return _OPA_ATTRS[prop_id - _OPA_BASE]
-    if 0x30 <= prop_id <= 0x5A:
-        return _INT_ATTRS[prop_id - _INT_BASE]
-    if 0x60 <= prop_id <= 0x69:
-        return _ENUM_ATTRS[prop_id - _ENUM_BASE]
-    if 0x70 <= prop_id <= 0x74:
-        return _BOOL_ATTRS[prop_id - _BOOL_BASE]
+    if 0x40 <= prop_id <= 0x5F:
+        idx = prop_id - _OPA_BASE
+        return _OPA_ATTRS[idx] if idx < len(_OPA_ATTRS) else None
+    if 0x60 <= prop_id <= 0x9F:
+        idx = prop_id - _INT_BASE
+        return _INT_ATTRS[idx] if idx < len(_INT_ATTRS) else None
+    if 0xA0 <= prop_id <= 0xBF:
+        idx = prop_id - _ENUM_BASE
+        return _ENUM_ATTRS[idx] if idx < len(_ENUM_ATTRS) else None
+    if 0xC0 <= prop_id <= 0xCF:
+        idx = prop_id - _BOOL_BASE
+        return _BOOL_ATTRS[idx] if idx < len(_BOOL_ATTRS) else None
+    if 0xD0 <= prop_id <= 0xDF:
+        idx = prop_id - _ARRAY_BASE
+        return _ARRAY_ATTRS[idx] if idx < len(_ARRAY_ATTRS) else None
     return None
 
 
 def _resolve_enum(prop_id, value_str):
     """Resolve an ENUM LIT string to its lv constant. Returns None on error."""
-    if prop_id == 0x60:
+    if prop_id == 0xA0:
         v = getattr(lv.BORDER_SIDE, value_str, None)
-    elif prop_id == 0x61:
+    elif prop_id == 0xA1:
         v = getattr(lv.ALIGN, value_str, None)
-    elif prop_id == 0x62:
+    elif prop_id == 0xA2:
         v = getattr(lv.TEXT_ALIGN, value_str, None)
-    elif prop_id == 0x63:
+    elif prop_id == 0xA3:
         v = getattr(lv.TEXT_DECOR, value_str, None)
-    elif prop_id == 0x64:
+    elif prop_id == 0xA4:
         v = getattr(lv.BLEND_MODE, value_str, None)
-    elif prop_id == 0x65:
+    elif prop_id == 0xA5:
         v = getattr(lv.GRAD_DIR, value_str, None)
-    elif prop_id == 0x66:
+    elif prop_id == 0xA6:
         v = getattr(lv.FLEX_FLOW, value_str, None)
-    elif 0x67 <= prop_id <= 0x69:
+    elif 0xA7 <= prop_id <= 0xA9:
         v = getattr(lv.FLEX_ALIGN, value_str, None)
+    elif prop_id == 0xAA:
+        v = getattr(lv.LAYOUT, value_str, None)
+    elif prop_id == 0xAB:
+        v = getattr(lv.BASE_DIR, value_str, None)
+    elif 0xAC <= prop_id <= 0xAF:
+        v = getattr(lv.GRID_ALIGN, value_str, None)
     else:
         v = None
     if v is None:
@@ -386,17 +452,37 @@ def _resolve_lit(lit_str, prop_id, context):
             print("Warning: unknown OPA constant: " + lit_str)
         return v
     if group == _GRP_INT:
-        try:
-            return int(lit_str)
-        except ValueError:
-            print("Warning: expected int literal, got: " + lit_str)
-            return None
+        return _resolve_int_lit(lit_str)
     if group == _GRP_ENUM:
         return _resolve_enum(prop_id, lit_str)
     if group == _GRP_BOOL:
         return lit_str == "true"
     print("Warning: _resolve_lit: unknown group for prop_id 0x{:02X}".format(prop_id))
     return None
+
+
+def _resolve_int_lit(lit_str):
+    """Resolve an INT literal string, supporting plain ints, SIZE_CONTENT,
+    pct(N), and FR(N) for grid track descriptors."""
+    if lit_str == "SIZE_CONTENT":
+        return lv.SIZE_CONTENT
+    if lit_str.startswith("pct(") and lit_str.endswith(")"):
+        try:
+            return lv.pct(int(lit_str[4:-1]))
+        except (ValueError, TypeError):
+            print("Warning: bad pct() expression: " + lit_str)
+            return None
+    if lit_str.startswith("FR(") and lit_str.endswith(")"):
+        try:
+            return lv.grid_fr(int(lit_str[3:-1]))
+        except (ValueError, TypeError, AttributeError):
+            print("Warning: bad FR() expression: " + lit_str)
+            return None
+    try:
+        return int(lit_str)
+    except ValueError:
+        print("Warning: expected int literal, got: " + lit_str)
+        return None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -533,6 +619,9 @@ class StylePaletteCompiler(ThemeSectionCompiler):
 
         *entry* is a dict: { "style": "@OTHER"|["@A","@B"], "bg_color": ..., ... }
         Returns bytearray: [op_count u8] + [op_count x 3-byte ops].
+
+        For ARRAY attrs, emits a header op (prop_id, VAL_ARRAY, length) followed
+        by N element ops (prop_id, VAL_LIT, lit_index).
         """
         if not isinstance(entry, dict):
             print("Warning: style entry is not a dict, skipping")
@@ -565,11 +654,27 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             result = _encode_value(key, group, raw_val, self._lit_builder)
             if result is None:
                 continue
-            val_type, index = result
-            if index > 255:
-                print("Warning: LIT index {} > 255 for '{}' — skipping".format(index, key))
-                continue
-            ops.append((prop_id, val_type, index))
+
+            if group == _GRP_ARRAY:
+                # result is a list of (val_type, index) for each element
+                elements = result
+                if len(elements) > 255:
+                    print("Warning: array too long for '{}' — skipping".format(key))
+                    continue
+                # Header op: prop_id, VAL_ARRAY, length
+                ops.append((prop_id, VAL_ARRAY, len(elements)))
+                # Element ops: prop_id repeated, val_type, lit_index
+                for val_type, index in elements:
+                    if index > 255:
+                        print("Warning: LIT index {} > 255 in array '{}' — skipping element".format(index, key))
+                        continue
+                    ops.append((prop_id, val_type, index))
+            else:
+                val_type, index = result
+                if index > 255:
+                    print("Warning: LIT index {} > 255 for '{}' — skipping".format(index, key))
+                    continue
+                ops.append((prop_id, val_type, index))
 
         if len(ops) > 255:
             print("Warning: style has {} ops, truncating to 255".format(len(ops)))
@@ -665,10 +770,43 @@ class StylePaletteCompiler(ThemeSectionCompiler):
 
     def _apply_ops_to_style(self, f, ops, s, context, in_progress):
         """Apply a decoded ops list onto lv.style_t *s*.
-        STYLE_INHERIT ops are inlined recursively using the open file handle *f*."""
-        for prop_id, val_type, index in ops:
+        STYLE_INHERIT ops are inlined recursively using the open file handle *f*.
+        ARRAY ops consume the next N ops as array elements."""
+        i = 0
+        while i < len(ops):
+            prop_id, val_type, index = ops[i]
+            i += 1
             if prop_id == PROP_STYLE_INHERIT:
                 self._reconstruct_style_from_handle(f, index, context, s, in_progress)
+                continue
+            if val_type == VAL_ARRAY:
+                # index = array length N; next N ops are elements
+                arr_len = index
+                elements = []
+                for _ in range(arr_len):
+                    if i >= len(ops):
+                        print("Warning: truncated array for prop_id 0x{:02X}".format(prop_id))
+                        break
+                    _, elem_val_type, elem_index = ops[i]
+                    i += 1
+                    value = self._resolve_op(f, prop_id, elem_val_type, elem_index, context)
+                    if value is not None:
+                        elements.append(value)
+                # Auto-append LV_GRID_TEMPLATE_LAST for grid track descriptors
+                if hasattr(lv, "GRID_TEMPLATE_LAST"):
+                    elements.append(lv.GRID_TEMPLATE_LAST)
+                attr_name = _attr_name_from_prop_id(prop_id)
+                if attr_name is None:
+                    print("Warning: unknown array prop_id 0x{:02X}".format(prop_id))
+                    continue
+                setter = getattr(s, "set_" + attr_name, None)
+                if setter is None:
+                    print("Warning: lv.style_t has no set_{}".format(attr_name))
+                    continue
+                try:
+                    setter(elements)
+                except Exception as e:
+                    print("Warning: set_{}({}) failed: {}".format(attr_name, elements, e))
                 continue
             attr_name = _attr_name_from_prop_id(prop_id)
             if attr_name is None:
@@ -737,6 +875,10 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             lit_str = self._read_lit_string_from_handle(f, index)
             if lit_str is None:
                 return None
+            # For ARRAY attrs, resolve elements as INT literals (supports FR(N), pct(N), etc.)
+            group = _group_from_prop_id(prop_id)
+            if group == _GRP_ARRAY:
+                return _resolve_int_lit(lit_str)
             return _resolve_lit(lit_str, prop_id, context)
         print("Warning: unknown val_type 0x{:02X}".format(val_type))
         return None
