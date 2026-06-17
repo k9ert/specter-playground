@@ -28,7 +28,7 @@ import lvgl as lv
 from .seed_dropup import SeedDropUp
 from .wallet_dropup import WalletDropUp
 from ..utils import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BTN_HEIGHT, STATUS_BAR_H,
+    SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BAR_H,
     BTC_ICON_WIDTH,
     style_as_flex_container
 )
@@ -61,9 +61,6 @@ class NavigationBar(SpecterGuiElement):
                                 scrollable=False)
         apply_style(self, "WIDGET.NAVBAR")
         apply_style(self, "WIDGET.SCREEN", lv.STATE.DISABLED)
-
-        h = STATUS_BTN_HEIGHT
-        w = SCREEN_WIDTH // 5
 
         names = ["Back", "Seed", "Home", "Wallet", "Device"]
         icons = [BTC_ICONS.CARET_LEFT,
