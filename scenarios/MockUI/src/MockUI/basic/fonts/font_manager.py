@@ -28,6 +28,10 @@ import lvgl as lv
 
 # Montserrat sizes shipped as builtins in this MicroPython/LVGL build.
 _BUILTIN_MONTSERRAT = (8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28)
+# Roboto Mono sizes compiled into the udisplay_f469 usermod.
+_BUILTIN_ROBOTO_MONO = (12, 16, 22, 28)
+# Unscii sizes compiled as LVGL builtins.
+_BUILTIN_UNSCII = (8, 16)
 
 
 class FontManager:
@@ -79,6 +83,16 @@ class FontManager:
             font = getattr(lv, "font_montserrat_%d" % size, None)
             if font is not None:
                 return font
+        # Builtin Roboto Mono (compiled into udisplay_f469 usermod).
+        if family == "roboto_mono" and size in _BUILTIN_ROBOTO_MONO:
+            font = getattr(lv, "font_roboto_mono_%d" % size, None)
+            if font is not None:
+                return font
+        # Builtin Unscii.
+        if family == "unscii" and size in _BUILTIN_UNSCII:
+            font = getattr(lv, "font_unscii_%d" % size, None)
+            if font is not None:
+                return font
         # .bin file: <family>_<size>.bin (e.g. montserrat_de -> montserrat_<size>_de.bin)
         path = self._bin_path(family, size)
         try:
@@ -96,10 +110,17 @@ class FontManager:
 
     def _fallback(self, family, size):
         """Resolve the nearest available size for *family* (never returns None)."""
-        # Prefer the plain montserrat builtin nearest to the requested size.
+        # Pick the builtin set matching the requested family, fall back to montserrat.
+        if family == "roboto_mono":
+            candidates = [("roboto_mono", s, "font_roboto_mono_%d" % s) for s in _BUILTIN_ROBOTO_MONO]
+        elif family == "unscii":
+            candidates = [("unscii", s, "font_unscii_%d" % s) for s in _BUILTIN_UNSCII]
+        else:
+            candidates = [("montserrat", s, "font_montserrat_%d" % s) for s in _BUILTIN_MONTSERRAT]
+
         best = None
-        for s in _BUILTIN_MONTSERRAT:
-            font = getattr(lv, "font_montserrat_%d" % s, None)
+        for _, s, attr in candidates:
+            font = getattr(lv, attr, None)
             if font is None:
                 continue
             if best is None or abs(s - size) < abs(best[0] - size):
