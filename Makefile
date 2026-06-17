@@ -55,6 +55,7 @@ trim-icons:
 # i18n compilation
 build-i18n: sync-i18n
 	@echo Building i18n files...
+	@rm -rf build/flash_image/i18n
 	@mkdir -p build/flash_image/i18n
 	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py generate_keys languages/specter_ui_en.json translation_keys.py
 	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_en.json translation_keys.py && mv lang_en.bin ../../../../../../build/flash_image/i18n/
@@ -73,6 +74,7 @@ build-i18n: sync-i18n
 # The default theme (specter) is ALWAYS compiled; extra themes are opt-in via ADD_THEME.
 build-themes:
 	@echo Building theme files...
+	@rm -rf build/flash_image/themes
 	@mkdir -p build/flash_image/themes
 	cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_specter.json ../../../../../../build/flash_image/themes/
 	@if [ -n "$(ADD_THEME)" ]; then \
