@@ -8,6 +8,7 @@ from ..basic import (
     SCREEN_WIDTH,
     section_header,
     WalletCard,
+    apply_style,
 )
 from ..stubs.wallet import WalletType, _wallet_type_rank
 
@@ -82,6 +83,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                 width=SCREEN_WIDTH,
                 height=BTN_HEIGHT,
             )
+            apply_style(card, "WIDGET.DROP_UP_ROW")
             set_propagate_events(card, True)
 
         self._configure_scroll()
