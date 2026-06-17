@@ -33,7 +33,7 @@ def fingerprint_badge(parent, seed, digits=4):
     fp = seed.get_fingerprint()
     if fp[:2].lower() == "0x":
         fp = fp[2:]
-    badge._lbl = make_label(badge, fp[:digits+1])
+    badge._lbl = make_label(badge, fp[:digits].upper())
     apply_style(badge._lbl, ["WIDGET.INFO_ITEM", "TEXT.BODY"])
     return badge
 
