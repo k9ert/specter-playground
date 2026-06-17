@@ -2,13 +2,16 @@
 import lvgl as lv
 import urandom
 from ..basic import (
+    BTC_ICONS,
     TitledScreen, 
-    Btn, BTN_HEIGHT, BTN_WIDTH, 
-    SWITCH_HEIGHT, SWITCH_WIDTH, 
-    SMALL_PAD,
+    Btn, BTN_HEIGHT, BTN_WIDTH,  
+    SCREEN_WIDTH,
     Layout,
     form_label, form_textarea, flex_row,
     style_as_flex_container,
+    set_scroll,
+    make_switch,
+    Btn,
 )
 from ..stubs import Wallet
 
@@ -41,9 +44,7 @@ class CreateCustomWalletMenu(TitledScreen):
         ms_row = self._make_row(ROW_H)
         form_label(ms_row, t("COMMON_MULTISIG"), width=lv.pct(50))
 
-        self.ms_sw = lv.switch(ms_row)
-        self.ms_sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
-        self.ms_sw.add_event_cb(lambda e: self._on_multisig_toggle(e), lv.EVENT.VALUE_CHANGED, None)
+        self.ms_sw = make_switch(ms_row, False, setter_cb=lambda e: self._on_multisig_toggle(e))
 
         # ── Threshold (visible only for multisig) ────────────────────
         self.thresh_row = self._make_row(ROW_H)
@@ -89,43 +90,20 @@ class CreateCustomWalletMenu(TitledScreen):
         net_row = self._make_row(ROW_H)
         form_label(net_row, "Testnet", width=lv.pct(50))
 
-        self.net_sw = lv.switch(net_row)
-        self.net_sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
+        self.net_sw = make_switch(net_row, False, setter_cb=None)
 
         # ── Custom toggle ───────────────────────────────────────────
         custom_row = self._make_row(ROW_H)
         form_label(custom_row, t("ADD_WALLET_CUSTOM"), width=lv.pct(50))
 
-        self.custom_sw = lv.switch(custom_row)
-        self.custom_sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
+        self.custom_sw = make_switch(custom_row, False, setter_cb=None)
 
         # ── Account index ────────────────────────────────────────────
         acc_row = self._make_row(ROW_H)
         form_label(acc_row, t("WALLET_MENU_SELECT_ACCOUNT"), width=lv.pct(50))
 
-        spin_row = flex_row(acc_row, height=ROW_H - 4, pad=0)
-        spin_row.set_width(lv.SIZE_CONTENT)
-        spin_row.set_style_pad_column(SMALL_PAD, 0)
-
-        btn_sz = ROW_H - 14
-        dec_btn = lv.button(spin_row)
-        dec_btn.set_size(btn_sz, btn_sz)
-        dec_lbl = lv.label(dec_btn)
-        dec_lbl.set_text(lv.SYMBOL.MINUS)
-        dec_lbl.center()
-
         self.account_val = 0
-        self.acc_lbl = lv.label(spin_row)
-        self.acc_lbl.set_style_text_font(lv.font_montserrat_22, 0)
-        self.acc_lbl.set_text("0")
-        self.acc_lbl.set_width(50)
-        self.acc_lbl.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
-
-        inc_btn = lv.button(spin_row)
-        inc_btn.set_size(btn_sz, btn_sz)
-        inc_lbl = lv.label(inc_btn)
-        inc_lbl.set_text(lv.SYMBOL.PLUS)
-        inc_lbl.center()
+        spin_row = flex_row(acc_row, height=ROW_H - 4, width = lv.SIZE_CONTENT)
 
         def _dec_cb(e):
             if e.get_code() == lv.EVENT.CLICKED and self.account_val > 0:
@@ -137,8 +115,20 @@ class CreateCustomWalletMenu(TitledScreen):
                 self.account_val += 1
                 self.acc_lbl.set_text(str(self.account_val))
 
-        dec_btn.add_event_cb(_dec_cb, lv.EVENT.CLICKED, None)
-        inc_btn.add_event_cb(_inc_cb, lv.EVENT.CLICKED, None)
+        btn_sz = ROW_H - 14
+        dec_btn = Btn(spin_row,
+                      icon=BTC_ICONS.MINUS,
+                      size=(btn_sz, btn_sz),
+                      callback=_dec_cb
+                    )
+        self.acc_lbl = form_label(spin_row, str(self.account_val), width=50)
+        self.acc_lbl.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
+
+        inc_btn = Btn(spin_row,
+                      icon=BTC_ICONS.PLUS,
+                      size=(btn_sz, btn_sz),
+                      callback=_inc_cb
+                    )
 
         # ── Create button ────────────────────────────────────────────
         btn_row = self._make_row(80)
@@ -152,8 +142,8 @@ class CreateCustomWalletMenu(TitledScreen):
     # ── helpers ──────────────────────────────────────────────────────
 
     def _make_row(self, height):
-        row = flex_row(self.body, height=height, pad=SMALL_PAD, main_align=lv.FLEX_ALIGN.SPACE_BETWEEN)
-        row.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+        row = flex_row(self.body, height=height, width=SCREEN_WIDTH, main_align=lv.FLEX_ALIGN.SPACE_BETWEEN)
+        set_scroll(row, horizontal=False, vertical=False)
         return row
 
     def _on_multisig_toggle(self, e):
