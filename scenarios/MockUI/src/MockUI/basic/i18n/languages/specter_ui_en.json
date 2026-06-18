@@ -39,6 +39,7 @@
     "ADD_WALLET_THRESHOLD": "Threshold: ",
     "ADD_WALLET_SIGNERS": "Signers: ",
     "ADD_WALLET_CUSTOM" : "Custom",
+    "ADD_WALLET_ENABLE_INTERFACES": "Enable Interfaces",
     
     "ADD_SWITCH_WALLET_MENU_WALLETS_FOR_SEED": "Wallets for active seed",
     "ADD_SWITCH_WALLET_MENU_OTHER_WALLETS": "Other wallets",

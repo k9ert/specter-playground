@@ -122,6 +122,10 @@
       "text": "Eigenes",
       "ref_en": "Custom"
     },
+    "ADD_WALLET_ENABLE_INTERFACES": {
+      "text": "Schnittstellen aktivieren",
+      "ref_en": "Enable Interfaces"
+    },
     "ADD_SWITCH_WALLET_MENU_WALLETS_FOR_SEED": {
       "text": "Wallets für aktiven Seed",
       "ref_en": "Wallets for active seed"
