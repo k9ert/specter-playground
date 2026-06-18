@@ -33,7 +33,7 @@ class SeedDropUp(DropUp):
             on_backup_warning=lambda: self._on_backup_warning(seed),
             on_delete=lambda: self._on_delete_seed(seed),
         )
-        apply_style(card, ["WIDGET.DROP_UP_ROW", "CONTEXT.SEED"])
+        apply_style(card, ["CONTAINER.DROP_UP_ROW", "CONTEXT.SEED"])
         return card
 
     def _on_backup_warning(self, seed):

@@ -119,7 +119,7 @@ def style_as_screen_backdrop(obj, width=SCREEN_WIDTH, height=CONTENT_H, x=None, 
     set_pos(obj, x=x, y=y)
     set_size(obj, width=width, height=height)
     set_scroll(obj, horizontal=False, vertical=False)
-    apply_style(obj, "WIDGET.SCREEN")
+    apply_style(obj, "CONTAINER.SCREEN")
 
 def style_as_flex_container(obj, flow=lv.FLEX_FLOW.COLUMN, 
                    width=lv.SIZE_CONTENT, height=lv.SIZE_CONTENT, 

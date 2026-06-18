@@ -45,7 +45,7 @@ class GenericMenu(TitledScreen):
 
     def fill_body(self):
         style_as_flex_container(self.body, width=lv.pct(100), height=CONTENT_H-TITLE_HEIGHT, scrollable=True)
-        apply_style(self.body, "WIDGET.MENU_CONTAINER")
+        apply_style(self.body, "CONTAINER.MENU_CONTAINER")
         menu_items = self.get_menu_items(self.t, self.device_state)
         self.pre_init(self.t, self.device_state)
         self._build_menu_items(menu_items)

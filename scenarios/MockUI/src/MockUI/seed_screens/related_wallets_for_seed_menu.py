@@ -83,7 +83,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                 width=SCREEN_WIDTH,
                 height=BTN_HEIGHT,
             )
-            apply_style(card, "WIDGET.DROP_UP_ROW")
+            apply_style(card, "CONTAINER.DROP_UP_ROW")
             set_propagate_events(card, True)
 
         self._configure_scroll()

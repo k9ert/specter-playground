@@ -9,7 +9,7 @@ class SettingsMenu(GenericMenu):
         self.row = flex_row(self.body, 
                             width=lv.pct(100), height=STATUS_BTN_HEIGHT, 
                             main_align=lv.FLEX_ALIGN.CENTER)
-        apply_style(self.row, "WIDGET.DROP_UP_ROW")
+        apply_style(self.row, "CONTAINER.DROP_UP_ROW")
 
         def _add_ico(icon):
             img = make_icon(self.row, icon)

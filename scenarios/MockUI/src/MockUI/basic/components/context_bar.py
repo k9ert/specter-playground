@@ -38,7 +38,7 @@ class ContextBar(SpecterGuiElement):
         set_size(self, width, height)
         set_scroll(self, horizontal=False, vertical=False)
         set_align(self, lv.ALIGN.TOP_LEFT)
-        apply_style(self, ["WIDGET.CONTEXT_BAR"])
+        apply_style(self, ["CONTAINER.CONTEXT_BAR"])
 
         if context is None:
             context = self.context
@@ -65,7 +65,7 @@ class ContextBar(SpecterGuiElement):
                 leading_icon=BTC_ICONS.KEY_OUTLINE,
                 on_name_click=self._make_name_commit_handler("active_seed"),
             )
-            apply_style(self.card, ["WIDGET.CONTEXT_BAR", "CONTEXT.SEED"])
+            apply_style(self.card, ["CONTAINER.CONTEXT_BAR", "CONTEXT.SEED"])
         elif ctx == Context.WALLET:
             wallet = self.active_wallet
             if not wallet:
@@ -91,7 +91,7 @@ class ContextBar(SpecterGuiElement):
                 leading_icon=BTC_ICONS.WALLET_OUTLINE,
                 on_name_click=self._make_name_commit_handler("active_wallet"),
             )
-            apply_style(self.card, ["WIDGET.CONTEXT_BAR", "CONTEXT.WALLET"])
+            apply_style(self.card, ["CONTAINER.CONTEXT_BAR", "CONTEXT.WALLET"])
 
     def _make_name_commit_handler(self, target_attr):
         """Return an ``on_name_click`` handler that commits edits to ``target_attr``.

@@ -36,34 +36,31 @@ class SpecterStylePalette:
     """Integer style-token keys.  Pass to ``apply_style(obj, key)``."""
 
     class WIDGET:
-        SCREEN                =  0
         SCREEN_TITLE          =  1
         OVERLAY               =  2
-        NAVBAR                =  3
-        NAVBAR_BUTTON         =  4
-        NAVBAR_BUTTON_FG      =  5
-        MODAL_WINDOW          =  6
-        BUTTON                =  7
-        BUTTON_FG             =  8
-        TEXT_EDIT             =  9
-        INFO_ITEM             = 10
-        HELP_ICON             = 11
-        MENU_CONTAINER        = 12
-        MENU_SECTION_HEADER   = 13
-        MENU_BUTTON           = 14
-        MENU_BUTTON_FG        = 15        
-        MENU_ICON             = 16
-        MENU_SWITCH           = 17
-        SUBMENU_INDICATOR     = 18
-        DROPUP                = 19
-        DROP_UP_ROW           = 20
-        DROP_UP_ADDBTN        = 21
-        DROP_UP_ADDBTN_FG     = 22
-        CONTEXT_BAR           = 23
-        KEYBOARD              = 24
-        BATTERY               = 25
-        PIN_BUTTON            = 26
-        PIN_DISPLAY           = 27
+        NAVBAR_BUTTON         =  3
+        NAVBAR_BUTTON_FG      =  4
+        BUTTON                =  5
+        BUTTON_FG             =  6
+        TEXT_EDIT             =  7
+        INFO_ITEM             =  8
+        HELP_ICON             =  9
+        MENU_SECTION_HEADER   = 10
+        MENU_BUTTON           = 11
+        MENU_BUTTON_FG        = 12        
+        MENU_ICON             = 13
+        MENU_SWITCH           = 14
+        SUBMENU_INDICATOR     = 15
+        DROP_UP_ADDBTN        = 16
+        DROP_UP_ADDBTN_FG     = 17
+        KEYBOARD              = 18
+        BATTERY               = 19
+        PIN_BUTTON            = 20
+        PIN_BUTTON_FG         = 21
+        PIN_DISPLAY           = 22
+        DELETE_BUTTON         = 23
+        DELETE_BUTTON_FG      = 24
+    
         # reserved till 40
 
     class TEXT:
@@ -79,6 +76,11 @@ class SpecterStylePalette:
     class LAYOUT:
         BARE        = 50   # no padding/border/radius, transparent bg
         BORDERLESS  = 51   # zero border width, keep other layout defaults
+        GROWS       = 52   # flex grow: with standard weight 1
+        FLEX_COL    = 53   # flex layout with column direction
+        FLEX_ROW    = 54   # flex layout with row direction
+        
+        # reserved till 60
 
     class APPEARANCE:
         VISIBLE     = 60   # full opacity for FG and BG
@@ -136,3 +138,17 @@ class SpecterStylePalette:
 
     class MODIFIER:
         MUTED = 130   # disabled/unusable widgets
+
+    class CONTAINER:
+        SCREEN              = 160
+        NAVBAR              = 161
+        MAIN_MENU           = 162
+        MENU_CONTAINER      = 163
+        MENU_ROW            = 164
+        CONTEXT_BAR         = 165
+        DROPUP              = 166
+        DROP_UP_ROW         = 167
+        INTERFACE_STATUS    = 168
+        MODAL_WINDOW        = 169
+        TITLE_BAR           = 169   
+        #reserved until end (255)

@@ -54,7 +54,7 @@ class TitledScreen(SpecterGuiElement):
                                 width=lv.pct(100), height=lv.pct(100),
                                 main_align = lv.FLEX_ALIGN.START, 
                                 scrollable=False)
-        apply_style(self, "WIDGET.SCREEN")
+        apply_style(self, "CONTAINER.SCREEN")
 
         # ── 1. Title bar ──────────────────────────────────────────────────────
         self.title = None

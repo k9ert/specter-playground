@@ -62,8 +62,8 @@ class NavigationBar(SpecterGuiElement):
                                 main_align=lv.FLEX_ALIGN.SPACE_AROUND,
                                 cross_align=lv.FLEX_ALIGN.CENTER,
                                 scrollable=False)
-        apply_style(self, "WIDGET.NAVBAR")
-        apply_style(self, "WIDGET.SCREEN", lv.STATE.DISABLED)
+        apply_style(self, "CONTAINER.NAVBAR")
+        apply_style(self, "CONTAINER.SCREEN", lv.STATE.DISABLED)
 
         names = ["Back", "Seed", "Home", "Wallet", "Device"]
         icons = [BTC_ICONS.CARET_LEFT,
