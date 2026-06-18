@@ -10,11 +10,20 @@ class StoreSeedphraseMenu(GenericMenu):
 
     def get_menu_items(self, t, state):
         menu_items = []
+        highlighted = False
 
         if state.SmartCard_detected():
-            menu_items.append(MenuItem(BTC_ICONS.SMARTCARD, t("HARDWARE_SMARTCARD"), "store_to_smartcard"))
+            menu_items.append(MenuItem(BTC_ICONS.SMARTCARD, t("HARDWARE_SMARTCARD"), 
+                                       target="store_to_smartcard",
+                                       modifier="Highlight"))
+            highlighted = True
         if state.SD_detected():
-            menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), "store_to_sd"))
-        menu_items.append(MenuItem(BTC_ICONS.FILE, t("HARDWARE_INTERNAL_FLASH"), "store_to_flash", modifier="Warning"))
+            menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("HARDWARE_SD_CARD"), 
+                                       target="store_to_sd",
+                                       modifier="Highlight" if not highlighted else None))
+            highlighted = True
+        menu_items.append(MenuItem(BTC_ICONS.FILE, t("HARDWARE_INTERNAL_FLASH"),
+                                   target="store_to_flash",
+                                   modifier="Warning"))
 
         return menu_items
