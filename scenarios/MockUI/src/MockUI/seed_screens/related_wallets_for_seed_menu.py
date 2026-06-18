@@ -26,7 +26,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
     """
 
     def __init__(self, parent):
-        title = parent.i18n.t("SEEDPHRASE_MENU_RELATED_WALLETS")
+        title = parent.t("SEEDPHRASE_MENU_RELATED_WALLETS")
         super().__init__(title, parent)
 
         style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100))
