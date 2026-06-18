@@ -13,7 +13,9 @@ class ViewSignersMenu(GenericMenu):
     def get_menu_items(self, t, state):
         """Show list of signers for the active seed."""
         s4w = state.seeds_for_wallet(self.ui_state.active_wallet)
-        loaded_fp4w = Seed.get_fingerprints(s4w) if s4w else []
+        loaded_fp4w = []
+        if s4w:
+            loaded_fp4w = Seed.get_fingerprints(s4w)
 
         if self.ui_state.active_wallet.is_default_wallet():
             fp_list = loaded_fp4w
