@@ -26,7 +26,7 @@ class MenuItem:
     Args:
         icon:       Icon instance or lv.SYMBOL string, or None (section header).
         text:       Display text.
-        target:     None (section header), a menu_id string, or a callable.
+        target:     None (for section header), a menu_id string to navigate to, or a callable.
         modifier:   semantic modifier: "Danger"/"Warning"/"Highlight".
         height_scaling: Height multiplier float (default 1); minimum 1.
         help_key:   i18n key for a help popup, or None.
