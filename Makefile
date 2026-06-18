@@ -81,7 +81,7 @@ build-themes:
 		for theme in $(shell echo $(ADD_THEME) | tr ',' ' '); do \
 			if [ -f scenarios/MockUI/src/MockUI/basic/theming/themes/specter_ui_theme_$$theme.json ]; then \
 				echo "  Compiling $$theme..."; \
-				cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_$$theme.json ../../../../../../build/flash_image/themes/ || true; \
+				(cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_$$theme.json ../../../../../../build/flash_image/themes/) || true; \
 			else \
 				echo "  Warning: theme file scenarios/MockUI/src/MockUI/basic/theming/themes/specter_ui_theme_$$theme.json not found"; \
 			fi; \
