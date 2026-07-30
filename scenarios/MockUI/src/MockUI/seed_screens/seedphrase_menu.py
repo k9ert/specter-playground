@@ -1,4 +1,4 @@
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.components.confirm_modals import confirm_delete_seed, make_delete_active_handler
 from ..basic.widgets import MenuItem
@@ -11,7 +11,8 @@ class SeedPhraseMenu(GenericMenu):
     """
     TITLE_KEY = "MENU_MANAGE_SEED"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         # Sign message (only when signing is possible)
         has_controlled_input = (state.QR_enabled() or state.SD_detected())
         can_sign_msg = (
@@ -27,7 +28,10 @@ class SeedPhraseMenu(GenericMenu):
                                    modifier="Warning",
                                    is_submenu=True))
 
-        pp_label = t("MENU_CHANGE_CLEAR_PASSPHRASE") if self.ui_state.active_seed.passphrase else t("MENU_SET_PASSPHRASE")
+        if self.ui_state.active_seed.passphrase:
+            pp_label = t("MENU_CHANGE_CLEAR_PASSPHRASE")
+        else:
+            pp_label = t("MENU_SET_PASSPHRASE")
         menu_items.append(MenuItem(BTC_ICONS.PASSWORD, pp_label, "set_passphrase", is_submenu=True))
 
         menu_items += [
@@ -48,7 +52,7 @@ class SeedPhraseMenu(GenericMenu):
 
         return menu_items
 
-    def post_init(self, t, state):
+    def post_itemlist(self):
         # The ContextBar (shown automatically in SEED context) handles the
         # editable seed name and fingerprint display.  Here we only add the
         # delete button so the user can remove this seed from the device.

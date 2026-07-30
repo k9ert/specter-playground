@@ -26,7 +26,7 @@ class Seed:
     @staticmethod
     def _generate_dummy_fingerprint():
         """Generate a fake fingerprint for mock purposes."""
-        h = hex(urandom.getrandbits(16))[:]
+        h = hex(urandom.getrandbits(32))[:]
         return h
     
     def get_fingerprint(self):

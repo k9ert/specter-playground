@@ -1,5 +1,4 @@
-import lvgl as lv
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 
 class ThemeMenu(GenericMenu):
@@ -7,7 +6,8 @@ class ThemeMenu(GenericMenu):
 
     TITLE_KEY = "DEVICE_MENU_THEME"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         themes = self.theme.get_available_files()
         active = self.theme.current
         show_check = len(themes) > 1
@@ -17,7 +17,7 @@ class ThemeMenu(GenericMenu):
             items.append(MenuItem(
                 BTC_ICONS.CHECK if show_check and name == active else None,
                 self.theme.get_file_name(name),
-                self._make_select_cb(name),
+                lambda name=name: self._select_theme(name),
             ))
 
         if state.SD_detected():
@@ -27,9 +27,6 @@ class ThemeMenu(GenericMenu):
 
         return items
 
-    def _make_select_cb(self, name):
-        def cb(e):
-            if e.get_code() == lv.EVENT.CLICKED:
-                self.gui.change_theme(name)
-                self.on_navigate(None)
-        return cb
+    def _select_theme(self, name):
+        self.gui.change_theme(name)
+        self.on_navigate(None)

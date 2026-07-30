@@ -1,7 +1,7 @@
 """Image helpers — lv.image wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..utils import BTC_ICON_WIDTH, set_size, set_scale
+from ..utils import set_scale
 
 def apply_icon(img, icon):
     img.set_src(icon.get_image_dsc())
@@ -12,8 +12,8 @@ def make_icon(parent, icon, width=None, height=None):
     Args:
         parent: LVGL parent object.
         icon:   Icon factory (e.g. ``BTC_ICONS.RELAY``) or an ``Icon`` instance.
-        width:  Targeted width in pixels.  Defaults to ``BTC_ICON_WIDTH``.
-        height: Targeted height in pixels.  Defaults to ``BTC_ICON_WIDTH``.
+        width:  Targeted width in pixels.  Defaults to *icon*'s native width.
+        height: Targeted height in pixels.  Defaults to *icon*'s native width.
         zoom:   Zoom factor for the icon.  Defaults to ``BTC_ICON_ZOOM``.
 
     Returns:
@@ -21,7 +21,7 @@ def make_icon(parent, icon, width=None, height=None):
     """
     """Apply *icon* bitmap and sizing to an existing ``lv.image`` widget."""
     if width is None and height is None:
-        target_size = BTC_ICON_WIDTH
+        target_size = icon.width
     elif height is None:
         target_size = width
     elif width is None:
@@ -29,6 +29,8 @@ def make_icon(parent, icon, width=None, height=None):
     elif width != height:
         print("WARNING: make_icon called with non-square dimensions; falling back to smaller square.")
         target_size = min(width, height)
+    else:
+        target_size = width
     scale = target_size * 256 // icon.width
 
     img = lv.image(parent)

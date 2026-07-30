@@ -3,22 +3,17 @@
 
 import lvgl as lv
 from .icon_widgets import make_icon
-from .containers import flex_row
-from .inputs import title_textarea
-from .labels import make_label, menu_label, optimize_font_size
-from .card_helpers import build_delete_slot, compute_name_width
+from .inputs import make_textarea
+from .labels import make_label, body_label, optimize_font_size
+from .card_helpers import build_delete_slot
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style
-from ..utils import (
-    BTC_ICON_WIDTH,
-    SCREEN_WIDTH, CARD_H,
-    style_as_flex_container
-)
+from ..utils import set_scroll
 
 SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
 
-def fingerprint_badge(parent, seed, digits=4):
+def fingerprint_badge(parent, seed, digits=8):
     """Append a FINGERPRINT icon and the first *digits* hex chars of *seed*'s
     fingerprint to *parent*.
 
@@ -26,15 +21,22 @@ def fingerprint_badge(parent, seed, digits=4):
 
     Returns the fingerprint ``lv.label``.
     """
-    badge = flex_row(parent)
+    badge = SpecterGuiElement(parent)
+    set_scroll(badge, horizontal=False, vertical=False)
+    apply_style(badge, "CONTAINER.FINGERPRINT_BADGE")
+
     badge._ico = make_icon(badge, BTC_ICONS.FINGERPRINT)
     apply_style(badge._ico, ["WIDGET.INFO_ITEM"])
 
     fp = seed.get_fingerprint()
     if fp[:2].lower() == "0x":
         fp = fp[2:]
-    badge._lbl = make_label(badge, fp[:digits].upper())
-    apply_style(badge._lbl, ["WIDGET.INFO_ITEM", "TEXT.BODY"])
+
+    #insert line breaks every 4 chars for readability, then truncate to requested digits
+    fp = "\n".join(fp[i:i + 4] for i in range(0, digits, 4)).lower()
+    badge._lbl = body_label(badge, fp,
+                            ["WIDGET.INFO_ITEM", "LAYOUT.GROWS"])
+
     return badge
 
 def passphrase_toggle(parent, seed):
@@ -52,7 +54,7 @@ def passphrase_toggle(parent, seed):
 
     img = make_icon(parent, BTC_ICONS.PASSWORD)
     img.add_flag(lv.obj.FLAG.CLICKABLE)
-    apply_style(img, "WIDGET.INFO_ITEM")
+    apply_style(img, ["WIDGET.INFO_ITEM", "FG.DEFAULT"])
     apply_style(img, "MODIFIER.MUTED", lv.STATE.CHECKED)
     img.set_state(lv.STATE.CHECKED, not seed.passphrase_active)
 
@@ -83,7 +85,6 @@ class SeedCard(SpecterGuiElement):
     """
 
     def __init__(self, parent, seed, *,
-                 width=SCREEN_WIDTH, height=None,
                  slots=("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete"),
                  leading_icon=None,
                  on_card_click=None,
@@ -91,14 +92,9 @@ class SeedCard(SpecterGuiElement):
                  on_delete=None,
                  on_backup_warning=None):
         super().__init__(parent)
-        if height is None:
-            height = lv.SIZE_CONTENT
+        apply_style(self, "CONTAINER.INFO_CARD")
+        set_scroll(self, horizontal=False, vertical=False)
 
-        style_as_flex_container(self,
-                                flow=lv.FLEX_FLOW.ROW,
-                                main_align=lv.FLEX_ALIGN.START,
-                                width=width, height=height, 
-                                scrollable=False)
         # ── Input validation ──────────────────────────────────────────────────
         for s in slots:
             if s not in SEED_SLOTS:
@@ -133,15 +129,16 @@ class SeedCard(SpecterGuiElement):
 
             elif slot == "name":
                 if on_name_click is not None:
-                    self.name_widget = title_textarea(self)
+                    self.name_widget = make_textarea(self)
+                    apply_style(self.name_widget, "TEXT.TITLE")
                     self.name_widget.set_text(seed.label)
                     self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
                     self.text_edit = self.name_widget
                 else:
-                    self.name_widget = menu_label(self, seed.label)
+                    self.name_widget = make_label(self, seed.label, styles=["WIDGET.MENU_BUTTON_FG", "TEXT.TITLE", "TEXT.LEFT"])
                 
-                self.name_widget.set_flex_grow(1)
-                # when all slots are builtcthe actual width of the name widget
+                apply_style(self.name_widget, "LAYOUT.GROWS")
+                # when all slots are built the actual width of the name widget
                 # will be set and we can set its font optimally for the content
                 def _on_name_resized(e):
                     optimize_font_size(self.name_widget)
@@ -162,7 +159,7 @@ class SeedCard(SpecterGuiElement):
                     self.passphrase_widget = passphrase_toggle(self, seed)
 
             elif slot == "fingerprint":
-                self.fp_badge = fingerprint_badge(self, seed, digits=4)
+                self.fp_badge = fingerprint_badge(self, seed)
 
             elif slot == "delete":
-                self.del_btn = build_delete_slot(self, BTC_ICON_WIDTH, BTC_ICON_WIDTH, on_delete)
+                self.del_btn = build_delete_slot(self, on_delete)

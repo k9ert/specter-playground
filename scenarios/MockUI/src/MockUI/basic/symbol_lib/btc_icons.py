@@ -92,7 +92,7 @@ from .icons.globe import GLOBE
 # from .icons.grid import GRID
 # from .icons.hashes import HASHES
 from .icons.hat_and_glasses import HAT_AND_GLASSES
-# from .icons.hidden import HIDDEN
+from .icons.hidden import HIDDEN
 from .icons.home import HOME
 from .icons.home_outline import HOME_OUTLINE
 # from .icons.info import INFO
@@ -153,7 +153,7 @@ from .icons.safe import SAFE
 # from .icons.satoshi_v1 import SATOSHI_V1
 # from .icons.satoshi_v2 import SATOSHI_V2
 # from .icons.satoshi_v3 import SATOSHI_V3
-from .icons.scan import SCAN
+# from .icons.scan import SCAN
 from .icons.sd_card import SD_CARD
 # from .icons.search import SEARCH
 from .icons.send import SEND
@@ -280,7 +280,7 @@ class BTC_ICONS:
 #     GRID = GRID
 #     HASHES = HASHES
     HAT_AND_GLASSES = HAT_AND_GLASSES
-#     HIDDEN = HIDDEN
+    HIDDEN = HIDDEN
     HOME = HOME
     HOME_OUTLINE = HOME_OUTLINE
 #     INFO = INFO
@@ -341,7 +341,7 @@ class BTC_ICONS:
 #     SATOSHI_V1 = SATOSHI_V1
 #     SATOSHI_V2 = SATOSHI_V2
 #     SATOSHI_V3 = SATOSHI_V3
-    SCAN = SCAN
+#     SCAN = SCAN
     SD_CARD = SD_CARD
 #     SEARCH = SEARCH
     SEND = SEND

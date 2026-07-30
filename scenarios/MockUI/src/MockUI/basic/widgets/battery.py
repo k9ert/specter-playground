@@ -1,6 +1,6 @@
 import lvgl as lv
 from .icon_widgets import make_icon, apply_icon
-from ..utils import BTC_ICON_WIDTH, set_size, set_align
+from ..utils import set_align
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style
 
@@ -29,15 +29,14 @@ class Battery(lv.obj):
         (18, BTC_ICONS.BATTERY_EMPTY_OUTLINE,  "low"),
     ]
 
-    def __init__(self, parent, width=BTC_ICON_WIDTH, height=BTC_ICON_WIDTH):
+    def __init__(self, parent):
         super().__init__(parent)
-        set_size(self, width=width, height=height)
+        apply_style(self, "CONTAINER.BATTERY")  # drives size + alignment
         self.value = None      # battery percentage (0-100) or None to hide
         self.charging = None   # bool or None
 
         self.level_bg = make_icon(self, BTC_ICONS.BATTERY_EMPTY)
         set_align(self.level_bg, lv.ALIGN.CENTER)
-        apply_style(self.level_bg, "WIDGET.BATTERY")
         apply_style(self.level_bg, "FG.DEFAULT", lv.STATE.USER_1)
         apply_style(self.level_bg, "FG.SUCCESS", lv.STATE.USER_2)
         apply_style(self.level_bg, "FG.WARNING", lv.STATE.USER_3)
@@ -46,7 +45,6 @@ class Battery(lv.obj):
 
         self.level = make_icon(self, BTC_ICONS.BATTERY_FULL_OUTLINE)
         set_align(self.level, lv.ALIGN.CENTER)
-        apply_style(self.level, "WIDGET.BATTERY")
         apply_style(self.level, "FG.DEFAULT", lv.STATE.USER_1)
         apply_style(self.level, "FG.SUCCESS", lv.STATE.USER_2)
         apply_style(self.level, "FG.WARNING", lv.STATE.USER_3)
@@ -55,11 +53,11 @@ class Battery(lv.obj):
 
         self.level_ol = make_icon(self, BTC_ICONS.BATTERY_EMPTY_OUTLINE)
         set_align(self.level_ol, lv.ALIGN.CENTER)
-        apply_style(self.level_ol, ["WIDGET.BATTERY", "FG.DEFAULT"])
+        apply_style(self.level_ol, "FG.DEFAULT")
 
-        self.charge = make_icon(self, BTC_ICONS.LIGHTNING, width=int(2*BTC_ICON_WIDTH//3))
+        self.charge = make_icon(self, BTC_ICONS.LIGHTNING, width=int(2*BTC_ICONS.LIGHTNING.width//3))
         set_align(self.charge, lv.ALIGN.CENTER)
-        apply_style(self.charge, ["WIDGET.BATTERY", "FG.DEFAULT"])
+        apply_style(self.charge, "FG.DEFAULT")
         apply_style(self.charge, "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
 
         self.update()

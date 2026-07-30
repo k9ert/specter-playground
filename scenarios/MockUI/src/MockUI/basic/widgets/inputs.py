@@ -1,11 +1,11 @@
 """Input helpers — lv.textarea wrappers with Specter default styling."""
 
 import lvgl as lv
+from .btn import Btn
+from ..symbol_lib import BTC_ICONS
+from ..templates.specter_gui_base import SpecterGuiElement
 from ..utils import (
-    CONFIRMATION_SLIDER_HEIGHT,
-    FORM_TA_HEIGHT,
-    SWITCH_HEIGHT, SWITCH_WIDTH,
-    set_size
+    set_size,
 )
 from ..theming import apply_style, remove_style
 
@@ -14,34 +14,53 @@ ACCEPTED_CHARS = (
     "0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~ "
 )
 
-
-def title_textarea(parent, accepted_chars=ACCEPTED_CHARS):
+def make_textarea(parent, accepted_chars=ACCEPTED_CHARS):
     """Intended for editable names in the title bar."""
     ta = lv.textarea(parent)
-    apply_style(ta, ["WIDGET.TEXT_EDIT", "TEXT.TITLE"])
+    apply_style(ta, ["WIDGET.TEXT_EDIT"])
+    apply_style(ta, "WIDGET.TEXT_EDIT_CURSOR", lv.PART.CURSOR | lv.STATE.FOCUSED)
     ta.set_one_line(True)
     ta.set_accepted_chars(accepted_chars)
     return ta
 
-def form_textarea(parent, width=lv.pct(60)):
-    ta = lv.textarea(parent)
-    set_size(ta, width, FORM_TA_HEIGHT)
-    apply_style(ta, ["WIDGET.TEXT_EDIT", "TEXT.DEFAULT"])
-    ta.set_one_line(True)
-    return ta
+def make_password_textarea(parent, accepted_chars=ACCEPTED_CHARS):
+    pw_ta_container = SpecterGuiElement(parent)
+    apply_style(pw_ta_container, ["LAYOUT.FLEX_ROW", "LAYOUT.ALL_CENTERED", "LAYOUT.GROWS"])
 
-def password_textarea(parent):
-    ta = title_textarea(parent)
-    ta.set_password_mode(True)
-    return ta
+    """Intended for password/passphrase entry."""
+    pw_ta_container.ta = make_textarea(pw_ta_container, accepted_chars)
+    apply_style(pw_ta_container.ta, "LAYOUT.GROWS")
+    pw_ta_container.ta.set_password_bullet("*")
+
+    def set_pw_mode(new_mode):
+        pw_ta_container.ta.set_password_mode(new_mode)
+
+        if new_mode:
+            pw_ta_container.toggle_btn.update_icon(BTC_ICONS.VISIBLE)
+        else:
+            pw_ta_container.toggle_btn.update_icon(BTC_ICONS.HIDDEN)
+
+
+    pw_ta_container.toggle_btn = Btn(pw_ta_container,
+                     icon=BTC_ICONS.HIDDEN,
+                     background_style="APPEARANCE.TRANSPARENT",
+                     foreground_style="WIDGET.BUTTON_FG",
+                     callback=lambda: set_pw_mode(not pw_ta_container.ta.get_password_mode())
+                     )
+
+    set_pw_mode(True)
+    
+    return pw_ta_container.ta
+
 
 def make_switch(parent, init_value=False, setter_cb=None):
     switch = lv.switch(parent)
-    set_size(switch, SWITCH_HEIGHT, SWITCH_WIDTH)
     apply_style(switch, "SWITCH.TRACK", lv.PART.MAIN)
     apply_style(switch, "SWITCH.KNOB", lv.PART.KNOB)
     apply_style(switch, "SWITCH.INDICATOR", lv.PART.INDICATOR)
     apply_style(switch, "BG.SUCCESS", lv.PART.INDICATOR | lv.STATE.CHECKED)
+
+    apply_style(switch, "MODIFIER.MUTED_BG", lv.PART.INDICATOR | lv.STATE.DISABLED)
 
     # Set initial state
     if init_value:
@@ -59,9 +78,8 @@ def make_switch(parent, init_value=False, setter_cb=None):
     return switch
 
 def confirmation_slider(parent,
-                        width=lv.pct(80), height=CONFIRMATION_SLIDER_HEIGHT,
                         on_max=None, max_value=100, max_style="BG.SUCCESS", 
-                        on_min=None, min_value=-100, min_style="BG.DANGER",
+                        on_min=None, min_value=-100, min_style="BG.DANGER"
                         ):
     """Bidirectional confirmation slider.
     
@@ -71,9 +89,6 @@ def confirmation_slider(parent,
     
     Args:
         parent:         LVGL parent object.
-        optional:
-        width:          Slider width in pixels or lv.pct(x) (defaults to 100% of parent).
-        height:         Slider height in pixels (defaults to CONFIRMATION_SLIDER_HEIGHT).
 
         min_value:      Minimum slider value (left end), must be negative  (default:-100).
         max_value:      Maximum slider value (right end), must be positive (default: 100).
@@ -83,7 +98,6 @@ def confirmation_slider(parent,
         
         min_style:      Style string for min direction (defaults to "BG.DANGER").
         max_style:      Style string for max direction (defaults to "BG.SUCCESS").
-    
     The range is normalized so the larger absolute value becomes ±100. Start value is always at 0.
     
     returns the created slider
@@ -108,7 +122,6 @@ def confirmation_slider(parent,
 
     # Create slider
     slider = lv.slider(parent)
-    set_size(slider, width, height)
     slider.set_range(min_value, max_value)
     slider.set_mode(lv.slider.MODE.SYMMETRICAL)
     

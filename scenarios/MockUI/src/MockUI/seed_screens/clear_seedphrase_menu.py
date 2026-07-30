@@ -1,11 +1,12 @@
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 class ClearSeedphraseMenu(GenericMenu):
     """Sub-menu for choosing where to clear the seedphrase from."""
 
     TITLE_KEY = "SEEDPHRASE_MENU_CLEAR_FROM"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         menu_items = []
 
         if state.SmartCard_hasSeed():

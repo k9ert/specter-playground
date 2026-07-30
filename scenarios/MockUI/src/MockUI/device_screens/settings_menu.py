@@ -1,15 +1,17 @@
 import lvgl as lv
-from ..basic import GenericMenu, BTC_ICONS, MenuItem, STATUS_BTN_HEIGHT, make_icon, flex_row, apply_style
-
+from ..basic import (
+    GenericMenu, BTC_ICONS, MenuItem, SpecterGuiElement,
+    make_icon, apply_style, t
+)
 
 class SettingsMenu(GenericMenu):
     TITLE_KEY = "MENU_MANAGE_SETTINGS"
 
-    def pre_init(self, t, state):
-        self.row = flex_row(self.body, 
-                            width=lv.pct(100), height=STATUS_BTN_HEIGHT, 
-                            main_align=lv.FLEX_ALIGN.CENTER)
-        apply_style(self.row, "CONTAINER.DROP_UP_ROW")
+    def pre_itemlist(self):
+        state = self.device_state
+        
+        self.row = SpecterGuiElement(self.body)
+        apply_style(self.row, "CONTAINER.INTERFACE_STATUS")
 
         def _add_ico(icon):
             img = make_icon(self.row, icon)
@@ -42,7 +44,7 @@ class SettingsMenu(GenericMenu):
     def _iface_ico_cb(self, e):
         self.gui.navigate_to("interfaces")
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
         lang_code = self.i18n.get_language()
         lang_label = t("MENU_LANGUAGE") + " (" + lang_code.upper() + ")"
 

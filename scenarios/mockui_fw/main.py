@@ -74,7 +74,7 @@ _test_wallet = Wallet(
 gc.collect()
 
 scr = SpecterGui(specter_state, ui_state)
-lv.screen_load(scr)
+
 
 # Start TCP control server when --control flag is passed (simulator only)
 if not _ON_HARDWARE and '--control' in sys.argv:

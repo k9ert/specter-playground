@@ -180,6 +180,7 @@ _INT_ATTRS = (
     "grid_cell_row_pos",     # 0x8F
     "grid_cell_column_span", # 0x90
     "grid_cell_row_span",    # 0x91
+    "anim_duration",         # 0x92
 )
 
 _ENUM_BASE = 0xA0

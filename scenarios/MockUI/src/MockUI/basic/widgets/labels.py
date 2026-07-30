@@ -13,31 +13,23 @@ def optimize_font_size(label):
     label.set_text(display_text)
     label.set_style_text_font(font, 0)
 
-def make_label(parent, text, width=lv.SIZE_CONTENT, styles = None):
+def make_label(parent, text, styles = None):
     """Base label factory: create, size, font, align, colour."""
     lbl = lv.label(parent)
     lbl.set_text(text if text is not None else "")
-    set_size(lbl, width, None)
     if styles is not None:
         apply_style(lbl, styles)
     return lbl
 
-def body_label(parent, text, width=lv.pct(100)):
-    lbl = make_label(parent, text, width=width, styles=["TEXT.DEFAULT", "TEXT.BODY", "TEXT.CENTER", "FG.DEFAULT"])
+def body_label(parent, text, styles = None):
+    lbl = make_label(parent, text, styles)
+
+    # Post-process to make sure textwrapping actually works
+    # (a max. width for the label is needed, otherwise it
+    #  will just expand to fit the text)
+    w = lbl.get_style_width(lv.PART.MAIN)
+    if w == lv.SIZE_CONTENT:
+        set_size(lbl, width=lv.pct(100))
+        
     lbl.set_long_mode(lv.label.LONG_MODE.WRAP)
     return lbl
-
-def info_label(parent, text, width=None):
-    return make_label(parent, text, width, ["TEXT.SMALL", "FG.DEFAULT"])
-
-def form_label(parent, text, width=None):
-    return make_label(parent, text, width, ["TEXT.DEFAULT", "FG.DEFAULT"])
-
-def section_header(parent, text):
-    return make_label(parent, text, lv.pct(100), ["WIDGET.MENU_SECTION_HEADER"]) 
-
-def menu_label(parent, text, width=None):
-    return make_label(parent, text, width, ["WIDGET.MENU_BUTTON_FG", "FG.DEFAULT", "TEXT.TITLE"])
-
-def title_label(parent, text, width=None):
-    return make_label(parent, text, width, ["WIDGET.SCREEN_TITLE"])

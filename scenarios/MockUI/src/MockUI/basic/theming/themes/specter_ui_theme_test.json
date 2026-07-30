@@ -22,8 +22,8 @@
     "small": "montserrat:16"
   },
   "styles": {
-    "CONTAINER.SCREEN":     { "bg_color": "@canvas",   "bg_opa": "COVER", "border_width": 0, "radius": 10, "pad_all": 0 },
-    "CONTAINER.NAVBAR":     { "bg_color": "@primary",  "bg_opa": "COVER", "border_width": 0, "radius": 10, "pad_all": 0 },
+    "CONTAINER.SCREEN":     { "bg_color": "@canvas",   "bg_opa": "COVER", "border_width": 0, "radius": 10, "pad_all": 0, "layout": "FLEX", "flex_flow": "COLUMN" },
+    "CONTAINER.NAVBAR":     { "bg_color": "@primary",  "bg_opa": "COVER", "border_width": 0, "radius": 10, "pad_all": 0, "width": "pct(100)", "height": "pct(8)" },
     "CONTAINER.MAIN_MENU":        {},
     "CONTAINER.MENU_CONTAINER":   {},
     "CONTAINER.MENU_ROW":         {},
@@ -31,8 +31,9 @@
     "CONTAINER.DROPUP":           {},
     "CONTAINER.DROP_UP_ROW":      {},
     "CONTAINER.INTERFACE_STATUS": {},
-    "CONTAINER.TITLE_BAR":        {},
-    "WIDGET.SCREEN_TITLE":      {},
+    "CONTAINER.TITLE_BAR":        { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@LAYOUT.FLEX_ROW"], "flex_cross_place": "CENTER", "width": "pct(100)", "height": "pct(8)"},
+    "CONTAINER.APP_SCREEN":       { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE"], "layout": "FLEX", "flex_flow": "COLUMN", "flex_grow": 1, "width": "pct(100)" },
+    "CONTAINER.BATTERY":          { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE"], "align": "TOP_RIGHT", "width": 50, "height": "pct(8)" },
     "WIDGET.OVERLAY":     { "bg_color": "@neutral",  "bg_opa": 180, "border_width": 0, "radius": 10, "pad_all": 0 },
     "WIDGET.PANEL":       { "border_width": 0, "radius": 10, "pad_all": 0 },
     "WIDGET.CARD":        { "radius": 8, "border_width": 0, "pad_all": 12 },

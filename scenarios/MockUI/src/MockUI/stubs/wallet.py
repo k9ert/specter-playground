@@ -4,6 +4,7 @@ Keep this small and replace with the project's real Wallet model when ready.
 Represents a persistent wallet descriptor — stored in flash, auto-loaded on boot.
 """
 
+from micropython import const
 
 class Wallet:
     """Wallet descriptor placeholder used by DeviceState.
@@ -44,10 +45,10 @@ class Wallet:
 
 
 class WalletType:
-    SINGLE_SIG_DEFAULT = 0
-    SINGLE_SIG = 1
-    MULTISIG = 2
-    CUSTOM = 3
+    SINGLE_SIG_DEFAULT = const(0)
+    SINGLE_SIG = const(1)
+    MULTISIG = const(2)
+    CUSTOM = const(3)
 
 
 def _wallet_type_rank(wallet):

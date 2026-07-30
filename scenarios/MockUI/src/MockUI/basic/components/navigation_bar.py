@@ -1,12 +1,13 @@
 """NavigationBar — permanent bottom navigation bar for Specter MockUI.
 
-Layout (left-to-right, full width, STATUS_BAR_PCT% height):
+Layout (left-to-right, full width):
     ┌────────────────────────────────────────────────────┐
     │  [Back]   [Seed]   [Home]   [Wallet]   [Device]    │
     │  pos 1    pos 2    pos 3    pos 4      pos 5       │
     └────────────────────────────────────────────────────┘
 
-All five slots have fixed positions (SCREEN_WIDTH / 5 each).
+The five buttons are flex-distributed (SPACE_AROUND) by CONTAINER.NAVBAR,
+not placed at fixed pixel positions.
 
 Filled vs outline icon rules
 ─────────────────────────────
@@ -28,10 +29,8 @@ import lvgl as lv
 from .seed_dropup import SeedDropUp
 from .wallet_dropup import WalletDropUp
 from ..utils import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, STATUS_BAR_H,
-    BTC_ICON_WIDTH,
     delete_all_children_of,
-    style_as_flex_container
+    set_scroll
 )
 from ..symbol_lib import BTC_ICONS
 from ..widgets import Btn, modal_overlay
@@ -41,7 +40,7 @@ from ..theming import apply_style
 from ..ui_state import Context
 
 class NavigationBar(SpecterGuiElement):
-    """Permanent bottom navigation bar with 5 fixed-position icon buttons."""
+    """Permanent bottom navigation bar with 5 flex-distributed icon buttons."""
 
     def __init__(self, gui):
         super().__init__(gui)
@@ -56,28 +55,24 @@ class NavigationBar(SpecterGuiElement):
         self._wallet_dropup = WalletDropUp()
         self._wallet_dropup._on_closed = self._on_any_panel_closed
 
-        # ── Screen backdrop style ───────────────────────────────────────────────
-        style_as_flex_container(self, flow=lv.FLEX_FLOW.ROW, 
-                                width=SCREEN_WIDTH, height=STATUS_BAR_H,
-                                main_align=lv.FLEX_ALIGN.SPACE_AROUND,
-                                cross_align=lv.FLEX_ALIGN.CENTER,
-                                scrollable=False)
+        # ── Navbar container style ──────────────────────────────────────────────
         apply_style(self, "CONTAINER.NAVBAR")
         apply_style(self, "CONTAINER.SCREEN", lv.STATE.DISABLED)
+        set_scroll(self, horizontal=False, vertical=False)
 
-        names = ["Back", "Seed", "Home", "Wallet", "Device"]
-        icons = [BTC_ICONS.CARET_LEFT,
-                 BTC_ICONS.KEY_OUTLINE,
-                 BTC_ICONS.HOME_OUTLINE,
-                 BTC_ICONS.WALLET_OUTLINE,
-                 BTC_ICONS.GEAR_OUTLINE]
-        cbs = [self._back_cb, self._seed_cb, self._home_cb, self._wallet_cb, self._device_cb]
+        # (name, initial icon, click callback)
+        button_specs = [
+            ("Back",   BTC_ICONS.CARET_LEFT,      self._back_cb),
+            ("Seed",   BTC_ICONS.KEY_OUTLINE,     self._seed_cb),
+            ("Home",   BTC_ICONS.HOME_OUTLINE,    self._home_cb),
+            ("Wallet", BTC_ICONS.WALLET_OUTLINE,  self._wallet_cb),
+            ("Device", BTC_ICONS.GEAR_OUTLINE,    self._device_cb),
+        ]
 
         self.buttons = {}
-        for (name, icon, cb) in zip(names, icons, cbs):
+        for name, icon, cb in button_specs:
             self.buttons[name] = Btn(self, 
                                      icon=icon, 
-                                     size=(BTC_ICON_WIDTH, BTC_ICON_WIDTH), 
                                      callback=cb,
                                      background_style="WIDGET.NAVBAR_BUTTON",
                                      foreground_style="WIDGET.NAVBAR_BUTTON_FG")
@@ -91,8 +86,9 @@ class NavigationBar(SpecterGuiElement):
         """Create shared backdrop if not already present; return its container."""
         if self._backdrop is not None:
             return self._backdrop
-        _panel_max_h = SCREEN_HEIGHT - STATUS_BAR_H
-        self._backdrop = modal_overlay(width=SCREEN_WIDTH, height=_panel_max_h)
+        
+        panel_h = self.gui.get_height() - self.get_height()
+        self._backdrop = modal_overlay(height=panel_h)
         self._backdrop.add_event_cb(self._backdrop_tap_cb, lv.EVENT.CLICKED, None)
         return self._backdrop
 
@@ -133,10 +129,10 @@ class NavigationBar(SpecterGuiElement):
     
     def rebuild(self):
         """Rebuild the navigation bar and its drop-ups from scratch."""
-        if self._seed_dropup and self._seed_dropup._anim:
-            self._seed_dropup._anim = None
-        if self._wallet_dropup and self._wallet_dropup._anim:
-            self._wallet_dropup._anim = None
+        if self._seed_dropup:
+            self._seed_dropup.cancel_animation()
+        if self._wallet_dropup:
+            self._wallet_dropup.cancel_animation()
         # Delete existing buttons and drop-ups (if any)
         if self._backdrop is not None:
             self._backdrop.delete()
@@ -170,41 +166,27 @@ class NavigationBar(SpecterGuiElement):
             seed_open = self._seed_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
             wallet_open = self._wallet_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
 
-            # Home icon: filled only when on main and no dropup is open
-            if self.current_menu == "main" and not seed_open and not wallet_open:
-                self.buttons["Home"].update_icon(BTC_ICONS.HOME)
-            else:
-                self.buttons["Home"].update_icon(BTC_ICONS.HOME_OUTLINE)
-            # Home is always visible when not locked
-            self.buttons["Home"].set_state(lv.STATE.DISABLED, False)
+            no_seed_loaded = (self.gui.device_state is None
+                              or len(self.gui.device_state.loaded_seeds) == 0)
 
-            # Seed icon: filled when dropup open OR when in a seed menu
-            if (self.context == Context.SEED and not wallet_open) or seed_open:
-                self.buttons["Seed"].update_icon(BTC_ICONS.KEY)
-            else:
-                self.buttons["Seed"].update_icon(BTC_ICONS.KEY_OUTLINE)
-            #Seed icon: invisible when no seed loaded
-            self.buttons["Seed"].set_state(lv.STATE.DISABLED,
-                                           self.gui.device_state is None or 
-                                           len(self.gui.device_state.loaded_seeds) == 0)
-
-            # Wallet icon: filled when dropup open OR when in a wallet menu
-            if (self.context == Context.WALLET and not seed_open) or wallet_open:
-                self.buttons["Wallet"].update_icon(BTC_ICONS.WALLET)
-            else:
-                self.buttons["Wallet"].update_icon(BTC_ICONS.WALLET_OUTLINE)
-            #Wallet icon: invisible when no seed loaded
-            self.buttons["Wallet"].set_state(lv.STATE.DISABLED, 
-                                             self.gui.device_state is None or 
-                                             len(self.gui.device_state.loaded_seeds) == 0)
-
-            # Device icon
-            if self.context == Context.DEVICE and not seed_open and not wallet_open:
-                self.buttons["Device"].update_icon(BTC_ICONS.GEAR)
-            else:
-                self.buttons["Device"].update_icon(BTC_ICONS.GEAR_OUTLINE)
-            # Device is always visible when not locked
-            self.buttons["Device"].set_state(lv.STATE.DISABLED, False)
+            # (name, filled icon, outline icon, is-filled condition, is-disabled condition)
+            icon_table = [
+                ("Home", BTC_ICONS.HOME, BTC_ICONS.HOME_OUTLINE,
+                 self.current_menu == "main" and not seed_open and not wallet_open,
+                 False),
+                ("Seed", BTC_ICONS.KEY, BTC_ICONS.KEY_OUTLINE,
+                 (self.context == Context.SEED and not wallet_open) or seed_open,
+                 no_seed_loaded),
+                ("Wallet", BTC_ICONS.WALLET, BTC_ICONS.WALLET_OUTLINE,
+                 (self.context == Context.WALLET and not seed_open) or wallet_open,
+                 no_seed_loaded),
+                ("Device", BTC_ICONS.GEAR, BTC_ICONS.GEAR_OUTLINE,
+                 self.context == Context.DEVICE and not seed_open and not wallet_open,
+                 False),
+            ]
+            for name, icon_filled, icon_outline, is_filled, is_disabled in icon_table:
+                self.buttons[name].update_icon(icon_filled if is_filled else icon_outline)
+                self.buttons[name].set_state(lv.STATE.DISABLED, is_disabled)
 
             # Rebuild drop-up card lists if open (e.g. after passphrase/wallet state change)
             if self._seed_dropup.get_state() == DropUpState.OPEN:
@@ -213,6 +195,17 @@ class NavigationBar(SpecterGuiElement):
                 self._wallet_dropup.refresh()
 
     # ── Button callbacks ──────────────────────────────────────────────────────
+
+    def _can_dispatch(self, name):
+        """Check if animation is ongoing or the *name* button is disabled.
+        """
+        if (self.gui.ui_state._is_animating
+                or self._seed_dropup.get_state() in (DropUpState.OPENING, DropUpState.CLOSING)
+                or self._wallet_dropup.get_state() in (DropUpState.OPENING, DropUpState.CLOSING)):
+            return False
+        if (self.buttons[name].get_state() & lv.STATE.DISABLED) != 0:
+            return False
+        return True
 
     def _dropup_button_cb(self, own_dropup, other_dropup):
         """Shared logic for Seed and Wallet nav buttons.
@@ -226,58 +219,29 @@ class NavigationBar(SpecterGuiElement):
             self._close_dropup(own_dropup)
         else:
             self._open_dropup(own_dropup)
-        self.refresh()
+        self.refresh()        
 
-    def _any_animation_ongoing(self):
-        """Helper to check if any drop-up is currently animating."""
-        return (
-            getattr(self.gui, '_animating', True) 
-            or self._seed_dropup.get_state() in (DropUpState.OPENING, DropUpState.CLOSING)
-            or self._wallet_dropup.get_state() in (DropUpState.OPENING, DropUpState.CLOSING)
-        )
+    def _back_cb(self):
+        if self._can_dispatch("Back"):
+            self.close_dropups()
+            self.on_navigate(None)
 
-    def _back_cb(self, event=None):
-        if self._any_animation_ongoing():
-            return
-        if (self.buttons["Back"].get_state() & lv.STATE.DISABLED) != 0:
-            return  # ignore clicks when Back button is disabled
-        # If a drop-up is open, close it first, then navigate back
-        self.close_dropups()
-        self.on_navigate(None)
+    def _seed_cb(self):
+        if self._can_dispatch("Seed"):
+            self._dropup_button_cb(self._seed_dropup, self._wallet_dropup)
 
-    def _seed_cb(self, event=None):
-        if self._any_animation_ongoing():
-            return
-        if (self.buttons["Seed"].get_state() & lv.STATE.DISABLED) != 0:
-            return  # ignore clicks when Seed button is disabled
-        self._dropup_button_cb(self._seed_dropup, self._wallet_dropup)
+    def _home_cb(self):
+        if self._can_dispatch("Home"):
+            self.close_dropups()
+            self.gui.on_navigate("main")
 
-    def _home_cb(self, event=None):
-        if self._any_animation_ongoing():
-            return
-        if (self.buttons["Home"].get_state() & lv.STATE.DISABLED) != 0:
-            return  # ignore clicks when Home button is disabled
-        # History clearing is handled inside on_navigate/show_menu for target="main"
-        self.close_dropups()
-        self.gui.on_navigate("main")
+    def _wallet_cb(self):
+        if self._can_dispatch("Wallet"):
+            self._dropup_button_cb(self._wallet_dropup, self._seed_dropup)
 
-    def _wallet_cb(self, event=None):
-        if self._any_animation_ongoing():
-            return
-        if (self.buttons["Wallet"].get_state() & lv.STATE.DISABLED) != 0:
-            return  # ignore clicks when Wallet button is disabled
-        self._dropup_button_cb(self._wallet_dropup, self._seed_dropup)
-
-    def _device_cb(self, event=None):
-        if self._any_animation_ongoing():
-            return
-        
-        if (self.buttons["Device"].get_state() & lv.STATE.DISABLED) != 0:
-            return  # ignore clicks when Device button is disabled
-        
-        #always close drop ups if they are open
-        self.close_dropups()
-        
-        if self.context != Context.DEVICE:
-            self.on_navigate("manage_settings")
-        self.refresh()
+    def _device_cb(self):
+        if self._can_dispatch("Device"):
+            self.close_dropups()
+            if self.context != Context.DEVICE:
+                self.on_navigate("manage_settings")
+            self.refresh()

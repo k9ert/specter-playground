@@ -174,13 +174,13 @@
       "text": "Wallet",
       "ref_en": "Wallet"
     },
-    "PASSPHRASE_MENU_LABEL": {
-      "text": "Passphrase:",
-      "ref_en": "Passphrase:"
-    },
     "PASSPHRASE_MENU_CLEAR": {
       "text": "Löschen",
       "ref_en": "Clear"
+    },
+    "PASSPHRASE_MENU_ENABLE_DISABLE": {
+      "text": "Aktiviert:",
+      "ref_en": "Enabled:"
     },
     "SEEDPHRASE_MENU_SHOW": {
       "text": "Seedphrase anzeigen",

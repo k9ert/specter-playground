@@ -1,18 +1,19 @@
 import lvgl as lv
 
 from .utils import (
-    SCREEN_WIDTH, CONTENT_H, ANIM_MS_HORIZONTAL, ANIM_MS_VERTICAL, GUI_REFRESH_MS,
+    GUI_REFRESH_MS,
     KeyboardManager,
     slide_x, slide_y, GUIAnimations,
-    set_scroll, get_size, set_size, set_pos, set_align
+    set_scroll, set_size, set_pos, get_size,
+    set_layout,
 )
 from .ui_state import UIState, Context
 from .i18n import I18nManager
-from .theming import ThemeManager
+from .theming import ThemeManager, apply_style
 from .tour import GuidedTour, INTRO_TOUR_STEPS
 from .components import NavigationBar, AppScreen
-from .templates.action_screen import ActionScreen
 from .templates.specter_gui_base import bind_gui
+from .templates.rebuildable import RebuildableObj
 
 from ..main_screens import (
     MainMenu,
@@ -78,45 +79,55 @@ _VIEW_MAP = {
 }
 
 
-class SpecterGui(lv.obj):
+class SpecterGui(RebuildableObj):
 
-    def __init__(self, specter_state=None, ui_state=None, *args, **kwargs):
+    # Ordered list: _init_grid() builds children top-to-bottom in list order.
+    # MicroPython dicts do NOT preserve insertion order!
+    _SUBELEMENTS = [
+        ("app_screen",     AppScreen),
+        ("navigation_bar", NavigationBar),
+    ]
+
+    def __init__(self, specter_state=None, ui_state=None):
+        #disable LVGL's built-in theme; we'll use our own theming system instead
         lv.display_get_default().set_theme(None)
         #register the global GUI instance before calling super().__init__ 
         # so that any early calls to get_gui() (e.g. from widget constructors) succeed
         bind_gui(self)
-        super().__init__(*args, **kwargs)
-        set_scroll(self, horizontal=False, vertical=False)
 
-        self.on_navigate = self.navigate_to
-
-        # Initialize i18n manager
-        self.i18n = I18nManager()
-
-        # Initialize theme manager — singleton already warmed up at boot
-        self.theme = ThemeManager.get_instance()
-
-        if specter_state:
+        if specter_state and isinstance(specter_state, DeviceState):
             self.device_state = specter_state
         else:
             self.device_state = DeviceState()
 
-        if ui_state:
+        if ui_state and isinstance(ui_state, UIState):
             self.ui_state = ui_state
         else:
             self.ui_state = UIState()
-
+        
+        # Initialize non visible children/elements
+        self.i18n = I18nManager()
+        self.theme = ThemeManager.get_instance()
         self.keyboard_manager = KeyboardManager(self)
-        self._animating = False   # True while a slide animation is running
-        self._anim_refs = None    # holds Python callbacks + anim objects alive
 
-        # Active AppScreen (screen.view holds the active TitledScreen widget)
-        self.screen = None
+        self.on_navigate = self.navigate_to
 
-        # Navigation bar at bottom — always present, owned by SpecterGui
-        self.navigation_bar = NavigationBar(self)
-        set_align(self.navigation_bar, lv.ALIGN.BOTTOM_MID)
+        # Resolve the initial view class before _init_grid runs (AppScreen reads it via ui_state).
+        self.ui_state.view_class = _VIEW_MAP.get(self.ui_state.current_menu_id)
 
+        # create SpecterGui as new screen object and create subelements 
+        # (app_screen, navigation_bar) as children of self
+        super().__init__(parent=None)
+
+    #gets called during call to superclass constructor before subelements are built
+    def setup_self(self):
+        apply_style(self, "CONTAINER.SCREEN")
+        set_scroll(self, horizontal=False, vertical=False)
+
+    #gets called during call to superclass constructor after subelements are built
+    def post_init(self):
+        # Initial view was already built by _init_grid (AppScreen reads ui_state.view_class).
+        # Just refresh to sync nav bar highlights etc.
         self.navigate_to(self.ui_state.current_menu_id)
 
         # Periodic refresh (e.g. to update battery level)
@@ -124,40 +135,42 @@ class SpecterGui(lv.obj):
             self.device_state.debug_cycle_battery()
             self.refresh_ui()
         lv.timer_create(_tick, GUI_REFRESH_MS, None)
+
+        # load SpecterGui as the active screen
+        lv.screen_load(self)
+
         
 
     def change_language(self, lang_code):
         """Change the active language and rebuild the current screen."""
         self.i18n.set_language(lang_code)
-        self.rebuild_ui()
+        self.rebuild_all()
 
     def change_theme(self, theme_name, mode=None):
         """Change the active theme (and optionally mode) and rebuild the current screen."""
         self.theme.set_theme(theme_name, mode)
-        self.rebuild_ui()
+        self.rebuild_all()
 
     def change_mode(self, mode):
         """Toggle dark/light mode and rebuild the current screen."""
         self.theme.set_mode(mode)
-        self.rebuild_ui()
-
-    def rebuild_ui(self):
-        """Rebuild the entire UI from scratch, keeping the current menu and context."""
-        if self.screen:
-            self.screen.delete()
-        self.screen = self._make_screen()
-        self.navigation_bar.rebuild()
+        self.rebuild_all()
 
     def refresh_ui(self):
         """Centralized refresh method for all UI components."""
-        if self.screen:
-            self.screen.refresh()
+        # Animated widgets own their geometry until the transition cleanup.
+        # Defer periodic and event-driven refreshes so they cannot rebuild or
+        # relayout any visible component halfway through an animation.
+        if self.ui_state._is_animating:
+            return
+        if self.app_screen:
+            self.app_screen.refresh()
         if self.navigation_bar:
             self.navigation_bar.refresh()
 
     def navigate_to(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
         # Drop all input while animating
-        if self._animating:
+        if self.ui_state._is_animating:
             return
         
         if target_menu_id == "main" and self.ui_state.is_run_tour_on_startup:
@@ -184,12 +197,13 @@ class SpecterGui(lv.obj):
         if target_wallet != "unset":
             self.ui_state.set_active_wallet(target_wallet)
 
+        # Resolve the view class for the new menu before any rebuild or transition.
+        self.ui_state.view_class = _VIEW_MAP.get(self.ui_state.current_menu_id)
+
         if anim is not None and self.ui_state.are_animations_enabled:
             self._do_transition(anim)
         else:
-            if self.screen:
-                self.screen.delete()
-            self.screen = self._make_screen()
+            self.rebuild_slot("app_screen")
             self.refresh_ui()
 
         if self.ui_state.current_menu_id == "start_intro_tour":
@@ -197,22 +211,6 @@ class SpecterGui(lv.obj):
             if self.navigation_bar:
                 self.navigation_bar.refresh()
             GuidedTour(self, GuidedTour.resolve_steps(INTRO_TOUR_STEPS, self)).start()
-
-    def _make_screen(self):
-        """Create a new AppScreen for the current ui_state and populate it with a view.
-
-        Returns the new AppScreen.  Does NOT delete any old screen.
-        """
-        screen = AppScreen(self)
-        screen.view = self._build_view(screen, self.ui_state.current_menu_id)
-        return screen
-
-    def _build_view(self, screen, menu_id):
-        """Instantiate and return the correct view class for *menu_id* into *screen*."""
-        class_name = _VIEW_MAP.get(menu_id)
-        if class_name is not None:
-            return class_name(screen.content)
-        return ActionScreen(menu_id, screen.content)
 
     def _do_transition(self, anim_type):
         """Animate from the current screen to a freshly-built new screen.
@@ -223,10 +221,10 @@ class SpecterGui(lv.obj):
           • Cases 1/2 (between contexts, or context without bar): animate the
             entire Screen unit (bar + battery + content move together).
         """
-        self._animating = True
+        self.ui_state._is_animating = True
 
         ctx = self.ui_state.active_context  # already updated by navigate_to
-        ctx_has_bar = self.screen.context_bar is not None
+        ctx_has_bar = self.app_screen.context_bar is not None
         is_horizontal = anim_type in (
             GUIAnimations.horizontal_slide_in,
             GUIAnimations.horizontal_slide_out,
@@ -246,109 +244,101 @@ class SpecterGui(lv.obj):
 
     def _transition_within_context(self, anim_type):
         """Case 3: slide only the view widget inside the existing screen.content."""
-        old_screen = self.screen
-        old_view = old_screen.view
-        content = old_screen.content
-        (content_w, content_h) = get_size(content)
-        content.set_layout(lv.LAYOUT.NONE)
-        set_pos(old_view, 0, 0)
-        set_size(old_view, SCREEN_WIDTH, content_h)
+        screen = self.app_screen
+        transition_data = screen.begin_view_transition(self.ui_state.view_class)
+        if transition_data is None:
+            # An invalid view must not leave navigation locked.  Rebuild the
+            # active app screen without animation, which also resets any
+            # partially prepared view/layout state.
+            self.rebuild_slot("app_screen")
+            self._end_animation()
+            return
 
-        # Build new view into the same screen (added to content as 2nd child)
-        new_view = self._build_view(old_screen, self.ui_state.current_menu_id)
-        old_screen.view = new_view
-        set_size(new_view, SCREEN_WIDTH, content_h)
+        old_view, new_view, W, _ = transition_data
+
+        def _cleanup():
+            screen.finish_view_transition(old_view)
+            self._end_animation()
 
         anims = []
-        W = SCREEN_WIDTH
-
-        def _cleanup_case3():
-            self._animating = False
-            self._anim_refs = None
-            old_view.delete()
-            content.set_layout(lv.LAYOUT.FLEX)
-            content.set_flex_flow(lv.FLEX_FLOW.COLUMN)
-            self.refresh_ui()
-
         if anim_type == GUIAnimations.horizontal_slide_in:
-            new_view.set_x(W)
-            anims.append(slide_x(new_view, W, 0, ANIM_MS_HORIZONTAL,
-                                on_done_cb=lambda a: _cleanup_case3()))
+            anims.append(slide_x(new_view, W, 0,
+                                 on_done_cb=lambda a: _cleanup()))
         elif anim_type == GUIAnimations.horizontal_slide_out:
-            new_view.set_x(0)
             old_view.move_foreground()
-            anims.append(slide_x(old_view, 0, W, ANIM_MS_HORIZONTAL,
-                                on_done_cb=lambda a: _cleanup_case3()))
+            anims.append(slide_x(old_view, 0, W,
+                                 on_done_cb=lambda a: _cleanup()))
 
+        self.ui_state._anim_refs = anims
         for a in anims:
             a.start()
-        self._anim_refs = anims
 
     def _transition_full_screen(self, anim_type):
         """Cases 1/2: slide the entire Screen unit (bar + content) via a clip container."""
-        old_screen = self.screen
-        new_screen = self._make_screen()
-        self.screen = new_screen
+        old_screen = self.app_screen
+        W, H = get_size(old_screen)
+        app_screen_index = old_screen.get_index()
 
-        # temporary clip container: same size as the content zone
-        # (480×_CONTENT_H).
-        # Both screens are reparented into it so LVGL's default parent-clip
-        # prevents them from ever painting over the navigation bar below.
-        
-        
+        # The clip temporarily occupies the active app-screen slot in the root
+        # flex layout.  Constructing the new screen inside it avoids a second
+        # flex-growing AppScreen splitting the visible viewport in half.
         anim_clip = lv.obj(self)
-        set_size(anim_clip, SCREEN_WIDTH, CONTENT_H)
-        set_pos(anim_clip, 0, 0)
+        set_size(anim_clip, W, H)
         set_scroll(anim_clip, horizontal=False, vertical=False)
-        anim_clip.set_layout(lv.LAYOUT.NONE)
+        set_layout(anim_clip, lv.LAYOUT.NONE)
 
-        # Reparent both screens; their coords were (0,0) relative to
-        # SpecterGui which is identical to (0,0) inside anim_clip.
+        # Reparent the old screen, then put the clip in its former root slot so
+        # the navigation bar remains the only other flex child.
         old_screen.set_parent(anim_clip)
+        anim_clip.move_to_index(app_screen_index)
         set_pos(old_screen, 0, 0)
-        new_screen.set_parent(anim_clip)
-        set_pos(new_screen, 0, 0)
+        set_size(old_screen, W, H)
 
-        # Navigation bar must remain above the clip container.
-        self.navigation_bar.move_foreground()
+        new_screen = AppScreen(anim_clip)  # reads ui_state.view_class
+        set_pos(new_screen, 0, 0)
+        set_size(new_screen, W, H)
+        new_screen.update_layout()
+        self.app_screen = new_screen
 
         def _cleanup_whole():
-            self._animating = False
-            self._anim_refs = None
             # Reparent new_screen back to SpecterGui before deleting the
             # clip (which would otherwise take new_screen with it).
             new_screen.set_parent(self)
-            set_pos(new_screen, 0, 0)
+            new_screen.move_to_index(app_screen_index)
             anim_clip.delete()   # also deletes old_screen
-            self.navigation_bar.move_foreground()
-            self.refresh_ui()
+            self.update_layout()
+            self._end_animation()
 
         anims = []
-        W = SCREEN_WIDTH
 
         if anim_type == GUIAnimations.horizontal_slide_in:
-            anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL,
+            anims.append(slide_x(new_screen, W, 0,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.horizontal_slide_out:
             old_screen.move_foreground()   # old on top within anim_clip
-            anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+            anims.append(slide_x(old_screen, 0, W,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.horizontal_push_in:
-            anims.append(slide_x(new_screen, W, 0, ANIM_MS_HORIZONTAL))
-            anims.append(slide_x(old_screen, 0, -W, ANIM_MS_HORIZONTAL,
+            anims.append(slide_x(new_screen, W, 0))
+            anims.append(slide_x(old_screen, 0, -W,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.horizontal_push_out:
-            anims.append(slide_x(new_screen, -W, 0, ANIM_MS_HORIZONTAL))
-            anims.append(slide_x(old_screen, 0, W, ANIM_MS_HORIZONTAL,
+            anims.append(slide_x(new_screen, -W, 0))
+            anims.append(slide_x(old_screen, 0, W,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.vertical_slide_in:
-            anims.append(slide_y(new_screen, CONTENT_H, 0, ANIM_MS_VERTICAL,
+            anims.append(slide_y(new_screen, H, 0,
                                 on_done_cb=lambda a: _cleanup_whole()))
         elif anim_type == GUIAnimations.vertical_slide_out:
             old_screen.move_foreground()   # old on top within anim_clip
-            anims.append(slide_y(old_screen, 0, CONTENT_H, ANIM_MS_VERTICAL,
+            anims.append(slide_y(old_screen, 0, H,
                                 on_done_cb=lambda a: _cleanup_whole()))
 
+        self.ui_state._anim_refs = anims
         for a in anims:
             a.start()
-        self._anim_refs = anims
+
+    def _end_animation(self):
+        self.ui_state._anim_refs = None
+        self.ui_state._is_animating = False
+        self.refresh_ui()

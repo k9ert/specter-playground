@@ -7,15 +7,12 @@ and displays explanatory text with navigation controls.
 import lvgl as lv
 
 from ..utils import (
-    EXPLAINER_WIDTH,
-    EXPLAINER_HEIGHT,
-    SCREEN_WIDTH, SCREEN_HEIGHT,
-    get_size, set_size, set_pos, set_scroll
+    get_size, set_size, set_pos
 )
 from ..symbol_lib import BTC_ICONS
 from ..templates.specter_gui_base import SpecterGuiMixin
 from ..theming import apply_style
-from ..widgets import Btn, flex_row, flex_col, flex_container, body_label, modal_overlay
+from ..widgets import MenuItem, modal_overlay, button_modal
 
 
 class UIExplainer(SpecterGuiMixin):
@@ -41,7 +38,7 @@ class UIExplainer(SpecterGuiMixin):
         # LVGL objects (created on show())
         self._overlay = None
         self._dim_strips = []
-        self._text_box = None
+        self._modal_box = None
     
     def show(self):
         """Create and display the explainer overlay."""
@@ -58,7 +55,7 @@ class UIExplainer(SpecterGuiMixin):
             self._overlay.delete()
             self._overlay = None
         self._dim_strips = []
-        self._text_box = None
+        self._modal_box = None
     
     def _get_cutout_area(self):
         """
@@ -97,8 +94,7 @@ class UIExplainer(SpecterGuiMixin):
         
         If cutout is None, creates a single full-screen dim overlay.
         """
-        screen_width = SCREEN_WIDTH
-        screen_height = SCREEN_HEIGHT
+        screen_width, screen_height = get_size(self.gui)
 
         def add_strip(x, y, w, h):
             """Create a dim strip at the given position and size."""
@@ -129,67 +125,39 @@ class UIExplainer(SpecterGuiMixin):
                 add_strip(right_x, cut_y, screen_width - right_x, cut_h)
     
     def _create_text_box(self):
-        """Create the text box with explanation and navigation buttons.
-        
-        Args:
-            box_x: X position for the text box
-            box_y: Y position for the text box
-            box_width: Width of the text box
-            box_height: Height of the text box
-            highlighted_element: The UI element being highlighted, or None
+        """Create the text box with explanation and navigation buttons. This is
+        a special case of button_modal(): we own the overlay/backdrop (spotlight
+        dim strips) and positioning (align_to), so it's passed in as `parent`,
+        and auto_close is disabled since the tour controls the modal's lifecycle
+        via hide().
         """
-        # Create text box container
-        self._text_box = flex_container(self._overlay,
-                                        width=EXPLAINER_WIDTH, height=lv.SIZE_CONTENT,
-                                        main_align=lv.FLEX_ALIGN.CENTER,
-                                        scrollable=False)
-        
-        #set_pos(self._text_box, box_x, box_y)
-        apply_style(self._text_box, ["WIDGET.MODAL_WINDOW"])
-        
-        # Create text label (with flex grow to take available space)
-        self.text_container = flex_row(self._text_box, width=lv.pct(100))
-        set_scroll(self.text_container, horizontal=False, vertical=False)
-        
-        self.text_label = body_label(self.text_container, self.text)
-        #self.text_label.center()
-        
-        # Create navigation button container
-        self.nav_container = flex_row(self._text_box, height=60)
-        set_scroll(self.nav_container, horizontal=False, vertical=False)
-        
-        # Get position info from tour
         is_first = self.tour.is_first()
         is_last = self.tour.is_last()
-        
-        # Previous button (or invisible placeholder on first screen)
-        self.PrevBtn = Btn(self.nav_container, 
-                           icon=BTC_ICONS.CARET_LEFT, 
-                           size=(60, 50),
-                           callback=self._on_prev_clicked)
 
-        if is_first:
-            apply_style(self.PrevBtn, "APPEARANCE.INVISIBLE")
-        
-        # Skip/Complete button (always present)
+        prev_spec = MenuItem(icon=BTC_ICONS.CARET_LEFT,
+                             target=lambda: self.tour.prev(),
+                             visible=not is_first)
+
         if is_last:
-            self.SkipBtn = Btn(self.nav_container, 
-                               icon=BTC_ICONS.CHECK, 
-                               size=(60, 50),
-                               callback=self._on_skip_clicked)
+            skip_spec = MenuItem(icon=BTC_ICONS.CHECK,
+                                 target=lambda: self.tour.skip(),
+                                 modifier="Highlight")
         else:
-            self.SkipBtn = Btn(self.nav_container, 
-                               text=self.t("TOUR_SKIP_BTN"),
-                               size=(160, 50),
-                               callback=self._on_skip_clicked)
-        
-        # Next button (or invisible placeholder on last screen)
-        self.NextBtn = Btn(self.nav_container,
-                           icon=BTC_ICONS.CARET_RIGHT, 
-                           size=(60, 50),
-                           callback=self._on_next_clicked)
-        if is_last:
-            apply_style(self.NextBtn, "APPEARANCE.INVISIBLE")
+            skip_spec = MenuItem(text=self.t("TOUR_SKIP_BTN"),
+                                 target=lambda: self.tour.skip())
+
+        next_spec = MenuItem(icon=BTC_ICONS.CARET_RIGHT,
+                             target=lambda: self.tour.next(),
+                             visible=not is_last,
+                             modifier="Highlight" if not is_last else None)
+
+        overlay = button_modal(
+            self.text,
+            buttons=[prev_spec, skip_spec, next_spec],
+            auto_close=False,
+            parent=self._overlay,
+        )
+        self._modal_box = overlay.modal_window
 
         align_enum = lv.ALIGN.CENTER
         if self.text_position == "left":
@@ -201,19 +169,5 @@ class UIExplainer(SpecterGuiMixin):
         elif self.text_position == "below":
             align_enum = lv.ALIGN.OUT_BOTTOM_MID
 
-        self._text_box.align_to(self.highlighted_element, align_enum, 0, 0)
-    
-    def _on_prev_clicked(self, e):
-        """Handle previous button click - delegate to tour."""
-        if e.get_code() == lv.EVENT.CLICKED:
-            self.tour.prev()
-    
-    def _on_next_clicked(self, e):
-        """Handle next button click - delegate to tour."""
-        if e.get_code() == lv.EVENT.CLICKED:
-            self.tour.next()
-    
-    def _on_skip_clicked(self, e):
-        """Handle skip/complete button click - delegate to tour."""
-        if e.get_code() == lv.EVENT.CLICKED:
-            self.tour.skip()
+        self._modal_box.align_to(self.highlighted_element, align_enum, 0, 0)
+

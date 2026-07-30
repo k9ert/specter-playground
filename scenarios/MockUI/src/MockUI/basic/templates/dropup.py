@@ -12,12 +12,9 @@ The panel fills from the nav bar top edge upward.
 import lvgl as lv
 from micropython import const
 
-from .specter_gui_base import SpecterGuiMixin
-from ..widgets import Btn, flex_col, flex_row
+from .specter_gui_base import SpecterGuiMixin, SpecterGuiElement
+from ..widgets import Btn
 from ..utils import (
-    STATUS_BTN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT,
-    STATUS_BAR_PCT,
-    ANIM_MS_VERTICAL,
     slide_y, delete_all_children_of,
     set_pos, set_scroll, set_propagate_events,
     get_size, get_pos,
@@ -25,23 +22,13 @@ from ..utils import (
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style
 
-# ── Layout constants ──────────────────────────────────────────────────────────
-_NAV_BAR_H   = SCREEN_HEIGHT * STATUS_BAR_PCT // 100  # navigation bar height (px)
-_PANEL_MAX_H = SCREEN_HEIGHT - _NAV_BAR_H             # max panel height
-_ADD_BTN_H   = STATUS_BTN_HEIGHT                      # "Add …" button height
-
-_CLOSED  = const(0)
-_OPENING = const(1)
-_OPEN    = const(2)
-_CLOSING = const(3)
-
 
 class DropUpState:
     """Valid states for a ``DropUp`` instance."""
-    CLOSED  = _CLOSED
-    OPENING = _OPENING
-    OPEN    = _OPEN
-    CLOSING = _CLOSING
+    CLOSED  = const(0)
+    OPENING = const(1)
+    OPEN    = const(2)
+    CLOSING = const(3)
 
 
 class DropUp(SpecterGuiMixin):
@@ -54,6 +41,7 @@ class DropUp(SpecterGuiMixin):
 
     def __init__(self):
         self._panel = None       # lv.obj panel widget when open
+        self._backdrop = None    # backdrop overlay the panel is parented to when open
         self._on_closed = None   # callback()/None — called after close animation
         self._animating = False
         self._closing = False    # True while close animation is running
@@ -75,13 +63,10 @@ class DropUp(SpecterGuiMixin):
         if state in (DropUpState.OPENING, DropUpState.CLOSING, DropUpState.OPEN):
             return state
 
-        self._panel = flex_col(
-            backdrop_overlay,
-            width=SCREEN_WIDTH,
-            main_align=lv.FLEX_ALIGN.START,
-        )
-        set_scroll(self._panel, horizontal=False, vertical=True)
+        self._backdrop = backdrop_overlay
+        self._panel = SpecterGuiElement(backdrop_overlay)
         apply_style(self._panel, "CONTAINER.DROPUP")
+        set_scroll(self._panel, horizontal=False, vertical=True)
         set_propagate_events(self._panel, False)
 
         self._fill_panel()
@@ -96,9 +81,10 @@ class DropUp(SpecterGuiMixin):
 
             #needed to finish the flex layout
             self._panel.update_layout() 
+            max_h = self._backdrop.get_height()
             pan_w, pan_h = get_size(self._panel)
-            panel_y = _PANEL_MAX_H - pan_h
-            self._anim = slide_y(self._panel, _PANEL_MAX_H, panel_y, ANIM_MS_VERTICAL, on_done_cb=_on_open_done)
+            panel_y = max_h - pan_h
+            self._anim = slide_y(self._panel, max_h, panel_y, on_done_cb=_on_open_done)
             self._anim.start()
 
         return self.get_state()
@@ -116,6 +102,7 @@ class DropUp(SpecterGuiMixin):
             if self._panel is not None:
                 self._panel.delete()
             self._panel = None
+            self._backdrop = None
             if self._on_closed is not None:
                 self._on_closed()
 
@@ -123,8 +110,8 @@ class DropUp(SpecterGuiMixin):
             self._animating = True
             self._closing = True
             panel_x_now, panel_y_now = get_pos(self._panel)
-            panel_y_end = _PANEL_MAX_H  # slide off-screen down
-            self._anim = slide_y(self._panel, panel_y_now, panel_y_end, ANIM_MS_VERTICAL, on_done_cb=_on_close_done)
+            panel_y_end = self._backdrop.get_height()  # slide off-screen down
+            self._anim = slide_y(self._panel, panel_y_now, panel_y_end, on_done_cb=_on_close_done)
             self._anim.start()
         else:
             _on_close_done(None)
@@ -137,6 +124,13 @@ class DropUp(SpecterGuiMixin):
             return
         self._fill_panel()
 
+    def cancel_animation(self):
+        """Discard any in-flight open/close animation without running its callback.
+        """
+        self._anim = None
+        self._animating = False
+        self._closing = False
+
     # ── Internal build ────────────────────────────────────────────────────────
 
     def _fill_panel(self):
@@ -146,13 +140,12 @@ class DropUp(SpecterGuiMixin):
         self._panel.rows = []
         for item in self._get_items():
             #styling is done in _build_card
-            row = self._build_card(self._panel, item, width=SCREEN_WIDTH)
+            row = self._build_card(self._panel, item)
+            apply_style(row, "CONTAINER.DROP_UP_ROW")
             self._panel.rows.append(row)
-            apply_style(row, "BORDER.BOTTOM")
 
         # Add button row
-        row = flex_row(self._panel, width=SCREEN_WIDTH,
-                       main_align=lv.FLEX_ALIGN.CENTER)
+        row = SpecterGuiElement(self._panel)
         apply_style(row, "CONTAINER.DROP_UP_ROW")
         self._panel.rows.append(row)
 
@@ -164,11 +157,11 @@ class DropUp(SpecterGuiMixin):
             background_style="WIDGET.DROP_UP_ADDBTN",
             foreground_style="WIDGET.DROP_UP_ADDBTN_FG",
         )
-
+        self._panel.update_layout()
         w, h = get_size(self._panel)
-        set_pos(self._panel, 0, max(_PANEL_MAX_H - h, 0))
+        set_pos(self._panel, 0, max(self._backdrop.get_height() - h, 0))
 
-    def _add_cb(self, event=None):
+    def _add_cb(self):
         self.close()
         self._navigate_add()
 
@@ -176,7 +169,7 @@ class DropUp(SpecterGuiMixin):
         """Row click handler: close, then switch active item or navigate."""
         def _cb(e):
             self.close()
-            if (self.ui_state.active_context == ctx
+            if (self.context == ctx
                     and getattr(self.ui_state, attr) is not None):
                 getattr(self.ui_state, setter)(item)
                 self.gui.refresh_ui()
@@ -191,7 +184,7 @@ class DropUp(SpecterGuiMixin):
         """Return list of items (seeds or wallets) to display."""
         raise NotImplementedError
 
-    def _build_card(self, parent, item, width):
+    def _build_card(self, parent, item):
         """Build one item card inside *parent* and return the row widget."""
         raise NotImplementedError
 

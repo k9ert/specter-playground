@@ -16,7 +16,7 @@ from ..utils.generic_utils import resolve_obj
 INTRO_TOUR_STEPS = [
     (None,                                                  "TOUR_INTRO",          "center"),
     ("navigation_bar",                                      "TOUR_WALLET_BAR",     "above"),
-    ("screen.view.body.rows[1].right_cont.h_btn",          "TOUR_HELP_ICON",      "left"),
+    ("app_screen.view.body.rows[1].right_cont.h_btn",       "TOUR_HELP_ICON",      "left"),
 ]
 
 
@@ -58,7 +58,7 @@ class GuidedTour:
         Translates i18n keys eagerly (text is stable). 
         Element specs that are strings are kept as-is and resolved lazily at 
         show-time via ``_resolve_element``, because screen-dependent paths (e.g.
-        ``screen.body.rows[1]``) are only valid while that screen is active.
+        ``app_screen.view.body.rows[1]``) are only valid while that screen is active.
 
         Returns a list of (element_spec, translated_text, position) tuples.
         """

@@ -1,12 +1,8 @@
 """ContextBar — active-seed / active-wallet info strip at the top of screens.
 """
 
-import lvgl as lv
-
 from ..utils import (
-    TITLE_HEIGHT,
-    SCREEN_WIDTH,
-    delete_all_children_of, set_size, set_scroll, set_align, get_size,
+    delete_all_children_of, set_scroll,
     Layout
 )
 from ..templates.specter_gui_base import SpecterGuiElement
@@ -32,23 +28,21 @@ class ContextBar(SpecterGuiElement):
         grey = inactive; tap to toggle ``passphrase_active``.
     """
 
-    def __init__(self, parent, width=SCREEN_WIDTH, height=TITLE_HEIGHT, context=None):
+    def __init__(self, parent, context=None):
         super().__init__(parent)
 
-        set_size(self, width, height)
+        apply_style(self, "CONTAINER.CONTEXT_BAR")
         set_scroll(self, horizontal=False, vertical=False)
-        set_align(self, lv.ALIGN.TOP_LEFT)
-        apply_style(self, ["CONTAINER.CONTEXT_BAR"])
 
         if context is None:
             context = self.context
         self.bar_context = context
 
-        self._build(width, height)
+        self._build()
 
     # ── Internal build helpers ────────────────────────────────────────────
 
-    def _build(self, width, height):
+    def _build(self):
         """Create child widgets for the current context."""
         ctx = self.bar_context
         if ctx == Context.SEED:
@@ -59,13 +53,11 @@ class ContextBar(SpecterGuiElement):
             self.card = SeedCard(
                 self,
                 seed,
-                height=height,
-                width=width,
                 slots=("leading_icon", "name", "passphrase", "fingerprint"),
                 leading_icon=BTC_ICONS.KEY_OUTLINE,
                 on_name_click=self._make_name_commit_handler("active_seed"),
             )
-            apply_style(self.card, ["CONTAINER.CONTEXT_BAR", "CONTEXT.SEED"])
+            apply_style(self.card, "CONTEXT.SEED")
         elif ctx == Context.WALLET:
             wallet = self.active_wallet
             if not wallet:
@@ -85,13 +77,11 @@ class ContextBar(SpecterGuiElement):
                 self,
                 wallet,
                 self.device_state,
-                height=height,
-                width=width,
                 slots=active_slots,
                 leading_icon=BTC_ICONS.WALLET_OUTLINE,
                 on_name_click=self._make_name_commit_handler("active_wallet"),
             )
-            apply_style(self.card, ["CONTAINER.CONTEXT_BAR", "CONTEXT.WALLET"])
+            apply_style(self.card, "CONTEXT.WALLET")
 
     def _make_name_commit_handler(self, target_attr):
         """Return an ``on_name_click`` handler that commits edits to ``target_attr``.
@@ -105,7 +95,6 @@ class ContextBar(SpecterGuiElement):
             def _on_commit(val):
                 target = getattr(self, target_attr)
                 if val and target:
-                    ta.remove_state(lv.STATE.FOCUSED)
                     target.label = val
                     self.gui.refresh_ui()
             self.gui.keyboard_manager.bind(ta, Layout.FULL, _on_commit)
@@ -125,6 +114,5 @@ class ContextBar(SpecterGuiElement):
             return
         self.card.text_edit = None
         delete_all_children_of(self)
-        w, h = get_size(self)
-        self._build(w, h)
+        self._build()
 

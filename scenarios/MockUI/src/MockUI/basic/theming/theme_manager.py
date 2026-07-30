@@ -257,9 +257,6 @@ def apply_style(obj, keys, selector=0):
 def remove_style(obj, keys, selector=0):
     return get_theme_manager().remove_style(obj, keys, selector)
 
-def reset_style(obj, selector=0):
-    return get_theme_manager().reset_style(obj, selector)
-
 def get_style(style_key):
     return get_theme_manager().get_style(style_key)
 

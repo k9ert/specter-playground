@@ -1,11 +1,12 @@
 import lvgl as lv
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 class SecuritySettingsMenu(GenericMenu):
     """Security hub: security features, firmware, backups, danger zone."""
 
     TITLE_KEY = "MENU_SETTINGS_SECURITY"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         menu_items = [
             MenuItem(BTC_ICONS.LOCK, t("SECURITY_MENU_LOCK_DEVICE"), "locked"),
             MenuItem(BTC_ICONS.SHIELD, t("MENU_MANAGE_SECURITY"), "manage_security_features", is_submenu=True),

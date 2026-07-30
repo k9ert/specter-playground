@@ -21,7 +21,7 @@ class WalletDropUp(DropUp):
         # previously selected wallet's data.
         self.on_navigate("add_wallet", target_wallet=None)
 
-    def _build_card(self, parent, wallet, width):
+    def _build_card(self, parent, wallet):
         state = self.device_state
         # Cross-wallet alignment: show account/net columns if any wallet uses them.
         any_account = any(getattr(w, "account", 0) != 0 for w in state.registered_wallets)
@@ -39,7 +39,6 @@ class WalletDropUp(DropUp):
         on_delete = (lambda: self._on_delete_wallet(wallet)) if not_default else None
         card = WalletCard(
             parent, wallet, state,
-            width=width,
             slots=active_slots,
             on_card_click=self._make_on_row_click_cb(wallet, 
                                             Context.WALLET, 
@@ -49,7 +48,7 @@ class WalletDropUp(DropUp):
                                             "target_wallet"),
             on_delete=on_delete,
         )
-        apply_style(card, ["CONTAINER.DROP_UP_ROW", "CONTEXT.WALLET"])
+        apply_style(card, "CONTEXT.WALLET")
         return card
 
     def _do_delete_wallet(self, wallet):

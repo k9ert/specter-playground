@@ -11,30 +11,25 @@ from .utils import GUIAnimations, MAX_HISTORY_DEPTH
 
 CONFIG_FILE = "/flash/ui_state_config.json"
 
-_MENU_CTX_MAIN       = const(0)
-_MENU_CTX_DEVICE     = const(1)
-_MENU_CTX_ADD_SEED   = const(2)
-_MENU_CTX_SEED       = const(3)
-_MENU_CTX_ADD_WALLET = const(4)
-_MENU_CTX_WALLET     = const(5)
+
+class Context:
+    MAIN       = const(0)
+    DEVICE     = const(1)
+    ADD_SEED   = const(2)
+    SEED       = const(3)
+    ADD_WALLET = const(4)
+    WALLET     = const(5)
+
 
 # Fast O(1) lookup: menu_id → Context constant
 _MENU_CONTEXT = {
-    "main":              _MENU_CTX_MAIN,
-    "manage_settings":   _MENU_CTX_DEVICE,
-    "add_seed":          _MENU_CTX_ADD_SEED,
-    "manage_seedphrase": _MENU_CTX_SEED,
-    "add_wallet":        _MENU_CTX_ADD_WALLET,
-    "manage_wallet":     _MENU_CTX_WALLET,
+    "main":              Context.MAIN,
+    "manage_settings":   Context.DEVICE,
+    "add_seed":          Context.ADD_SEED,
+    "manage_seedphrase": Context.SEED,
+    "add_wallet":        Context.ADD_WALLET,
+    "manage_wallet":     Context.WALLET,
 }
-
-class Context:
-    MAIN   = _MENU_CTX_MAIN
-    DEVICE = _MENU_CTX_DEVICE
-    ADD_SEED = _MENU_CTX_ADD_SEED
-    SEED   = _MENU_CTX_SEED
-    ADD_WALLET = _MENU_CTX_ADD_WALLET
-    WALLET = _MENU_CTX_WALLET
 
 class UIState:
     class Snapshot:
@@ -57,7 +52,13 @@ class UIState:
 
         self._set_to_main()
         self.are_animations_enabled = True
-
+        # The view class (widget type) to instantiate for the current menu.
+        # None means fall back to the generic ActionScreen.
+        self.view_class = None
+        # Guard to detect if currently an animation is ongoing
+        self._is_animating = False
+        # used to store references to animations while they are running
+        self._anim_refs = None
         # Tour state - loaded from config file
         self._run_tour_on_startup = self._load_tour_state()
 

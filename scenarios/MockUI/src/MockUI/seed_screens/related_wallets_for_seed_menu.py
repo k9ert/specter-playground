@@ -2,13 +2,11 @@ import lvgl as lv
 from ..basic import (
     TitledScreen,
     delete_all_children_of, set_propagate_events,
-    style_as_flex_container,
-    BTC_ICONS,
-    Btn, BTN_HEIGHT, BTN_WIDTH, 
-    SCREEN_WIDTH,
-    section_header,
+    Btn,
+    make_label,
     WalletCard,
     apply_style,
+    t,
 )
 from ..stubs.wallet import WalletType, _wallet_type_rank
 
@@ -26,11 +24,8 @@ class RelatedWalletsForSeedMenu(TitledScreen):
     """
 
     def __init__(self, parent):
-        title = parent.t("SEEDPHRASE_MENU_RELATED_WALLETS")
-        super().__init__(title, parent)
-
-        style_as_flex_container(self.body, width=lv.pct(100), height=lv.pct(100))
-
+        super().__init__(t("SEEDPHRASE_MENU_RELATED_WALLETS"), parent)
+        apply_style(self.body, "CONTAINER.MENU_CONTAINER")
         self._fill()
 
     def _fill(self):
@@ -57,7 +52,8 @@ class RelatedWalletsForSeedMenu(TitledScreen):
         type = [_wallet_type_rank(w)[0] for w in wallets]
         only_singlesig = all(t in (WalletType.SINGLE_SIG, WalletType.SINGLE_SIG_DEFAULT) for t in type)
         if not only_singlesig:
-            section_header(self.body, self.t("COMMON_SINGLESIG"))
+            head_lbl = make_label(self.body, self.t("COMMON_SINGLESIG"))
+            apply_style(head_lbl, "WIDGET.MENU_SECTION_HEADER")
 
         for [i, wallet] in enumerate(wallets):
             if i > 0 and type[i] != type[i-1] and type[i] != WalletType.SINGLE_SIG:  # section header detection based on sorted order
@@ -65,7 +61,8 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                     heading = self.t("COMMON_MULTISIG")
                 elif type[i] == WalletType.CUSTOM:
                     heading = self.t("COMMON_MINISCRIPT")
-                section_header(self.body, heading)
+                head_lbl = make_label(self.body, heading)
+                apply_style(head_lbl, "WIDGET.MENU_SECTION_HEADER")
 
             def _make_cb(w):
                 def _cb(e):
@@ -73,15 +70,13 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                         self.on_navigate("manage_wallet", target_wallet=w)
                 return _cb
 
-            btn = Btn(self.body, size=(BTN_WIDTH, BTN_HEIGHT))
+            btn = Btn(self.body, background_style="WIDGET.MENU_BUTTON")
             card = WalletCard(
                 btn._btn,
                 wallet,
                 self.device_state,
                 slots=active_slots,
                 on_card_click=_make_cb(wallet),
-                width=SCREEN_WIDTH,
-                height=BTN_HEIGHT,
             )
             apply_style(card, "CONTAINER.DROP_UP_ROW")
             set_propagate_events(card, True)

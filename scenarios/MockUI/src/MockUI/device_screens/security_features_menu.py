@@ -1,10 +1,9 @@
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 class SecurityFeaturesMenu(GenericMenu):
     TITLE_KEY = "MENU_MANAGE_SECURITY"
 
-    def get_menu_items(self, t, state):
-
+    def get_menu_items(self):
         return [
             MenuItem(BTC_ICONS.VERIFY, t("SECURITY_MENU_SELF_TEST"), "self_test"),
             MenuItem(BTC_ICONS.POINT_OF_SALE, t("SECURITY_MENU_CHANGE_PIN"), "change_pin"),

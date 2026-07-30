@@ -58,8 +58,8 @@
     "MANAGE_SW_SEED_SECTION_TITLE": "Seed",
     "MANAGE_SW_WALLET_SECTION_TITLE": "Wallet",
 
-    "PASSPHRASE_MENU_LABEL": "Passphrase:",
     "PASSPHRASE_MENU_CLEAR": "Clear",
+    "PASSPHRASE_MENU_ENABLE_DISABLE": "Enabled:",
     
     "SEEDPHRASE_MENU_SHOW": "Show Seed",
     "SEEDPHRASE_MENU_BACKUP": "Backup",

@@ -14,6 +14,7 @@ installed onto both classes via the ``_install_gui_properties`` helper rather
 than being declared twice.
 """
 import lvgl as lv
+from .rebuildable import RebuildableObj
 #provide direct imports for convenience of consumer modules
 
 _gui_instance = None
@@ -30,6 +31,9 @@ def bind_gui(gui):
     if _gui_instance is not None:
         raise RuntimeError("specter_gui_base.set_gui() called more than once")
     _gui_instance = gui
+
+# Convenience imports for consumer modules.  Consumers can import these directly from specter_gui_base
+def t(key): return get_gui().i18n.t(key)
 
 def _install_gui_properties(cls):
     """Install the shared ``self.gui``-derived properties on *cls*.
@@ -72,7 +76,7 @@ class SpecterGuiMixin:
 _install_gui_properties(SpecterGuiMixin)
 
 
-class SpecterGuiElement(lv.obj):
+class SpecterGuiElement(RebuildableObj):
     """``lv.obj`` subclass: same ``self.gui``-derived properties as ``SpecterGuiMixin``.
 
     Properties are installed by ``_install_gui_properties`` below.  Use this

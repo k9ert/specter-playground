@@ -1,4 +1,4 @@
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 class AddWalletMenu(GenericMenu):
     """Menu to import or create a custom wallet/descriptor.
@@ -11,7 +11,8 @@ class AddWalletMenu(GenericMenu):
 
     TITLE_KEY = "MENU_ADD_WALLET"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         menu_items = []
 
         QR_enabled = state.QR_enabled()
@@ -43,7 +44,7 @@ class AddWalletMenu(GenericMenu):
                                        modifier=Interfaces_modifier))
 
 
-        # TODO: Customize section [DUMMY DURING DEVELOPMENT, remove once hw in integrated]
+        # TODO: Customize section [DUMMY DURING DEVELOPMENT, remove once hw is integrated]
         menu_items += [
             MenuItem(text=t("ADD_WALLET_CUSTOMIZE")),
             MenuItem(BTC_ICONS.CONSOLE, t("ADD_WALLET_CREATE_CUSTOM"), "create_custom_wallet", is_submenu=True),

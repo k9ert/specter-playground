@@ -1,4 +1,4 @@
-from ..basic import GenericMenu, BTC_ICONS, MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 from ..basic.theming.theme_manager import ColorMode
 
 
@@ -10,7 +10,7 @@ class PreferencesMenu(GenericMenu):
     def _set_dark_mode(self, on):
         self.gui.change_mode(ColorMode.DARK if on else ColorMode.LIGHT)
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
         return [
             MenuItem(BTC_ICONS.MAGIC_WAND, t("DEVICE_MENU_ANIMATIONS"),
                      get_value=lambda: self.ui_state.are_animations_enabled,

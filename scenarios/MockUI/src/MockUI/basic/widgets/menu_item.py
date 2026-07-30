@@ -30,17 +30,20 @@ class MenuItem:
         modifier:   semantic modifier: "Danger"/"Warning"/"Highlight".
         height_scaling: Height multiplier float (default 1); minimum 1.
         help_key:   i18n key for a help popup, or None.
-        suffix:     List of MenuItemSuffix instances, or None.
+        suffix:     List of suffix items (icon/text pairs), or None.
         is_submenu: Boolean. Indicates it opens a submenu. (Default False)
         get_value:  Callable → bool.  When set (together with set_value) the
                     item renders as a toggle row.  May also be a plain bool 
                     then it is used as the initial value).
         set_value:  Callable(bool).  Called when the user flips the switch.
+        visible:    Boolean (default True). Used by button-row builders (e.g.
+                    _action_modal) to render an invisible placeholder button
+                    that still reserves its row slot/spacing.
     """
 
     def __init__(self, icon=None, text=None, target=None,
                  modifier=None, height_scaling=None, help_key=None, suffix=None, is_submenu=False,
-                 get_value=None, set_value=None):
+                 get_value=None, set_value=None, visible=True):
         if not (modifier in (None, "Danger", "Warning", "Highlight")):
             print(f"MenuItem warning: invalid modifier '{modifier}' for item '{text}', falling back to no modifier")
             modifier = None
@@ -50,21 +53,10 @@ class MenuItem:
         self.modifier = modifier
         self.height_scaling = height_scaling
         self.help_key = help_key
-        # suffix: list of MenuItemSuffix instances
+        # suffix: list of suffix items (icon/text pairs)
         # rendered as a right-aligned group of icons/labels inside the button.
         self.suffix = suffix
         self.is_submenu = is_submenu
         self.get_value = get_value
         self.set_value = set_value
-
-
-class MenuItemSuffix:
-    """Structured suffix item for MenuItem.suffix list.
-
-    Args:
-        icon:   Icon instance or None (text-only).
-        text:   Text to show in suffix, or None (icon-only).
-    """
-    def __init__(self, icon=None, text=None):
-        self.icon = icon
-        self.text = text
+        self.visible = visible

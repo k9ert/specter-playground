@@ -1,5 +1,5 @@
 from ..basic import (
-    GenericMenu, BTC_ICONS, MenuItem,
+    GenericMenu, BTC_ICONS, MenuItem, t,
     confirm_delete_wallet, make_delete_active_handler
 )
 
@@ -9,7 +9,7 @@ class WalletMenu(GenericMenu):
 
     TITLE_KEY = "MENU_MANAGE_WALLET"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
         menu_items = []
 
         menu_items += [
@@ -32,11 +32,10 @@ class WalletMenu(GenericMenu):
 
         return menu_items
 
-    def post_init(self, t, state):
+    def post_itemlist(self):
         # The ContextBar (shown automatically in WALLET context) handles the
         # editable wallet name and type icon.  Here we only add the delete
         # button (custom wallets) and the account row.
-
         is_default = self.ui_state.active_wallet.is_default_wallet()
 
         if not is_default:

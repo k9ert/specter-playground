@@ -1,21 +1,13 @@
 import lvgl as lv
 from .titled_screen import TitledScreen
-from ..utils import (
-    BTN_HEIGHT, BTN_WIDTH,
-    SWITCH_HEIGHT,
-    CONTENT_H, TITLE_HEIGHT,
-    delete_all_children_of, style_as_flex_container,
-    set_align,
-    AUTO_GROW_MENU_BUTTONS
-)
+from .specter_gui_base import SpecterGuiElement, t
+from ..utils import delete_all_children_of, set_size, AUTO_GROW_MENU_BUTTONS
 from ..symbol_lib import Icon, BTC_ICONS
 from ..theming import apply_style
 from ..widgets import (
     button_modal, 
     Btn, 
-    body_label, menu_label, section_header, 
-    flex_row,
-    make_icon, make_switch
+    make_label, make_icon, make_switch
 )
 
 
@@ -23,20 +15,47 @@ class GenericMenu(TitledScreen):
     """Reusable menu builder — template method pattern.
 
     Subclasses override the three hooks:
-        get_title(t, state)      -> str          title shown at the top
-        get_menu_items(t, state) -> list         list of MenuItems; will be used to create the actual menu
-        pre_init(t, state)       -> None         called before menu items are built (optional)
-        post_init(t, state)      -> None         called after all LVGL widgets are built (optional)
+        get_title(self)          -> str          title shown at the top
+        get_menu_items(self)     -> list         list of MenuItems; will be used to create the actual menu
+        pre_itemlist(self)       -> None         optional hook to insert widgets above the menu items
+        post_itemlist(self)      -> None         optional hook to insert widgets below the menu items
     """
 
+    # --- template-method hooks /START-------------------------------------------
+    TITLE_KEY = None  # set in subclass to avoid overriding get_title. Use KEY for i18n.t
+
+    def get_title(self):
+        """Return the menu title string. Override in subclasses, or just set TITLE_KEY."""
+        return t(self.TITLE_KEY) if self.TITLE_KEY else ""
+
+    def get_menu_items(self):
+        """Return the list of MenuItems."""
+        return []
+
+    def pre_itemlist(self):
+        """Called before menu items are built. Override to insert widgets above the item list."""
+        pass
+
+    def post_itemlist(self):
+        """Called after all LVGL widgets are built. Override for post-construction work."""
+        pass
+    # --- template-method hooks /END---------------------------------------------
+
     def __init__(self, parent):
-        # TitledScreen sets self.gui, self.device_state, self.ui_state, self.i18n, self.on_navigate, self.body, etc.
+        # Hand no title to TitledScreen just yet (i18n not ready to resolve the title key yet)
+        # Title will be resolved later in setup_self
         super().__init__("", parent)
 
-        if self.title:
-            title = self.get_title(self.t, self.device_state)
-            self.title.set_text(title)
+    def setup_self(self):
+        super().setup_self()  # applies CONTAINER.TITLED_SCREEN
+        if self.show_title:
+            self.title = self.get_title()
 
+    def post_init(self):
+        #super will make title label with stored title
+        super().post_init()
+        apply_style(self.body, "CONTAINER.MENU_CONTAINER")
+        #now create all the menu items
         self.fill_body()
 
     def refresh(self):
@@ -44,12 +63,11 @@ class GenericMenu(TitledScreen):
         super().refresh()
 
     def fill_body(self):
-        style_as_flex_container(self.body, width=lv.pct(100), height=CONTENT_H-TITLE_HEIGHT, scrollable=True)
-        apply_style(self.body, "CONTAINER.MENU_CONTAINER")
-        menu_items = self.get_menu_items(self.t, self.device_state)
-        self.pre_init(self.t, self.device_state)
+        menu_items = self.get_menu_items()
+        self.pre_itemlist()
         self._build_menu_items(menu_items)
-        self.post_init(self.t, self.device_state)
+        self.post_itemlist()
+        # make sure to enable scrolling when necessary
         self._configure_scroll()
 
     def rebuild_body(self):
@@ -71,8 +89,8 @@ class GenericMenu(TitledScreen):
 
     def _build_section_title_row(self, item):
         """Section header row: optional icon + bold/coloured heading label."""
-        row = flex_row(self.body, width=lv.pct(100), main_align=lv.FLEX_ALIGN.START)
-        apply_style(row, "WIDGET.MENU_SECTION_HEADER")
+        row = SpecterGuiElement(self.body)
+        apply_style(row, "CONTAINER.MENU_ROW")
 
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
@@ -85,8 +103,8 @@ class GenericMenu(TitledScreen):
             elif item.modifier == "Highlight":
                 apply_style(row.ico, "FG.HIGHLIGHT")
 
-        row.lbl = section_header(row, item.text)
-        row.lbl.set_flex_grow(1)
+        row.lbl = make_label(row, item.text)
+        apply_style(row.lbl, "WIDGET.MENU_SECTION_HEADER")
         if item.modifier == "Danger":
             apply_style(row.lbl, "FG.DANGER")
         elif item.modifier == "Warning":
@@ -98,13 +116,14 @@ class GenericMenu(TitledScreen):
 
     def _build_toggle_select_row(self, item):
         """Switch row: icon + label + optional help + lv.switch wired to get/set_value."""
-        row = flex_row(self.body, width=lv.pct(100), height=SWITCH_HEIGHT, main_align=lv.FLEX_ALIGN.START)
-        apply_style(row, "WIDGET.MENU_SWITCH")
+        row = SpecterGuiElement(self.body)
+        apply_style(row, "CONTAINER.MENU_ROW")
+
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
             apply_style(row.ico, "WIDGET.MENU_ICON")
-        row.lbl = menu_label(row, item.text, width=None)
-        row.lbl.set_flex_grow(1)
+        row.lbl = make_label(row, item.text)
+        apply_style(row.lbl, ["WIDGET.MENU_BUTTON_FG", "LAYOUT.GROWS"])
         if item.help_key:
             row.h_btn = self._add_help_btn(row, item.text, item.help_key)
         
@@ -112,12 +131,10 @@ class GenericMenu(TitledScreen):
         def setter_cb(is_on):
             if callable(item.set_value):
                 item.set_value(is_on)
-            else:
-                item.set_value = is_on
             self.gui.refresh_ui()
 
         row.switch = make_switch(row, init_value=current_value, setter_cb=setter_cb)
-
+        apply_style(row.switch, "WIDGET.MENU_SWITCH")
         return row
 
     def _build_button_row(self, item):
@@ -125,14 +142,20 @@ class GenericMenu(TitledScreen):
         # Normalize size: default to 1, ensure minimum of 1
         size = item.height_scaling if item.height_scaling and item.height_scaling >= 1 else 1
 
+        if callable(item.target):
+            # If it's already a callable, use it directly
+            btn_click_cb = item.target
+        else:
+            # Otherwise, it's a string menu_id - create navigation callback
+            btn_click_cb = lambda target=item.target: self.on_navigate(target)
+
         btn = Btn(self.body,
-                  text=item.text,
-                  size=(BTN_WIDTH, int(BTN_HEIGHT*size)),
-                  background_style="WIDGET.MENU_BUTTON",
-                  foreground_style="WIDGET.MENU_BUTTON_FG",
-                )
+                  callback=btn_click_cb,
+                  background_style="WIDGET.MENU_BUTTON")
+                
         if AUTO_GROW_MENU_BUTTONS:
             btn.set_flex_grow(int(size*10))
+            set_size(btn._btn, height=lv.pct(100))
 
         if item.modifier == "Danger":
             btn.apply_style(background_style="BG.DANGER")
@@ -141,18 +164,19 @@ class GenericMenu(TitledScreen):
         elif item.modifier == "Highlight":
             btn.apply_style(background_style="BG.HIGHLIGHT")
 
+        # Build children in visual left-to-right order
         if item.icon:
-            btn.ico = make_icon(btn, item.icon)
+            btn.ico = make_icon(btn._btn, item.icon)
             apply_style(btn.ico, "WIDGET.MENU_ICON")
 
-        # Right-side container: [suffixes...] [help?] [caret — always reserved]
-        btn.right_cont = flex_row(
-            btn,
-            width=lv.SIZE_CONTENT,
-            height=lv.pct(100),
-            main_align=lv.FLEX_ALIGN.START,
-        )
+        btn.lbl = make_label(btn._btn, item.text)
+        apply_style(btn.lbl, "WIDGET.MENU_LABEL")
+
+        # Right-side container: [suffixes...] [help?]
+        btn.right_cont = SpecterGuiElement(btn._btn)
+        apply_style(btn.right_cont, "CONTAINER.MENU_BUTTON_RHS")
         btn.right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
+        
         btn.right_cont.suf = []
         for suf in (item.suffix or []):
             if suf.icon is not None:
@@ -160,59 +184,31 @@ class GenericMenu(TitledScreen):
                 apply_style(ico, "WIDGET.INFO_ITEM")
                 btn.right_cont.suf.append(ico)
             if suf.text is not None:
-                lbl = body_label(btn.right_cont, suf.text, width=lv.SIZE_CONTENT)
-                apply_style(lbl, ["WIDGET.INFO_ITEM", "TEXT.SMALL"])
+                lbl = make_label(btn.right_cont, suf.text)
+                apply_style(lbl, "WIDGET.INFO_ITEM")
                 btn.right_cont.suf.append(lbl)
 
         if item.help_key:
             btn.right_cont.h_btn = self._add_help_btn(btn.right_cont, item.text, item.help_key)
 
-        if item.is_submenu:
-            btn.right_cont.sub_men_ind = make_icon(btn.right_cont, BTC_ICONS.CARET_RIGHT)
-            apply_style(btn.right_cont.sub_men_ind, "WIDGET.SUBMENU_INDICATOR")        
+        #Submenu indicator (caret) to indicate this button leads to a submenu
+        #always added, only visible if is_submenu is True [to make menu appearence homogeneous]
+        btn.sub_men_ind = make_icon(btn._btn, BTC_ICONS.CARET_RIGHT)
+        apply_style(btn.sub_men_ind, "WIDGET.SUBMENU_INDICATOR")
+        if not item.is_submenu:
+            apply_style(btn.sub_men_ind, "APPEARANCE.INVISIBLE")
 
-        set_align(btn.right_cont, lv.ALIGN.RIGHT_MID)
-
-        btn_click_cb = None
-        if callable(item.target):
-            # If it's already a callable, use it directly
-            btn_click_cb = item.target
-        else:
-            # Otherwise, it's a string menu_id - create navigation callback
-            btn_click_cb = lambda e, target=item.target: self.on_navigate(target)
-
-        btn.add_event_cb(btn_click_cb, lv.EVENT.CLICKED, None)
         return btn
     
     def _add_help_btn(self, parent, item_text, help_key):
+
+        help_text = item_text + "\n\n" + self.t(help_key)
+
         h_btn = Btn(parent, 
                     icon=BTC_ICONS.QUESTION_CIRCLE,
+                    callback=lambda: button_modal(text=help_text),
+                    consume_click=True,
                     background_style="APPEARANCE.TRANSPARENT",
                     foreground_style="WIDGET.HELP_ICON",
                 )
-        help_text = item_text + "\n\n" + self.t(help_key)
-        def _on_help_click(e):
-            e.stop_bubbling = 1
-            button_modal(text=help_text)
-        h_btn.add_event_cb(_on_help_click, lv.EVENT.CLICKED, None)
         return h_btn
-        
-    # --- template-method hooks -------------------------------------------
-
-    TITLE_KEY = None  # set in subclass to avoid overriding get_title
-
-    def get_title(self, t, state):
-        """Return the menu title string. Override in subclasses, or just set TITLE_KEY."""
-        return t(self.TITLE_KEY) if self.TITLE_KEY else ""
-
-    def get_menu_items(self, t, state):
-        """Return the list of MenuItems."""
-        return []
-
-    def pre_init(self, t, state):
-        """Called before menu items are built. Override to insert widgets above the item list."""
-        pass
-
-    def post_init(self, t, state):
-        """Called after all LVGL widgets are built. Override for post-construction work."""
-        pass

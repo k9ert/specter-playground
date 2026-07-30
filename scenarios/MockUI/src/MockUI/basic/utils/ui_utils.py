@@ -5,9 +5,7 @@ without risk of circular imports.
 """
 import lvgl as lv
 import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
-
-from .ui_consts import SCREEN_WIDTH, CONTENT_H
-from ..theming import apply_style, get_font, get_palette_entries, SpecterFontPalette
+from ..theming import get_font, get_palette_entries, SpecterFontPalette
 
 # ---------------------------------------------------------------------------
 # Widget helpers
@@ -16,6 +14,12 @@ from ..theming import apply_style, get_font, get_palette_entries, SpecterFontPal
 def delete_all_children_of(widget):
     for i in reversed(range(widget.get_child_count())):
         widget.get_child(i).delete()
+
+def set_layout(obj, layout):
+    obj.set_layout(layout)
+
+def set_flex_flow(obj, flow):
+    obj.set_flex_flow(flow)
 
 def set_size(obj, width=None, height=None):
     if width is not None:
@@ -34,6 +38,9 @@ def set_pos(obj, x=None, y=None):
 
 def get_pos(obj):
     return obj.get_x(), obj.get_y()
+
+def get_anim_duration(obj):
+    return obj.get_style_anim_duration(0)
 
 def set_scale(obj, scale):
     obj.set_scale(scale)
@@ -88,10 +95,12 @@ def best_fonttype_for_size(text, max_w, max_h):
     # Sort largest-first by actual line height (theme-driven, not by index)
     loaded_fonts.sort(key=lambda item: item[1].get_line_height(), reverse=True)
 
+    #Try to use biggest font that fits in one line
     for font_key, font in loaded_fonts:
         if font.get_line_height() <= max_h and text_width(text, font) <= max_w:
             return font_key, text
 
+    #Try to split into two lines at smallest font
     font_key = SpecterFontPalette.SMALL
     f_small, err = get_font(font_key)
     if f_small is not None:
@@ -113,38 +122,6 @@ def best_fonttype_for_size(text, max_w, max_h):
                 return font_key, best_split
 
     return font_key, text
-
-def style_as_screen_backdrop(obj, width=SCREEN_WIDTH, height=CONTENT_H, x=None, y=None):
-    obj.set_layout(lv.LAYOUT.NONE)
-    set_pos(obj, x=x, y=y)
-    set_size(obj, width=width, height=height)
-    set_scroll(obj, horizontal=False, vertical=False)
-    apply_style(obj, "CONTAINER.SCREEN")
-
-def style_as_flex_container(obj, flow=lv.FLEX_FLOW.COLUMN, 
-                   width=lv.SIZE_CONTENT, height=lv.SIZE_CONTENT, 
-                   main_align = lv.FLEX_ALIGN.START, cross_align = lv.FLEX_ALIGN.CENTER, track_align = lv.FLEX_ALIGN.CENTER, 
-                   scrollable=True):
-    set_size(obj, width, height)
-    configure_flex(obj, flow=flow, main=main_align, cross=cross_align, track=track_align)
-    apply_style(obj, "LAYOUT.BARE")
-    if not scrollable:
-        set_scroll(obj, horizontal=False, vertical=False)
-
-def configure_flex(obj,
-                   flow=lv.FLEX_FLOW.COLUMN,
-                   main=lv.FLEX_ALIGN.START,
-                   cross=lv.FLEX_ALIGN.CENTER,
-                   track=lv.FLEX_ALIGN.CENTER):
-    #TODO: CHECK IF needed outside of style_as_flex_container, if not: inline
-    """Apply a flex layout to *obj* with sensible defaults.
-
-    Defaults match the typical titled-menu body: column flow with
-    START / CENTER / CENTER alignment.
-    """
-    obj.set_layout(lv.LAYOUT.FLEX)
-    obj.set_flex_flow(flow)
-    obj.set_flex_align(main, cross, track)
 
 # ---------------------------------------------------------------------------
 # Randomness helpers

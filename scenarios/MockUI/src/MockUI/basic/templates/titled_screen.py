@@ -24,11 +24,8 @@ Layout variants (absolute, no flex on root):
 import lvgl as lv
 from .specter_gui_base import SpecterGuiElement
 from ..theming import apply_style
-from ..utils import (
-    TITLE_HEIGHT, CONTENT_H,
-    style_as_flex_container, set_pos, set_align
-)
-from ..widgets import title_label, Btn, flex_row, screen_backdrop
+from ..utils import set_scroll, get_pos, get_size, set_align
+from ..widgets import make_label, Btn
 from ..symbol_lib import BTC_ICONS
 
 class TitledScreen(SpecterGuiElement):
@@ -45,28 +42,27 @@ class TitledScreen(SpecterGuiElement):
     self.title might be None
     """
 
+    _SUBELEMENTS = [
+        ("title_bar", SpecterGuiElement),
+        ("body", SpecterGuiElement),
+    ]
+
     def __init__(self, title, parent, *, show_title=True):
+        self.show_title = show_title
+        self.title = title
         super().__init__(parent)
 
-        # Root: fill parent completely, no decoration.
-        style_as_flex_container(self,
-                                flow=lv.FLEX_FLOW.COLUMN, 
-                                width=lv.pct(100), height=lv.pct(100),
-                                main_align = lv.FLEX_ALIGN.START, 
-                                scrollable=False)
-        apply_style(self, "CONTAINER.SCREEN")
+    def setup_self(self):
+        apply_style(self, "CONTAINER.TITLED_SCREEN")
 
-        # ── 1. Title bar ──────────────────────────────────────────────────────
-        self.title = None
-        self.title_bar = flex_row(self, 
-                                  width=lv.pct(100),
-                                  height=TITLE_HEIGHT)
-        if show_title:
-            self.title = title_label(self.title_bar, title)
-
-        # ── 2. Body ───────────────────────────────────────────────────────────
-        content_h = CONTENT_H
-        self.body = screen_backdrop(self, width=lv.pct(100), height=content_h - TITLE_HEIGHT)
+    def post_init(self):
+        apply_style(self.title_bar, "CONTAINER.TITLE_BAR")
+        apply_style(self.body, "CONTAINER.CONTENT")
+        # Force a layout pass so child pct() sizes (title_bar height) resolve
+        # before the title label and body children are added.
+        self.update_layout()
+        if self.show_title:
+            self.title = make_label(self.title_bar, self.title, "WIDGET.SCREEN_TITLE")
 
     def refresh(self):
         """Refresh dynamic content (override in subclasses as needed)."""
@@ -77,14 +73,15 @@ class TitledScreen(SpecterGuiElement):
         Forces a layout pass first so child positions are accurate, then scans
         all children to find the actual content extent. This way post_init
         additions are automatically included and no manual height tracking is
-        needed. Also zeroes pad_bottom to prevent the theme's default 13 px
-        bottom padding from creating a phantom over-drag zone.
+        needed.
         """
         self.body.update_layout()
         content_h = 0
         for i in range(self.body.get_child_count()):
             child = self.body.get_child(i)
-            bottom = child.get_y() + child.get_height()
+            _, y = get_pos(child)
+            _, h = get_size(child)
+            bottom = y + h
             if bottom > content_h:
                 content_h = bottom
         # Store so callers can read the real content height.
@@ -93,19 +90,9 @@ class TitledScreen(SpecterGuiElement):
                        - self.body.get_style_pad_top(0)
                        - self.body.get_style_pad_bottom(0))
         if content_h > available_h:
-            self.body.set_scroll_dir(lv.DIR.VER)
-            self.body.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
-            self.body.remove_flag(lv.obj.FLAG.SCROLL_ELASTIC)
-            self.body.remove_flag(lv.obj.FLAG.SCROLL_MOMENTUM)
-            # Zero pad_bottom so LVGL's scroll_bottom formula
-            # (last_child_bottom + pad_bottom - body_bottom) gives the exact
-            # overflow. Then force a second layout pass so LVGL recalculates
-            # scroll_bottom with the updated padding value.
-            self.body.set_style_pad_bottom(0, 0)
-            self.body.update_layout()
+            set_scroll(self.body, horizontal=False, vertical=True)
         else:
-            self.body.set_scroll_dir(lv.DIR.NONE)
-            self.body.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+            set_scroll(self.body, horizontal=False, vertical=False)
 
     def add_title_delete_btn(self, on_click):
         """Add a right-aligned red TRASH button to the title bar.
@@ -116,14 +103,12 @@ class TitledScreen(SpecterGuiElement):
         Returns:
             The created ``Btn`` widget (stored as ``self.delete_btn``).
         """
-        btn_size = TITLE_HEIGHT - 10
         self.delete_btn = Btn(self.title_bar,
                               icon=BTC_ICONS.TRASH,
-                              size=(btn_size, btn_size),
-                              background_style=["WIDGET.BUTTON", "BG.DANGER"],
+                              callback=on_click,
+                              background_style="WIDGET.DELETE_BUTTON",
+                              foreground_style="WIDGET.DELETE_BUTTON_FG"
                               )
-        set_align(self.delete_btn, lv.ALIGN.RIGHT_MID)
         self.delete_btn.add_flag(lv.obj.FLAG.FLOATING)
-
-        self.delete_btn.add_event_cb(on_click, lv.EVENT.CLICKED, None)
+        apply_style(self.delete_btn, "CONTAINER.DELETE_BUTTON")
         return self.delete_btn

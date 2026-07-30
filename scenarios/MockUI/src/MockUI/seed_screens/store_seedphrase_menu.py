@@ -1,4 +1,4 @@
-from ..basic import GenericMenu
+from ..basic import GenericMenu, t
 from ..basic.symbol_lib import BTC_ICONS
 from ..basic.widgets import MenuItem
 
@@ -8,7 +8,8 @@ class StoreSeedphraseMenu(GenericMenu):
 
     TITLE_KEY = "SEEDPHRASE_MENU_STORE_TO"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         menu_items = []
         highlighted = False
 

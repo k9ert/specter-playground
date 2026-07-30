@@ -1,7 +1,7 @@
 import lvgl as lv
 from .titled_screen import TitledScreen
-from ..utils import set_align, set_pos
-from ..widgets import Btn, body_label
+from ..theming import apply_style
+from ..widgets import body_label
 
 class ActionScreen(TitledScreen):
     """Generic action screen for menu items.
@@ -22,5 +22,4 @@ class ActionScreen(TitledScreen):
 
         # Message – placed inside body
         self.msg = body_label(self.body, self.t("ACTION_SCREEN_PREFIX") + title)
-        set_align(self.msg, lv.ALIGN.TOP_MID)
-        set_pos(self.msg, y=20)
+        apply_style(self.msg, ["FG.DEFAULT", "TEXT.DEFAULT", "TEXT.CENTER"])

@@ -119,10 +119,10 @@ class ControlServer:
         """Navigate to a menu or back."""
         target = cmd.get("target")
         if target == "back" or target is None:
-            self.nav.show_menu(None)
+            self.nav.navigate_to(None)
             return {"ok": True, "navigated": "back"}
         else:
-            self.nav.show_menu(target)
+            self.nav.navigate_to(target)
             return {"ok": True, "navigated": target}
 
     def _cmd_widget_tree(self):
@@ -192,7 +192,7 @@ class ControlServer:
 
     def _cmd_get_state(self):
         """Return DeviceState and UIState."""
-        ss = self.nav.specter_state
+        ss = self.nav.device_state
         us = self.nav.ui_state
 
         # Serialize DeviceState — use getattr for forwards/backwards compat
@@ -248,7 +248,7 @@ class ControlServer:
         if not attr:
             return {"ok": False, "error": "Must provide 'attr'"}
 
-        ss = self.nav.specter_state
+        ss = self.nav.device_state
         if not hasattr(ss, attr):
             return {"ok": False, "error": "Unknown attr: " + attr}
 

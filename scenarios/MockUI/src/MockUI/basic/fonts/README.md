@@ -156,74 +156,47 @@ font_loader_de = FontLoaderDE()
 
 ## Implementation Status
 
-### ✅ Option 1 - IMPLEMENTED (For Simulator)
+### ✅ Option 1 - IMPLEMENTED (For Simulator), superseded by `FontManager`
 
-Binary fonts have been generated and a Python font loader module is ready to use.
+Binary fonts have been generated. The dedicated `font_loader_de.py` module
+described in earlier revisions of this document has since been folded into
+the general-purpose `font_manager.py` (`FontManager` / `font_manager`
+singleton), which is now the single font-resolution API used throughout
+MockUI (including the theming framework).
 
-**Files created:**
+**Files:**
 - `generate_binary_fonts.sh` - Script to generate .bin font files
 - `montserrat_<size>_de.bin` - Binary font files (11 sizes)
-- `font_loader_de.py` - Python module for loading fonts
+- `font_manager.py` - Descriptor-based font resolver (builtin → `.bin` file → nearest fallback), language-aware
 - `__init__.py` - Package initialization
 
 **Usage in MockUI:**
 
 ```python
-from scenarios.MockUI.fonts import font_loader_de
+from scenarios.MockUI.src.MockUI.basic.fonts import font_manager
 
-# Initialize fonts (happens automatically on import)
-# Prints loading status to console
+# Select German so "montserrat" resolves to the umlaut-enabled variant
+font_manager.set_language("de")
 
-# Get a specific font size
-font_12 = font_loader_de.get_font(12)
-font_16 = font_loader_de.get_font(16)
+# Get a specific font size (family:size descriptor)
+font_12 = font_manager.get_font("montserrat:12")
+font_16 = font_manager.get_font("montserrat:16")
 
 # Use the font on a label or other widget
 label.set_style_text_font(font_12, 0)
-
-# Check available sizes
-print(f"Available sizes: {font_loader_de.get_available_sizes()}")
 ```
 
-**Integration into mock_ui.py:**
-
-Add after LVGL initialization:
-
-```python
-import lvgl as lv
-from scenarios.MockUI.fonts import font_loader_de
-
-# ... existing code ...
-
-# Load German umlaut fonts
-print("Loading German umlaut fonts...")
-
-# Set size 12 for status bar (or size 16 as default theme)
-font_12 = font_loader_de.get_font(12)
-font_16 = font_loader_de.get_font(16)
-
-if font_16:
-    # Update the default theme font
-    theme = lv.theme_default_init(
-        lv.disp_get_default(),
-        lv.palette_main(lv.PALETTE.BLUE),
-        lv.palette_main(lv.PALETTE.RED),
-        True,
-        font_16  # Use German umlaut font
-    )
-```
+Themes stay language-agnostic — they request a logical descriptor like
+`"montserrat:22"` and `font_manager` resolves it to the correct German
+variant automatically based on `set_language()`.
 
 **Testing:**
 
-Run the simulator and check console output for font loading status:
+Run the simulator and switch the language to German (or call
+`font_manager.set_language("de")` directly) to confirm umlaut rendering:
 
 ```bash
 sudo --preserve-env=XDG_RUNTIME_DIR nix develop -c make simulate SCRIPT=mock_ui.py
-```
-
-Expected output:
-```
-FontLoaderDE: Loaded 11/11 German umlaut fonts
 ```
 
 ---
@@ -231,7 +204,7 @@ FontLoaderDE: Loaded 11/11 German umlaut fonts
 ## Next Steps
 
 1. **For simulator (current setup):**
-   - Integrate `font_loader_de` into `mock_ui.py` or `SpecterGui`
+   - Exercise `font_manager.set_language("de")` from the language-selection UI
    - Update status bar and other components to use German fonts
    - Test German text rendering with umlauts
 
