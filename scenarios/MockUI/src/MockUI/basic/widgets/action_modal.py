@@ -1,139 +1,154 @@
 import lvgl as lv
-from .modal_overlay import ModalOverlay
+from .modal_overlay import SpecterGuiElement, modal_overlay
 from .btn import Btn
-from .containers import dialog_card, flex_row
-from .labels import body_label
+from .labels import body_label, make_label
+from .icon_widgets import make_icon
 from .menu_item import MenuItem
-from ..widgets.icon_widgets import make_icon
 from .inputs import confirmation_slider
-from ..utils.ui_consts import (
-    CONFIRMATION_SLIDER_HEIGHT,
-    DEFAULT_MODAL_BG_OPA,
-    MODAL_WIDTH_PCT,
-    MODAL_HEIGHT_PCT,
-    BTN_HEIGHT,
-    RED_HEX,
-    SCREEN_WIDTH,
-    SCREEN_HEIGHT,
-    WHITE_HEX,
-)
+from ..theming import apply_style
+from ..utils import set_align
 
 
-class _ActionModal:
-    """Generic choice modal built on top of ModalOverlay.
-        Do not instantiate directly. Use ButtonModal or SliderConfirmModal or other derived class.
+def _action_modal(text, title=None, parent=None):
+    """Generic modal built on top of modal_overlay: optional title and body text.
+        Do not call directly. Use button_modal or slider_confirm_modal.
+
     Args:
-        text:    Main message displayed in the dialog.
-        bg_opa:  Backdrop opacity (0-255).  Defaults to DEFAULT_MODAL_BG_OPA.
+        text:       Main message displayed in the dialog.
+        title:      Optional title text shown above the body (styled WIDGET.SCREEN_TITLE).
+        body_style: Optional style (string or list) applied to the body label, in
+                    addition to body_label()'s own default styling.
+        parent:     Existing overlay/container to build the dialog box into. When
+                    None (default), a new screen-centered modal_overlay() is created
+                    and returned. When provided, the dialog box is attached to
+                    `parent` instead and `parent` is returned unchanged — this lets
+                    the caller own backdrop and positioning.
     """
-    def __init__(self, text, bg_opa=None):
-        if bg_opa is None:
-            bg_opa = DEFAULT_MODAL_BG_OPA
-        self._modal = ModalOverlay(bg_opa=bg_opa)
+    if parent is None:
+        overlay = modal_overlay()
+        apply_style(overlay, ["LAYOUT.FLEX_COL", "LAYOUT.ALL_CENTERED"])
+    else:
+        overlay = parent
 
-        self.dw = SCREEN_WIDTH * MODAL_WIDTH_PCT // 100
-        self.dh = SCREEN_HEIGHT * MODAL_HEIGHT_PCT // 100
-        self.dx = (SCREEN_WIDTH - self.dw) // 2
-        self.dy = (SCREEN_HEIGHT - self.dh) // 2
-        self.dialog = dialog_card(self._modal.overlay, self.dw, self.dh, self.dx, self.dy)
+    overlay.modal_window = SpecterGuiElement(overlay)
+    apply_style(overlay.modal_window, "CONTAINER.MODAL_WINDOW")
 
-        body_label(self.dialog, text)
-class ButtonModal(_ActionModal):
+    if title is not None:
+        overlay.modal_window.title_lbl = make_label(overlay.modal_window, title)
+        apply_style(overlay.modal_window.title_lbl, "WIDGET.SCREEN_TITLE")
+
+    overlay.modal_window.body_text = body_label(overlay.modal_window, text, "WIDGET.MODAL_BODY")
+
+    return [overlay, overlay.modal_window]
+
+
+def _handle_button_click(overlay, auto_close, callback):
+    if auto_close:
+        overlay.delete()
+    if callable(callback):
+        callback()
+
+def button_modal(text, title=None, buttons=None, auto_close=True, parent=None):
     """Generic choice modal where the user options are given by buttons.
 
     Args:
-        text:    Main message displayed in the dialog.
-        buttons: List of ``MenuItem`` instances.  An empty list adds a
-                 default "Close" button.
-        bg_opa:  Backdrop opacity (0-255).
+        text:       Main message displayed in the dialog.
+        title:      Optional title text shown above the body.
+        buttons:    List of ``MenuItem`` instances.  An empty list adds a
+                    default "Close" button.
+        auto_close: When True (default), clicking any button closes the modal
+                    before invoking its callback. Set False when the caller owns
+                    the modal's lifecycle instead (e.g. a guided tour explainer).
+        parent:     Existing overlay/container to build the dialog box into,
+                    instead of creating a new screen-centered modal_overlay().
+                    Lets a caller own the backdrop and positioning (e.g. a
+                    spotlight/coach-mark overlay with its own dim strips).
     """
-    def __init__(self, text, buttons=None, bg_opa=None):
-        super().__init__(text, bg_opa)
-        
-        if buttons is None or len(buttons) == 0:
-            buttons = [MenuItem(text="Close")]
-    
-        btn_row = flex_row(
-            self.dialog,
-            width=lv.pct(100),
-            height=lv.SIZE_CONTENT,
-            main_align=lv.FLEX_ALIGN.SPACE_EVENLY,
+    if buttons is None or len(buttons) == 0:
+        buttons = [MenuItem(text="Close")]
+
+    overlay, modal_window = _action_modal(text, title=title, parent=parent)
+
+    modal_window.btn_row = SpecterGuiElement(modal_window)
+    apply_style(modal_window.btn_row, "CONTAINER.MODAL_BUTTON_ROW")
+
+    modal_window.btn_row.buttons = []
+    for item in buttons:
+        icon = getattr(item, 'icon', None)
+        label = getattr(item, 'text', None)
+        callback = getattr(item, 'target', None)
+        visible = getattr(item, 'visible', True)
+
+        btn = Btn(
+            modal_window.btn_row,
+            icon=icon,
+            text=label,
+            callback=lambda cb=callback: _handle_button_click(overlay, auto_close, cb),
         )
 
-        for item in buttons:
-            icon = getattr(item, 'icon', None)
-            label = getattr(item, 'text', None)
-            color = getattr(item, 'color', None)
-            callback = getattr(item, 'target', None)
+        if item.modifier == "Danger":
+            btn.apply_style(background_style="BG.DANGER")
+        elif item.modifier == "Warning":
+            btn.apply_style(background_style="BG.WARNING")
+        elif item.modifier == "Highlight":
+            btn.apply_style(background_style="BG.HIGHLIGHT")
 
-            btn = Btn(
-                btn_row,
-                icon=icon,
-                text=label,
-                color=color,
-                size=(None, BTN_HEIGHT),
-            )
+        if not visible:
+            apply_style(btn, "APPEARANCE.INVISIBLE")
 
-            def _make_handler(modal, cb):
-                def _handler(ev):
-                    if ev.get_code() == lv.EVENT.CLICKED:
-                        modal.close()
-                        if cb is not None and callable(cb):
-                            cb()
-                return _handler
+        modal_window.btn_row.buttons.append(btn)
 
-            btn.add_event_cb(_make_handler(self._modal, callback), lv.EVENT.CLICKED, None)
+    return overlay
 
-class SliderConfirmModal(_ActionModal):
+def slider_confirm_modal(text,
+                         on_confirm=None, confirm_style=None, confirm_icon=None,
+                         on_reject=None, reject_style=None, reject_icon=None
+                        ):
     """Confirmation modal with a slider as user input.
        Slide to left is always cancelling, slide to right confirms.
     
     Usage::
         
-        SliderConfirmModal(
+        slider_confirm_modal(
             text="Delete wallet?\\nThis cannot be undone.",
             on_confirm=lambda: do_delete(),
-            slider_color=RED_HEX,
+            confirm_style="FG.DANGER",
         )
     
     Args:
         text:         Main message displayed in the dialog.
         on_confirm:   Zero-argument callable invoked when slider confirmation completes.
-        on_reject:    Zero-argument callable invoked when slider is released without confirming (optional).
-        confirm_color:lv.color for the slider (optional).
-        reject_color: lv.color for the slider when moving in the opposite direction (optional).
+        on_reject:    Zero-argument callable invoked when slider is released without confirming (optional),
+                      defaults to closing the modal without further action.
+        confirm_style: Style to apply to the slider's indicator when confirming (optional).
+        reject_style: Style to apply to the slider's indicator when rejecting (optional).
         confirm_icon:  Icon to show on the confirm (right) side of the slider (optional).
         reject_icon:   Icon to show on the reject (left) side of the slider (optional).
-        bg_opa:       Backdrop opacity (0-255).
     """
-    def __init__(self, text, 
-                 on_confirm=None, confirm_color=None, confirm_icon=None,
-                 on_reject=None, reject_color=None, reject_icon=None,
-                 bg_opa=None):
-        
-        super().__init__(text, bg_opa)
-        
-        slider_container = flex_row(self.dialog)
+    overlay, modal_window = _action_modal(text)
 
-        def _on_user_decision(callback):
-            self._modal.close()
-            if callback is not None and callable(callback):
-                callback()
+    def _on_user_decision(callback):
+        overlay.delete()
+        if callback is not None and callable(callback):
+            callback()
 
-        self._slider = confirmation_slider(
-            slider_container,
-            max_value=300,
-            on_max=lambda: _on_user_decision(on_confirm),
-            max_color=confirm_color,
-            min_value=-200,
-            on_min=lambda: _on_user_decision(on_reject),
-            min_color=reject_color,
-        )
-        if confirm_icon is not None:
-            self.confirm_icon = make_icon(self._slider, confirm_icon, color=WHITE_HEX)
-            self.confirm_icon.add_flag(lv.obj.FLAG.IGNORE_LAYOUT)
-            self.confirm_icon.align(lv.ALIGN.RIGHT_MID, CONFIRMATION_SLIDER_HEIGHT//3, 0)
-        if reject_icon is not None:
-            self.reject_icon = make_icon(self._slider, reject_icon, color=WHITE_HEX)
-            self.reject_icon.add_flag(lv.obj.FLAG.IGNORE_LAYOUT)
-            self.reject_icon.align(lv.ALIGN.LEFT_MID, -CONFIRMATION_SLIDER_HEIGHT//3, 0)
+    modal_window._slider = confirmation_slider(
+        modal_window,
+        max_value=300,
+        on_max=lambda: _on_user_decision(on_confirm),
+        max_style=confirm_style,
+        min_value=-200,
+        on_min=lambda: _on_user_decision(on_reject),
+        min_style=reject_style
+    )
+    if confirm_icon is not None:
+        modal_window.confirm_icon = make_icon(modal_window._slider, confirm_icon)
+        apply_style(modal_window.confirm_icon, "WIDGET.INFO_ITEM")
+        apply_style(modal_window.confirm_icon, "APPEARANCE.TRANSPARENT")
+        set_align(modal_window.confirm_icon, lv.ALIGN.RIGHT_MID)
+    
+    if reject_icon is not None:
+        modal_window.reject_icon = make_icon(modal_window._slider, reject_icon)
+        apply_style(modal_window.reject_icon, "WIDGET.INFO_ITEM")
+        apply_style(modal_window.reject_icon, "APPEARANCE.TRANSPARENT")
+        set_align(modal_window.reject_icon, lv.ALIGN.LEFT_MID)

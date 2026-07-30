@@ -1,13 +1,12 @@
-from ..basic import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets import MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 class StorageMenu(GenericMenu):
     """Menu to manage storage devices (SD / SmartCard)."""
 
     TITLE_KEY = "MENU_MANAGE_STORAGE"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         menu_items = [MenuItem(BTC_ICONS.FILE, t("STORAGE_MENU_INTERNAL_FLASH"), "internal_flash")]
 
         if state.SmartCard_detected():

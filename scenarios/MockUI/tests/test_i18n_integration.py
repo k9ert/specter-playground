@@ -12,7 +12,9 @@ import pytest
 
 from MockUI.basic.i18n import I18nManager
 from MockUI.basic.i18n.translation_keys import KEY_COUNT, Keys
-import MockUI.basic.i18n.lang_compiler as lang_compiler
+from MockUI.basic.i18n.lang_compiler import LangCompiler
+
+_c = LangCompiler()
 
 
 # Path to real language source files
@@ -36,7 +38,7 @@ class TestFullWorkflow:
 
         # Step 1: Generate keys
         keys_out = str(tmp_path / "translation_keys.py")
-        kti = lang_compiler.generate_translation_keys(str(en_src), output_path=keys_out)
+        kti = _c.generate_lookup_keys_from_default_file(str(en_src), output_path=keys_out)
         assert len(kti) > 0
 
         # Load the generated Keys class (required by json_to_binary)
@@ -47,16 +49,16 @@ class TestFullWorkflow:
 
         # Step 2: Compile EN
         en_bin = str(tmp_path / "lang_en.bin")
-        assert lang_compiler.json_to_binary(str(en_src), tk_mod.Keys, en_bin) is not None
+        assert _c.json_to_binary(str(en_src), tk_mod.Keys, en_bin) is not None
 
         # Step 3: Compile DE
         de_bin = str(tmp_path / "lang_de.bin")
-        assert lang_compiler.json_to_binary(str(de_src), tk_mod.Keys, de_bin) is not None
+        assert _c.json_to_binary(str(de_src), tk_mod.Keys, de_bin) is not None
 
         # Step 4: Validate both
-        success, error = lang_compiler.validate_binary_file(en_bin)
+        success, error = _c.validate_binary_file(en_bin)
         assert success, f"EN validation failed: {error}"
-        success, error = lang_compiler.validate_binary_file(de_bin)
+        success, error = _c.validate_binary_file(de_bin)
         assert success, f"DE validation failed: {error}"
 
     def test_runtime_workflow(self, tmp_path):
@@ -72,18 +74,18 @@ class TestFullWorkflow:
 
         en_bin = str(flash_dir / "lang_en.bin")
         de_bin = str(flash_dir / "lang_de.bin")
-        lang_compiler.json_to_binary(str(en_src), Keys, en_bin)
-        lang_compiler.json_to_binary(str(de_src), Keys, de_bin)
+        _c.json_to_binary(str(en_src), Keys, en_bin)
+        _c.json_to_binary(str(de_src), Keys, de_bin)
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         # Init manager
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(flash_dir)
+        mgr.FLASH_DIR = str(flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("en")
 
         # Load expected values
@@ -117,16 +119,16 @@ class TestFullWorkflow:
         en_src = tmp_path / "specter_ui_en.json"
         shutil.copy(_EN_JSON, en_src)
         en_bin = str(flash_dir / "lang_en.bin")
-        lang_compiler.json_to_binary(str(en_src), Keys, en_bin)
+        _c.json_to_binary(str(en_src), Keys, en_bin)
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(flash_dir)
+        mgr.FLASH_DIR = str(flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("en")
 
         # Only English available initially
@@ -161,27 +163,27 @@ class TestFullWorkflow:
         shutil.copy(_EN_JSON, en_src)
         shutil.copy(_DE_JSON, de_src)
 
-        lang_compiler.json_to_binary(str(en_src), Keys, str(flash_dir / "lang_en.bin"))
-        lang_compiler.json_to_binary(str(de_src), Keys, str(flash_dir / "lang_de.bin"))
+        _c.json_to_binary(str(en_src), Keys, str(flash_dir / "lang_en.bin"))
+        _c.json_to_binary(str(de_src), Keys, str(flash_dir / "lang_de.bin"))
 
         config_path = flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         # First "boot" — switch to German
         mgr1 = I18nManager()
-        mgr1.FLASH_I18N_DIR = str(flash_dir)
+        mgr1.FLASH_DIR = str(flash_dir)
         mgr1.FLASH_CONFIG_PATH = str(config_path)
-        mgr1._scan_available_languages()
+        mgr1._scan_available_files()
         mgr1.set_language("de")
         assert mgr1.get_language() == "de"
 
         # Second "boot" — new manager instance, same flash dir
         mgr2 = I18nManager()
-        mgr2.FLASH_I18N_DIR = str(flash_dir)
+        mgr2.FLASH_DIR = str(flash_dir)
         mgr2.FLASH_CONFIG_PATH = str(config_path)
-        mgr2._scan_available_languages()
-        selected = mgr2._load_language_preference()
+        mgr2._scan_available_files()
+        selected = mgr2._load_stored_preference()
         mgr2.set_language(selected)
         assert mgr2.get_language() == "de"
 
@@ -195,7 +197,7 @@ class TestRealLanguageFiles:
     def test_all_english_keys_present_in_binary(self, en_binary_path, key_to_index, en_json_data):
         """Every key from translation_keys maps to a real string in the EN binary."""
         for key, idx in key_to_index.items():
-            text, error = lang_compiler.read_translation_from_binary(str(en_binary_path), idx)
+            text, error = _c.read_setting_from_binary(str(en_binary_path), idx)
             assert text is not None, f"Key '{key}' (index {idx}) missing in EN binary: {error}"
             assert text == en_json_data["translations"][key]
 
@@ -204,8 +206,8 @@ class TestRealLanguageFiles:
         for key, idx in key_to_index.items():
             if key not in de_json_data["translations"]:
                 continue
-            de_text, _ = lang_compiler.read_translation_from_binary(str(de_binary_path), idx)
-            en_text, _ = lang_compiler.read_translation_from_binary(str(en_binary_path), idx)
+            de_text, _ = _c.read_setting_from_binary(str(de_binary_path), idx)
+            en_text, _ = _c.read_setting_from_binary(str(en_binary_path), idx)
             if de_text is not None and en_text is not None:
                 de_expected = de_json_data["translations"][key]
                 if isinstance(de_expected, dict):
@@ -213,30 +215,30 @@ class TestRealLanguageFiles:
                 assert de_text == de_expected
 
     def test_validate_real_english_binary(self, en_binary_path):
-        success, error = lang_compiler.validate_binary_file(str(en_binary_path))
+        success, error = _c.validate_binary_file(str(en_binary_path))
         assert success, f"Validation failed: {error}"
 
     def test_validate_real_german_binary(self, de_binary_path):
-        success, error = lang_compiler.validate_binary_file(str(de_binary_path))
+        success, error = _c.validate_binary_file(str(de_binary_path))
         assert success, f"Validation failed: {error}"
 
     def test_roundtrip_every_english_key(self, en_json_path, key_to_index, tmp_path, en_json_data):
         """Compile from JSON and read back every single key."""
         out = str(tmp_path / "lang_en.bin")
-        lang_compiler.json_to_binary(str(en_json_path), Keys, out)
+        _c.json_to_binary(str(en_json_path), Keys, out)
         translations = en_json_data["translations"]
         for key, idx in key_to_index.items():
-            text, error = lang_compiler.read_translation_from_binary(out, idx)
+            text, error = _c.read_setting_from_binary(out, idx)
             assert error is None, f"Error reading '{key}': {error}"
             assert text == translations[key], f"Mismatch for '{key}': got '{text}'"
 
     def test_roundtrip_every_german_key(self, de_json_path, key_to_index, tmp_path, de_json_data):
         """Compile German and read back all translated keys."""
         out = str(tmp_path / "lang_de.bin")
-        lang_compiler.json_to_binary(str(de_json_path), Keys, out)
+        _c.json_to_binary(str(de_json_path), Keys, out)
         translations = de_json_data["translations"]
         for key, idx in key_to_index.items():
-            text, error = lang_compiler.read_translation_from_binary(out, idx)
+            text, error = _c.read_setting_from_binary(out, idx)
             if key in translations:
                 expected = translations[key]
                 if isinstance(expected, dict):

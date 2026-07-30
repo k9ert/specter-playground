@@ -1,6 +1,4 @@
-from ..basic import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets import MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 
 class FirmwareMenu(GenericMenu):
@@ -8,9 +6,9 @@ class FirmwareMenu(GenericMenu):
 
     TITLE_KEY = "MENU_MANAGE_FIRMWARE"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         fw_version = state.fw_version
-
         menu_items = [
             MenuItem(text=t("FIRMWARE_MENU_CURRENT_VERSION") + str(fw_version) + t("FIRMWARE_MENU_UPDATE_VIA")),
         ]

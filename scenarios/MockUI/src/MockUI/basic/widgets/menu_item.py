@@ -26,47 +26,37 @@ class MenuItem:
     Args:
         icon:       Icon instance or lv.SYMBOL string, or None (section header).
         text:       Display text.
-        target:     None (section header), a menu_id string, or a callable.
-        color:      Button background color override, or None.
-        size:       Height multiplier float (default 1); minimum 1.
+        target:     None (for section header), a menu_id string to navigate to, or a callable.
+        modifier:   semantic modifier: "Danger"/"Warning"/"Highlight".
+        height_scaling: Height multiplier float (default 1); minimum 1.
         help_key:   i18n key for a help popup, or None.
-        suffix:     List of MenuItemSuffix instances, or None.
+        suffix:     List of suffix items (icon/text pairs), or None.
         is_submenu: Boolean. Indicates it opens a submenu. (Default False)
-        font_color: lv.color_t to apply to the section-header label text, or
-                    None (default white).
         get_value:  Callable → bool.  When set (together with set_value) the
                     item renders as a toggle row.  May also be a plain bool 
                     then it is used as the initial value).
         set_value:  Callable(bool).  Called when the user flips the switch.
+        visible:    Boolean (default True). Used by button-row builders (e.g.
+                    _action_modal) to render an invisible placeholder button
+                    that still reserves its row slot/spacing.
     """
 
     def __init__(self, icon=None, text=None, target=None,
-                 color=None, size=None, help_key=None, suffix=None, is_submenu=False,
-                 font_color=None, get_value=None, set_value=None):
+                 modifier=None, height_scaling=None, help_key=None, suffix=None, is_submenu=False,
+                 get_value=None, set_value=None, visible=True):
+        if not (modifier in (None, "Danger", "Warning", "Highlight")):
+            print(f"MenuItem warning: invalid modifier '{modifier}' for item '{text}', falling back to no modifier")
+            modifier = None
         self.icon = icon
         self.text = text
         self.target = target
-        self.color = color
-        self.size = size
+        self.modifier = modifier
+        self.height_scaling = height_scaling
         self.help_key = help_key
-        # suffix: list of MenuItemSuffix instances
+        # suffix: list of suffix items (icon/text pairs)
         # rendered as a right-aligned group of icons/labels inside the button.
         self.suffix = suffix
         self.is_submenu = is_submenu
-        self.font_color = font_color
         self.get_value = get_value
         self.set_value = set_value
-
-
-class MenuItemSuffix:
-    """Structured suffix item for MenuItem.suffix list.
-
-    Args:
-        icon:   Icon instance or lv.SYMBOL string, or None (text-only).
-        color:  Background color override, or None.
-        text:   Text to show in suffix, or None (icon-only).
-    """
-    def __init__(self, icon=None, color=None, text=None):
-        self.icon = icon
-        self.color = color
-        self.text = text
+        self.visible = visible

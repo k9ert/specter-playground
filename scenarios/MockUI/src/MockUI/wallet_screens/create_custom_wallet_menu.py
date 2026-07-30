@@ -1,12 +1,21 @@
 
 import lvgl as lv
 import urandom
-from ..basic import TitledScreen, BTN_HEIGHT, BTN_WIDTH, SWITCH_HEIGHT, SWITCH_WIDTH, SMALL_PAD
-from ..basic.utils.ui_utils import configure_flex
-from ..basic.utils.keyboard_manager import Layout
-from ..basic.widgets import Btn, form_label, form_textarea, flex_row
+from ..basic import (
+    BTC_ICONS,
+    TitledScreen,
+    SpecterGuiElement,
+    Btn,
+    Layout,
+    apply_style,
+    set_size,
+    make_label,
+    make_textarea,
+    make_switch,
+    Btn,
+    t
+)
 from ..stubs import Wallet
-
 
 class CreateCustomWalletMenu(TitledScreen):
     """Form to create a custom (dummy) wallet descriptor for testing.
@@ -18,45 +27,50 @@ class CreateCustomWalletMenu(TitledScreen):
     """
 
     def __init__(self, parent):
-        super().__init__(parent.i18n.t("ADD_WALLET_CREATE_CUSTOM"), parent)
-        t = self.i18n.t
+        super().__init__(t("ADD_WALLET_CREATE_CUSTOM"), parent)
 
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        configure_flex(self.body)
+        apply_style(self.body, ["CONTAINER.MENU_CONTAINER", "LAYOUT.FLEX_COL", "LAYOUT.FULL_SIZE"])
 
-        ROW_H = 60
 
         # ── Wallet name ──────────────────────────────────────────────
-        name_row = self._make_row(ROW_H)
-        form_label(name_row, t("COMMON_NAME"), width=lv.pct(25))
-        self.name_ta = form_textarea(name_row, width=lv.pct(65))
-        self.name_ta.set_text(t("COMMON_WALLET") + " " + str(urandom.randint(1, 99)))
-        kb = lambda e: self.gui.keyboard_manager.bind(self.name_ta, Layout.FULL)
-        self.name_ta.add_event_cb(kb, lv.EVENT.CLICKED, None)
+        self.body.name_row = SpecterGuiElement(self.body)
+        apply_style(self.body.name_row, "CONTAINER.MENU_ROW")
+        self.body.name_lbl = make_label(self.body.name_row, t("COMMON_NAME"),
+                                        ["FG.DEFAULT", "TEXT.TITLE"])
+        self.body.name_ta = make_textarea(self.body.name_row)
+        apply_style(self.body.name_ta, ["TEXT.TITLE", "LAYOUT.GROWS"])
+        self.body.name_ta.set_text(t("COMMON_WALLET") + " " + str(urandom.randint(1, 99)))
+        kb = lambda e: self.keyboard_manager.bind(self.body.name_ta, Layout.FULL)
+        self.body.name_ta.add_event_cb(kb, lv.EVENT.CLICKED, None)
 
         # ── Multisig toggle ──────────────────────────────────────────
-        ms_row = self._make_row(ROW_H)
-        form_label(ms_row, t("COMMON_MULTISIG"), width=lv.pct(50))
+        self.body.ms_row = SpecterGuiElement(self.body)
+        apply_style(self.body.ms_row, "CONTAINER.MENU_ROW")
+        self.body.ms_lbl = make_label(self.body.ms_row, t("COMMON_MULTISIG"), 
+                                      ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
 
-        self.ms_sw = lv.switch(ms_row)
-        self.ms_sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
-        self.ms_sw.add_event_cb(lambda e: self._on_multisig_toggle(e), lv.EVENT.VALUE_CHANGED, None)
+        self.body.ms_sw = make_switch(self.body.ms_row, False, setter_cb=lambda e: self._on_multisig_toggle(e))
 
         # ── Threshold (visible only for multisig) ────────────────────
-        self.thresh_row = self._make_row(ROW_H)
-        form_label(self.thresh_row, t("ADD_WALLET_THRESHOLD"), width=lv.pct(50))
-        self.thresh_ta = form_textarea(self.thresh_row, width=lv.pct(30))
-        self.thresh_ta.set_text("2")
-        self.thresh_ta.set_accepted_chars("0123456789")
-        kb2 = lambda e: self.gui.keyboard_manager.bind(self.thresh_ta, Layout.FULL)
-        self.thresh_ta.add_event_cb(kb2, lv.EVENT.CLICKED, None)
-        self.thresh_row.add_flag(lv.obj.FLAG.HIDDEN)  # hidden until multisig
+        self.body.thresh_row = SpecterGuiElement(self.body)
+        apply_style(self.body.thresh_row, "CONTAINER.MENU_ROW")
+        self.body.thresh_row_lbl = make_label(self.body.thresh_row, t("ADD_WALLET_THRESHOLD"),
+                                              ["WIDGET.MENU_LABEL", "TEXT.DEFAULT"])
+        self.body.thresh_ta = make_textarea(self.body.thresh_row)
+        apply_style(self.body.thresh_ta, ["TEXT.TITLE"])
+        self.body.thresh_ta.set_text("2")
+        self.body.thresh_ta.set_accepted_chars("0123456789")
+        kb2 = lambda e: self.gui.keyboard_manager.bind(self.body.thresh_ta, Layout.FULL)
+        self.body.thresh_ta.add_event_cb(kb2, lv.EVENT.CLICKED, None)
+        self.body.thresh_row.add_flag(lv.obj.FLAG.HIDDEN)  # hidden until multisig
 
         # ── Extra fingerprints (for multisig cosigners) ──────────────
-        self.fp_row = self._make_row(ROW_H)
-        form_label(self.fp_row, t("ADD_WALLET_SIGNERS"), width=lv.pct(35), font=lv.font_montserrat_16)
-
-        self.fp_ta = form_textarea(self.fp_row, width=lv.pct(55), font=lv.font_montserrat_16)
+        self.body.fp_row = SpecterGuiElement(self.body)
+        apply_style(self.body.fp_row, "CONTAINER.MENU_ROW")
+        self.body.fp_row_lbl = make_label(self.body.fp_row, t("ADD_WALLET_SIGNERS"),
+                                          ["WIDGET.MENU_LABEL", "TEXT.DEFAULT"])
+        self.body.fp_ta = make_textarea(self.body.fp_row)
+        apply_style(self.body.fp_ta, ["TEXT.DEFAULT", "LAYOUT.GROWS"])
         sig_text = ""
         if self.device_state.loaded_seeds:
             if self.ui_state.active_seed:
@@ -76,106 +90,99 @@ class CreateCustomWalletMenu(TitledScreen):
         else:
             sig_text = "0x0123,0xabcd"
 
-        self.fp_ta.set_text(sig_text)
-        self.fp_ta.set_accepted_chars("0123456789abcdefx,")
-        kb3 = lambda e: self.gui.keyboard_manager.bind(self.fp_ta, Layout.FULL)
-        self.fp_ta.add_event_cb(kb3, lv.EVENT.CLICKED, None)
-        self.fp_row.add_flag(lv.obj.FLAG.HIDDEN)
+        self.body.fp_ta.set_text(sig_text)
+        self.body.fp_ta.set_accepted_chars("0123456789abcdefx,")
+        kb3 = lambda e: self.gui.keyboard_manager.bind(self.body.fp_ta, Layout.FULL)
+        self.body.fp_ta.add_event_cb(kb3, lv.EVENT.CLICKED, None)
+        self.body.fp_row.add_flag(lv.obj.FLAG.HIDDEN)
 
         # ── Network toggle ───────────────────────────────────────────
-        net_row = self._make_row(ROW_H)
-        form_label(net_row, "Testnet", width=lv.pct(50))
+        self.body.net_row = SpecterGuiElement(self.body)
+        apply_style(self.body.net_row, "CONTAINER.MENU_ROW")
+        self.body.net_row_lbl = make_label(self.body.net_row, "Testnet", 
+                                           ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
 
-        self.net_sw = lv.switch(net_row)
-        self.net_sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
+        self.body.net_sw = make_switch(self.body.net_row, False, setter_cb=None)
 
         # ── Custom toggle ───────────────────────────────────────────
-        custom_row = self._make_row(ROW_H)
-        form_label(custom_row, t("ADD_WALLET_CUSTOM"), width=lv.pct(50))
+        self.body.custom_row = SpecterGuiElement(self.body)
+        apply_style(self.body.custom_row, "CONTAINER.MENU_ROW")
+        self.body.custom_row_lbl = make_label(self.body.custom_row, t("ADD_WALLET_CUSTOM"),
+                                              ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
 
-        self.custom_sw = lv.switch(custom_row)
-        self.custom_sw.set_size(SWITCH_HEIGHT, SWITCH_WIDTH)
+        self.body.custom_sw = make_switch(self.body.custom_row, False, setter_cb=None)
 
         # ── Account index ────────────────────────────────────────────
-        acc_row = self._make_row(ROW_H)
-        form_label(acc_row, t("WALLET_MENU_SELECT_ACCOUNT"), width=lv.pct(50))
-
-        spin_row = flex_row(acc_row, height=ROW_H - 4, pad=0)
-        spin_row.set_width(lv.SIZE_CONTENT)
-        spin_row.set_style_pad_column(SMALL_PAD, 0)
-
-        btn_sz = ROW_H - 14
-        dec_btn = lv.button(spin_row)
-        dec_btn.set_size(btn_sz, btn_sz)
-        dec_lbl = lv.label(dec_btn)
-        dec_lbl.set_text(lv.SYMBOL.MINUS)
-        dec_lbl.center()
+        self.body.acc_row = SpecterGuiElement(self.body)
+        apply_style(self.body.acc_row, "CONTAINER.MENU_ROW")
+        self.body.acc_row._lbl = make_label(self.body.acc_row, t("WALLET_MENU_SELECT_ACCOUNT"),
+                                            ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
 
         self.account_val = 0
-        self.acc_lbl = lv.label(spin_row)
-        self.acc_lbl.set_style_text_font(lv.font_montserrat_22, 0)
-        self.acc_lbl.set_text("0")
-        self.acc_lbl.set_width(50)
-        self.acc_lbl.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)
+        self.body.acc_row.spin_row = SpecterGuiElement(self.body.acc_row)
+        apply_style(self.body.acc_row.spin_row, ["LAYOUT.FLEX_ROW", "LAYOUT.ALL_CENTERED"])
+        set_size(self.body.acc_row.spin_row, width=lv.SIZE_CONTENT, height=lv.SIZE_CONTENT)
 
-        inc_btn = lv.button(spin_row)
-        inc_btn.set_size(btn_sz, btn_sz)
-        inc_lbl = lv.label(inc_btn)
-        inc_lbl.set_text(lv.SYMBOL.PLUS)
-        inc_lbl.center()
+        self.body.acc_row.spin_row.dec_btn = Btn(self.body.acc_row.spin_row,
+                                                  icon=BTC_ICONS.MINUS,
+                                                  callback=self._decrement_account,
+                                                  background_style="WIDGET.BUTTON",
+                                                  foreground_style="WIDGET.BUTTON_FG",
+                                                 )
+        self.body.acc_row.spin_row.acc_lbl = make_label(self.body.acc_row.spin_row, str(self.account_val),
+                                                        ["FG.DEFAULT", "TEXT.TITLE", "TEXT.CENTER"])
+        set_size(self.body.acc_row.spin_row.acc_lbl, width=100, height=lv.SIZE_CONTENT)
 
-        def _dec_cb(e):
-            if e.get_code() == lv.EVENT.CLICKED and self.account_val > 0:
-                self.account_val -= 1
-                self.acc_lbl.set_text(str(self.account_val))
-
-        def _inc_cb(e):
-            if e.get_code() == lv.EVENT.CLICKED and self.account_val < 99:
-                self.account_val += 1
-                self.acc_lbl.set_text(str(self.account_val))
-
-        dec_btn.add_event_cb(_dec_cb, lv.EVENT.CLICKED, None)
-        inc_btn.add_event_cb(_inc_cb, lv.EVENT.CLICKED, None)
+        self.body.acc_row.spin_row.inc_btn = Btn(self.body.acc_row.spin_row,
+                                                 icon=BTC_ICONS.PLUS,
+                                                 callback=self._increment_account,
+                                                 background_style="WIDGET.BUTTON",
+                                                 foreground_style="WIDGET.BUTTON_FG",
+                                                )
 
         # ── Create button ────────────────────────────────────────────
-        btn_row = self._make_row(80)
+        self.body.btn_row = SpecterGuiElement(self.body)
+        apply_style(self.body.btn_row, ["CONTAINER.DROP_UP_ROW"])
         self.create_btn = Btn(
-            btn_row,
-            text=t("COMMON_CREATE"),
-            size=(lv.pct(BTN_WIDTH), BTN_HEIGHT),
-            callback=lambda e: self._on_create(e),
-        )
+                              self.body.btn_row,
+                              text=t("COMMON_CREATE"),
+                              callback=self._on_create,
+                              background_style="WIDGET.BUTTON",
+                              foreground_style="WIDGET.BUTTON_FG"
+                             )
 
     # ── helpers ──────────────────────────────────────────────────────
 
-    def _make_row(self, height):
-        row = flex_row(self.body, height=height, pad=SMALL_PAD, main_align=lv.FLEX_ALIGN.SPACE_BETWEEN)
-        row.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
-        return row
-
     def _on_multisig_toggle(self, e):
-        if self.ms_sw.has_state(lv.STATE.CHECKED):
-            self.thresh_row.remove_flag(lv.obj.FLAG.HIDDEN)
-            self.fp_row.remove_flag(lv.obj.FLAG.HIDDEN)
+        if self.body.ms_sw.has_state(lv.STATE.CHECKED):
+            self.body.thresh_row.remove_flag(lv.obj.FLAG.HIDDEN)
+            self.body.fp_row.remove_flag(lv.obj.FLAG.HIDDEN)
         else:
-            self.thresh_row.add_flag(lv.obj.FLAG.HIDDEN)
-            self.fp_row.add_flag(lv.obj.FLAG.HIDDEN)
+            self.body.thresh_row.add_flag(lv.obj.FLAG.HIDDEN)
+            self.body.fp_row.add_flag(lv.obj.FLAG.HIDDEN)
 
-    def _on_create(self, e):
-        if e.get_code() != lv.EVENT.CLICKED:
-            return
+    def _decrement_account(self):
+        if self.account_val > 0:
+            self.account_val -= 1
+            self.body.acc_row.spin_row.acc_lbl.set_text(str(self.account_val))
 
-        name = self.name_ta.get_text()
-        is_multi = self.ms_sw.has_state(lv.STATE.CHECKED)
-        net = "testnet" if self.net_sw.has_state(lv.STATE.CHECKED) else "mainnet"
-        is_custom = self.custom_sw.has_state(lv.STATE.CHECKED)
+    def _increment_account(self):
+        if self.account_val < 99:
+            self.account_val += 1
+            self.body.acc_row.spin_row.acc_lbl.set_text(str(self.account_val))
+
+    def _on_create(self):
+        name = self.body.name_ta.get_text()
+        is_multi = self.body.ms_sw.has_state(lv.STATE.CHECKED)
+        net = "testnet" if self.body.net_sw.has_state(lv.STATE.CHECKED) else "mainnet"
+        is_custom = self.body.custom_sw.has_state(lv.STATE.CHECKED)
 
         # Build fingerprint list
         fps = []
-        threshold = int(self.thresh_ta.get_text())
+        threshold = int(self.body.thresh_ta.get_text())
         if is_multi:
             # Parse extra cosigner fingerprints
-            raw = self.fp_ta.get_text().strip()
+            raw = self.body.fp_ta.get_text().strip()
             if raw:
                 for fp in raw.split(","):
                     fp = fp.strip()
@@ -183,7 +190,7 @@ class CreateCustomWalletMenu(TitledScreen):
                         fps.append(fp)
         else:
             # For singlesig, just take the first fingerprint (or 0xabcd if empty)
-            raw = self.fp_ta.get_text().strip()
+            raw = self.body.fp_ta.get_text().strip()
             fp = raw.split(",")[0].strip() if raw else "0xabcd"
             fps.append(fp)
 

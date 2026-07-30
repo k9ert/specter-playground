@@ -1,34 +1,6 @@
 """Core Icon class and bitmap conversion utilities."""
 
 import lvgl as lv
-from ..utils.ui_consts import WHITE_HEX, BTC_ICON_ZOOM
-
-
-
-def color_to_rgb(color):
-    """
-    Extract RGB values from an LVGL color object.
-    
-    Args:
-        color: lv.color_t object (e.g., from lv.color_hex(0xFF0000)) or integer
-    
-    Returns:
-        tuple: (r, g, b) values as integers (0-255)
-    """
-    try:
-        # Try to get RGB values from color object methods/attributes
-        r = color.red() if callable(getattr(color, 'red', None)) else color.red
-        g = color.green() if callable(getattr(color, 'green', None)) else color.green
-        b = color.blue() if callable(getattr(color, 'blue', None)) else color.blue
-    except (AttributeError, TypeError):
-        # Fallback: if it's already an integer, extract RGB
-        color_int = int(color)
-        r = (color_int >> 16) & 0xFF
-        g = (color_int >> 8) & 0xFF
-        b = color_int & 0xFF
-    
-    return (r, g, b)
-
 
 def create_icon_from_bitmap(pattern, width, height):
     """
@@ -53,7 +25,7 @@ def create_icon_from_bitmap(pattern, width, height):
     if len(pattern) != expected_size:
         raise ValueError(
             f"Pattern size mismatch: got {len(pattern)} pixels, "
-            f"expected {expected_size} (width={width} × height={height})"
+            f"expected {expected_size} (width={width} x height={height})"
         )
 
     # Detect if pattern is legacy binary (only 0 and 1) or 8-bit alpha
@@ -86,10 +58,7 @@ class Icon:
     """
     Reusable icon class that can be rendered as an image.
     
-    Can be called with a color to create a new Icon with that color:
-        icon = BTC_ICONS.CHECK(GREEN_HEX)
-    
-    Or used directly (will use white as default color):
+    Can be used directly:
         icon = BTC_ICONS.CHECK
     
     NOTE: Unlike lv.SYMBOL.*, custom bitmap icons cannot be directly concatenated 
@@ -97,11 +66,7 @@ class Icon:
     to add icons to buttons/containers with flex layout alongside labels.
     """
     
-    # Class-level cache shared across all Icon instances
-    # Key: (pattern_id, color_string) -> Value: lv.image_dsc_t
-    _global_image_dsc_cache = {}
-    
-    def __init__(self, pattern, width, height, color=None):
+    def __init__(self, pattern, width, height):
         """
         Initialize an icon with a bitmap pattern.
         
@@ -110,63 +75,24 @@ class Icon:
                     or list of 0s and 1s for legacy binary patterns
             width: Width of the icon in pixels
             height: Height of the icon in pixels
-            color: Optional lv.color_t object (defaults to WHITE_HEX)
         """
         self.pattern = pattern
         self.width = width
         self.height = height
-        self.color = color if color is not None else WHITE_HEX
-    
-    def __call__(self, color):
-        """
-        Create a new Icon instance with the specified color.
-        Reuses the same pattern data.
-        
-        Args:
-            color: lv.color_t object (e.g., from lv.color_hex(0xFF0000))
-        
-        Returns:
-            New Icon instance with the specified color
-        """
-        return Icon(self.pattern, self.width, self.height, color)
+        self._dsc = None
     
     def get_image_dsc(self):
-        """
-        Get an lv.image_dsc_t for this icon.
-        Results are cached in the global cache to avoid recreating descriptors.
-        With A8 format the descriptor is colour-independent, so one cached
-        entry per unique pattern is sufficient.
+        """Return the ``lv.image_dsc_t`` for this icon, building it once on first call.
+
+        The descriptor is stored on the instance.  Because named icons in
+        ``BTC_ICONS`` are module-level singletons this allocates at most one
+        descriptor (≈320 B heap) per distinct icon that is actually rendered.
 
         Returns:
             lv.image_dsc_t object
         """
-        cache_key = id(self.pattern)
-
-        if cache_key not in Icon._global_image_dsc_cache:
-            Icon._global_image_dsc_cache[cache_key] = create_icon_from_bitmap(
+        if self._dsc is None:
+            self._dsc = create_icon_from_bitmap(
                 self.pattern, self.width, self.height
             )
-
-        return Icon._global_image_dsc_cache[cache_key]
-
-    def apply_icon_to(self, parent, zoom=None):
-        """
-        Apply this icon to a parent lv.image object.
-        Sets the A8 image source and applies the icon colour via the
-        LVGL ``image_recolor`` style property.
-
-        Args:
-            parent: The lv.image object to configure
-            zoom: LVGL zoom factor (256=100%, 512=200%). Defaults to BTC_ICON_ZOOM.
-        """
-        if zoom is None:
-            zoom = BTC_ICON_ZOOM
-        parent.set_src(self.get_image_dsc())
-        scaled_w = self.width * zoom // 256
-        scaled_h = self.height * zoom // 256
-        parent.set_size(scaled_w, scaled_h)
-        parent.set_scale(zoom)
-        # Apply colour via recolor (image data is alpha-only A8)
-        r, g, b = color_to_rgb(self.color)
-        parent.set_style_image_recolor(lv.color_make(r, g, b), 0)
-        parent.set_style_image_recolor_opa(lv.OPA.COVER, 0)
+        return self._dsc

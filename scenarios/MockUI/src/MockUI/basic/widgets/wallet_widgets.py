@@ -2,55 +2,43 @@
 """
 
 import lvgl as lv
-from ..symbol_lib import BTC_ICONS
-from ..utils.ui_consts import (
-    WHITE_HEX, GREY_HEX, BTC_ICON_WIDTH, SCREEN_WIDTH,
-    STATUS_BTN_HEIGHT, SMALL_TEXT_FONT, CARD_H,
-)
-from ..utils.ui_utils import configure_as_bare
 from .icon_widgets import make_icon
-from .labels import make_label, best_font_for_size
-from .card_helpers import build_card_row, build_leading_icon_slot, build_name_slot, build_delete_slot, compute_name_width
+from .inputs import make_textarea
+from .labels import make_label, optimize_font_size
+from .card_helpers import build_delete_slot
+from ..symbol_lib import BTC_ICONS
+from ..theming import apply_style, remove_style, get_style
+from ..templates.specter_gui_base import SpecterGuiElement
+from ..utils import set_size, set_align, set_scroll
 
 # Wallet-card slot names (ordered as they appear left-to-right in default layout)
 WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete")
 
-# Fixed width budgets
-_ICON_W    = BTC_ICON_WIDTH
-_THRESH_W  = 40
-_ACC_W     = 36
-_NET_W     = 42
+def wallet_signing_status_modifier(wallet, device_state):
+    """Return MODIFIER.MUTED when not all required keys are loaded, None otherwise.
 
-
-def wallet_signing_color(wallet, device_state):
-    """Return WHITE_HEX when all required keys are loaded, GREY_HEX otherwise.
-
-    Used to colour the wallet type icon and any associated text (e.g. multisig
+    Used to style the wallet type icon and any associated text (e.g. multisig
     threshold label) consistently everywhere wallets are displayed.
     """
     matched, required = device_state.signing_match_count(wallet)
-    return WHITE_HEX if (required > 0 and matched >= required) else GREY_HEX
-
+    return None if (required > 0 and matched >= required) else get_style("MODIFIER.MUTED")
 
 _NET_MAP = {"mainnet": "main", "testnet": "test", "signet": "sig", "regtest": "reg"}
-
 
 def wallet_net_text(wallet):
     """Return the short network label for *wallet* (e.g. ``'test'``).
     """
     return _NET_MAP.get(wallet.net)
 
-
 def wallet_account_text(wallet):
     """Return the account label string for *wallet* (e.g. ``'#2'``).
     """
     return "#" + str(wallet.account)
 
-
-class MultisigKeyIcon(lv.obj):
+class MultisigKeyIcon(SpecterGuiElement):
     """Composite multisig type icon: two overlapping keys with independent colours.
 
-    Rendered as two ``lv.image`` layers inside a transparent ``BTC_ICON_WIDTH``
+    Rendered as two ``lv.image`` layers inside a transparent, content-sized
     square container — the same approach as ``Battery``.
 
     Colour semantics
@@ -63,160 +51,158 @@ class MultisigKeyIcon(lv.obj):
 
     def __init__(self, parent, wallet, device_state):
         super().__init__(parent)
-        configure_as_bare(self, width=BTC_ICON_WIDTH, height=BTC_ICON_WIDTH, transparent_bg=True)
+        set_size(self, lv.SIZE_CONTENT, lv.SIZE_CONTENT)
+        apply_style(self, "WIDGET.INFO_ITEM")
         # Upper/background key — rendered first, appears behind
-        self.key_back = make_icon(self, BTC_ICONS.KEY_MULTI_BACK, WHITE_HEX)
-        self.key_back.align(lv.ALIGN.CENTER, 0, 0)
+        self.key_back = make_icon(self, BTC_ICONS.KEY_MULTI_BACK)
+        set_align(self.key_back, lv.ALIGN.CENTER)
+        apply_style(self.key_back, "WIDGET.INFO_ITEM")
         # Lower/foreground key — rendered second, appears in front
-        self.key_front = make_icon(self, BTC_ICONS.KEY_MULTI_FRONT, WHITE_HEX)
-        self.key_front.align(lv.ALIGN.CENTER, 0, 0)
+        self.key_front = make_icon(self, BTC_ICONS.KEY_MULTI_FRONT)
+        set_align(self.key_front, lv.ALIGN.CENTER)
+        apply_style(self.key_front, "WIDGET.INFO_ITEM")
+
         self.update(wallet, device_state)
 
     def update(self, wallet, device_state):
-        """Recolour both key layers based on current signing readiness."""
+        """Restyle both key layers based on current signing readiness."""
         matched, _ = device_state.signing_match_count(wallet)
         threshold = getattr(wallet, 'threshold', 1) or 1
-        back_color = WHITE_HEX if matched >= threshold else GREY_HEX
-        front_color  = WHITE_HEX if matched >= 1         else GREY_HEX
-        BTC_ICONS.KEY_MULTI_BACK(back_color).apply_icon_to(self.key_back)
-        BTC_ICONS.KEY_MULTI_FRONT(front_color).apply_icon_to(self.key_front)
+        
+        if not matched >= threshold:
+            apply_style(self.key_back, "MODIFIER.MUTED")
+        else:
+            remove_style(self.key_back, "MODIFIER.MUTED")
+
+        if not matched >= 1:
+            apply_style(self.key_front, "MODIFIER.MUTED")
+        else:
+            remove_style(self.key_front, "MODIFIER.MUTED")
 
 
-def add_wallet_type_icon(parent, wallet, device_state):
+def wallet_type_icon(parent, wallet, device_state):
     """Append a wallet type icon to *parent* with colour indicating signing readiness.
 
     Returns the widget (``lv.image`` for single-sig/non-standard,
     ``MultisigKeyIcon`` container for multisig).
     """
+    ico = None
+    mod = None
+
     if not wallet.is_standard():
-        color = wallet_signing_color(wallet, device_state)
-        return make_icon(parent, BTC_ICONS.CONSOLE, color)
-    elif wallet.isMultiSig:
-        return MultisigKeyIcon(parent, wallet, device_state)
+        ico_type = BTC_ICONS.CONSOLE
     else:
-        color = wallet_signing_color(wallet, device_state)
-        return make_icon(parent, BTC_ICONS.KEY, color)
+        ico_type = BTC_ICONS.KEY
 
+    if wallet.is_standard() and wallet.isMultiSig:
+        ico = MultisigKeyIcon(parent, wallet, device_state)
+    else:
+        ico = make_icon(parent, ico_type)
+        mod = wallet_signing_status_modifier(wallet, device_state)
+        apply_style(ico, "WIDGET.INFO_ITEM")
+        if mod is not None:
+            apply_style(ico, mod)
 
-def build_wallet_card(
-    parent,
-    wallet,
-    device_state,
-    *,
-    height=None,
-    width=SCREEN_WIDTH,
-    slots=("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete"),
-    leading_icon=None,
-    on_card_click=None,
-    on_name_click=None,
-    on_delete=None,
-    gui=None,
-    border=True,
-    event_bubble=False,
-):
-    """Build a horizontal wallet card row inside *parent*.
+    return ico
 
-    Slot names control both presence and order of child widgets:
+class WalletCard(SpecterGuiElement):
+    """Wallet card row widget — layout + optional callbacks for one wallet.
 
-        ``"leading_icon"``  — icon passed via *leading_icon* arg (e.g. BTC_ICONS.WALLET_OUTLINE)
-        ``"type_icon"``     — wallet type icon (key / two-keys / console) coloured by signing status
-        ``"name"``          — wallet label; editable textarea if *on_name_click* is provided,
-                              otherwise a static clipped label.  For the default wallet,
-                              always rendered as static even when *on_name_click* is set.
-        ``"threshold"``     — M/N multisig label; only rendered when wallet.isMultiSig
-        ``"account"``       — account number label; only rendered when wallet.account != 0
-        ``"net"``           — network label; only rendered when wallet is not mainnet
-        ``"delete"``        — TRASH icon button; only rendered when *on_delete* is provided
+    Slot names control presence and left-to-right order of child widgets:
 
-    Args:
-        parent:         LVGL parent object.
-        wallet:         Wallet model object.
-        device_state:   DeviceState instance (needed for signing-colour calculation).
-        height:         Row height in pixels; defaults to ``CARD_H``.
-        width:          Row width in pixels; defaults to ``SCREEN_WIDTH``.
-        slots:          Iterable of slot name strings controlling presence and
-                        left-to-right order of child widgets.
-        leading_icon:   Icon factory for the ``"leading_icon"`` slot.
-                        Required when ``"leading_icon"`` is in *slots*.
-        on_card_click:  ``cb(event)`` attached to the row; fires on ``CLICKED``.
-        on_name_click:  ``cb(textarea)`` called when the name widget is clicked.
-                        When provided (and wallet is not the default wallet), the name
-                        is rendered as an editable textarea; otherwise a static label.
-        on_delete:      ``cb()`` called when the delete button is pressed (after
-                        ``stop_bubbling``).  Required when ``"delete"`` is in *slots*.
-        gui:            Unused; reserved for future use (accepted to keep call-site
-                        signatures symmetric with build_seed_card).
+        ``"leading_icon"``  — icon passed via *leading_icon* arg
+        ``"type_icon"``     — wallet type icon coloured by signing status
+        ``"name"``          — wallet label; editable textarea if *on_name_click* provided
+                              (never editable for the default wallet)
+        ``"threshold"``     — M/N multisig label; only when wallet.isMultiSig
+        ``"account"``       — account number label; only when wallet.account != 0
+        ``"net"``           — network label; only when wallet is not mainnet
+        ``"delete"``        — TRASH button; only when *on_delete* is provided
 
-    Returns:
-        The editable ``lv.textarea`` widget for the name slot, or ``None`` when
-        the name is rendered as a static label.
+    Attributes:
+        row        — the underlying ``lv.obj`` flex row
+        text_edit  — the editable ``lv.textarea`` for the name slot, or ``None``
     """
-    if height is None:
-        height = CARD_H
 
-    # ── Input validation ─────────────────────────────────────────────────────
-    slots = tuple(slots)
-    unknown = [s for s in slots if s not in WALLET_SLOTS]
-    assert not unknown, "Unknown wallet card slots: " + str(unknown)
-    assert "name" in slots, "'name' slot is mandatory"
-    if "leading_icon" in slots:
-        assert leading_icon is not None, "'leading_icon' slot requires leading_icon= argument"
-    if "delete" in slots:
-        assert on_delete is not None, "'delete' slot requires on_delete= callback"
+    def __init__(self, parent, wallet, device_state, *,
+                 slots=("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete"),
+                 leading_icon=None,
+                 on_card_click=None,
+                 on_name_click=None,
+                 on_delete=None):
 
-    # ── Derived flags ─────────────────────────────────────────────────────────
-    show_threshold = "threshold" in slots and wallet.isMultiSig and wallet.threshold is not None
-    show_account   = "account" in slots and getattr(wallet, "account", 0) != 0
-    show_net       = "net" in slots and wallet_net_text(wallet) not in (None, "main")
-    show_delete    = "delete" in slots and on_delete is not None
+        super().__init__(parent)
+        apply_style(self, "CONTAINER.INFO_CARD")
+        set_scroll(self, horizontal=False, vertical=False)
 
-    # ── Width budget for the name slot ─────────────────────────────────────
-    slot_costs = {
-        "leading_icon": _ICON_W,
-        "type_icon":    _ICON_W,
-        "threshold":    _THRESH_W if show_threshold else 0,
-        "account":      _ACC_W   if show_account   else 0,
-        "net":          _NET_W   if show_net       else 0,
-        "delete":       _ICON_W  if show_delete    else 0,
-    }
-    name_w = compute_name_width(width, slots, slot_costs)
+        # ── Input validation ──────────────────────────────────────────────────
+        for s in slots:
+            if s not in WALLET_SLOTS:
+                print(f"WalletCard warning: unknown slot '{s}'")
+        slots = tuple(s for s in slots if s in WALLET_SLOTS)
+        if "name" not in slots:
+            print("WalletCard warning: 'name' slot expected, adding to front.")
+            slots = ("name",) + slots
+        if "leading_icon" in slots and leading_icon is None:
+            print("WalletCard warning: 'leading_icon' requires leading_icon= argument. dropping.")
+            slots = tuple(s for s in slots if s != "leading_icon")
+        if "delete" in slots and on_delete is None:
+            print("WalletCard warning: 'delete' requires on_delete= callback. dropping.")
+            slots = tuple(s for s in slots if s != "delete")
 
-    # ── Build row ─────────────────────────────────────────────────────────────
-    row = build_card_row(parent, height=height, width=width, border=border, on_card_click=on_card_click)
-    ta = None
+        # ── Derived flags ─────────────────────────────────────────────────────
+        show_threshold = "threshold" in slots and wallet.isMultiSig and wallet.threshold is not None
+        show_account   = "account" in slots and getattr(wallet, "account", 0) != 0
+        show_net       = "net" in slots and wallet_net_text(wallet) not in (None, "main")
 
-    for slot in slots:
-        if slot == "leading_icon":
-            build_leading_icon_slot(row, leading_icon)
+        # ── Build row ─────────────────────────────────────────────────────────
+        self.text_edit = None
+        if on_card_click is not None:
+            self.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
 
-        elif slot == "type_icon":
-            add_wallet_type_icon(row, wallet, device_state)
+        for slot in slots:
+            if slot == "leading_icon":
+                self.leading_ico = make_icon(self, leading_icon)
+                apply_style(self.leading_ico, "WIDGET.INFO_ITEM")
 
-        elif slot == "name":
-            editable = on_name_click is not None and not wallet.is_default_wallet()
-            ta = build_name_slot(row, wallet.label, name_w, height, on_name_click, editable=editable)
+            elif slot == "type_icon":
+                self.wallet_type_ico = wallet_type_icon(self, wallet, device_state)
 
-        elif slot == "threshold" and show_threshold:
-            n = len(wallet.required_fingerprints)
-            thresh_lbl = make_label(
-                row,
-                str(wallet.threshold) + "/" + str(n),
-                width=_THRESH_W,
-                font=SMALL_TEXT_FONT,
-            )
-            thresh_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+            elif slot == "name":
+                if on_name_click is not None and not wallet.is_default_wallet():
+                    self.name_widget = make_textarea(self)
+                    apply_style(self.name_widget, "TEXT.TITLE")
+                    self.name_widget.set_text(wallet.label)
+                    self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
+                    self.text_edit = self.name_widget
+                else:
+                    self.name_widget = make_label(self, wallet.label, styles=["WIDGET.MENU_BUTTON_FG", "TEXT.TITLE", "TEXT.LEFT"])
+                
+                apply_style(self.name_widget, "LAYOUT.GROWS")
+                # when all slots are builtcthe actual width of the name widget
+                # will be set and we can set its font optimally for the content
+                def _on_name_resized(e):
+                    optimize_font_size(self.name_widget)
+                self.name_widget.add_event_cb(_on_name_resized, lv.EVENT.SIZE_CHANGED, None)
 
-        elif slot == "account" and show_account:
-            acc_lbl = make_label(row, wallet_account_text(wallet), width=_ACC_W, font=SMALL_TEXT_FONT)
-            acc_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+            elif slot == "threshold" and show_threshold:
+                n = len(wallet.required_fingerprints)
+                self.thresh_lbl = make_label(
+                    self,
+                    str(wallet.threshold) + "/" + str(n),
+                )
+                apply_style(self.thresh_lbl, "WIDGET.INFO_ITEM")
+                mod = wallet_signing_status_modifier(wallet, device_state)
+                if mod is not None:
+                    apply_style(self.thresh_lbl, mod)
 
-        elif slot == "net" and show_net:
-            net_lbl = make_label(row, wallet_net_text(wallet), width=_NET_W, font=SMALL_TEXT_FONT)
-            net_lbl.set_long_mode(lv.label.LONG_MODE.CLIP)
+            elif slot == "account" and show_account:
+                self.acc_lbl = make_label(self, wallet_account_text(wallet))
+                apply_style(self.acc_lbl, "WIDGET.INFO_ITEM")
 
-        elif slot == "delete" and show_delete:
-            build_delete_slot(row, _ICON_W, height, on_delete)
+            elif slot == "net" and show_net:
+                self.net_lbl = make_label(self, wallet_net_text(wallet))
+                apply_style(self.net_lbl, "WIDGET.INFO_ITEM")
 
-    if event_bubble:
-        row.add_flag(lv.obj.FLAG.EVENT_BUBBLE)
-    return ta
+            elif slot == "delete":
+                self.del_btn = build_delete_slot(self, on_delete)

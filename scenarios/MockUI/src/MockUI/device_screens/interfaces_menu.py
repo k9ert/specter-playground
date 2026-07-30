@@ -1,6 +1,4 @@
-from ..basic.templates.menu import GenericMenu
-from ..basic.symbol_lib import BTC_ICONS
-from ..basic.widgets.menu_item import MenuItem
+from ..basic import GenericMenu, BTC_ICONS, MenuItem, t
 
 
 class InterfacesMenu(GenericMenu):
@@ -8,7 +6,8 @@ class InterfacesMenu(GenericMenu):
 
     TITLE_KEY = "MENU_ENABLE_DISABLE_INTERFACES"
 
-    def get_menu_items(self, t, state):
+    def get_menu_items(self):
+        state = self.device_state
         items = []
         if state.hasQR():
             items.append(MenuItem(

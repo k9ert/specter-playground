@@ -1,11 +1,16 @@
 
 import lvgl as lv
-from ..basic import GREY_HEX, TitledScreen, BTN_HEIGHT, BTN_WIDTH
-from ..basic.utils.ui_utils import configure_flex
-from ..basic.utils.keyboard_manager import Layout
-from ..basic.widgets import flex_row, form_label, form_textarea, Btn, body_label
-from ..stubs import Seed
 import urandom
+from ..basic import (
+    SpecterGuiElement,
+    TitledScreen, 
+    Btn,
+    Layout,
+    apply_style, 
+    make_label, body_label, make_textarea, 
+    t,
+)
+from ..stubs import Seed
 
 
 class GenerateSeedMenu(TitledScreen):
@@ -18,19 +23,20 @@ class GenerateSeedMenu(TitledScreen):
     """
 
     def __init__(self, parent):
-        super().__init__(parent.i18n.t("MENU_GENERATE_SEEDPHRASE"), parent)
-        t = self.i18n.t
+        super().__init__(t("MENU_GENERATE_SEEDPHRASE"), parent)
 
-        self.body.set_layout(lv.LAYOUT.FLEX)
-        configure_flex(self.body)
-
+        apply_style(self.body, ["CONTAINER.MENU_CONTAINER", "LAYOUT.FULL_SIZE", "LAYOUT.FLEX_COL", "LAYOUT.ALL_CENTERED"])
+    
         # Key name row
-        name_row = flex_row(self.body, height=70, main_align=lv.FLEX_ALIGN.START)
+        self.name_row = SpecterGuiElement(self.body)
+        apply_style(self.name_row, ["CONTAINER.MENU_ROW"])
+        
+        name_lbl = make_label(self.name_row, t("COMMON_NAME"))
+        apply_style(name_lbl, ["TEXT.TITLE", "FG.DEFAULT"])
 
-        form_label(name_row, t("COMMON_NAME"))
-
-        # editable text area
-        self.name_ta = form_textarea(name_row)
+        # editable text area — fills remaining width after the label
+        self.name_ta = make_textarea(self.name_row)
+        apply_style(self.name_ta, ["TEXT.TITLE", "LAYOUT.GROWS"])
         self.name_ta.set_text("Key " + str(urandom.randint(1, 99)))
 
         keyboard_binder = lambda e: self.gui.keyboard_manager.bind(self.name_ta, Layout.FULL)
@@ -38,30 +44,21 @@ class GenerateSeedMenu(TitledScreen):
 
         # Fingerprint preview
         self.generated_fp = Seed._generate_dummy_fingerprint()
-        body_label(self.body,
-                   t("GENERATE_SEED_FINGERPRINT") + self.generated_fp,
-                   font=lv.font_montserrat_16)
+        fp_label = make_label(self.body, t("GENERATE_SEED_FINGERPRINT") + self.generated_fp, 
+                              ["TEXT.TITLE", "FG.DEFAULT"])
 
         # Info text
-        body_label(self.body, t("GENERATE_SEED_INFO"),
-                   font=lv.font_montserrat_16,
-                   width=lv.pct(90),
-                   color=GREY_HEX)
+        self.info_label = body_label(self.body, t("GENERATE_SEED_INFO"), "WIDGET.INFO_ITEM")
 
-        # Create button row
-        create_row = flex_row(self.body, height=80)
+        # Create button
+        self.create_btn = Btn(self.body,
+                              text=t("COMMON_CREATE"),
+                              callback=self._on_create,
+                              background_style="WIDGET.BUTTON",
+                              foreground_style="WIDGET.BUTTON_FG"
+                              )
 
-        self.create_btn = Btn(
-            create_row,
-            text=t("COMMON_CREATE"),
-            size=(lv.pct(BTN_WIDTH), BTN_HEIGHT),
-            callback=lambda e: self._on_create(e),
-        )
-
-    def _on_create(self, e):
-        if e.get_code() != lv.EVENT.CLICKED:
-            return
-
+    def _on_create(self):
         # read name
         name = self.name_ta.get_text()
 

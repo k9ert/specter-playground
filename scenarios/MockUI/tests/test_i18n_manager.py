@@ -6,7 +6,9 @@ import pytest
 
 from MockUI.basic.i18n import I18nManager
 from MockUI.basic.i18n.translation_keys import Keys
-import MockUI.basic.i18n.lang_compiler as lang_compiler
+from MockUI.basic.i18n.lang_compiler import LangCompiler
+
+_c = LangCompiler()
 
 
 # =====================================================================
@@ -24,21 +26,21 @@ class TestI18nManagerInit:
 
     def test_detects_multiple_languages(self, i18n_manager, de_binary_path):
         """After adding German binary, rescan picks it up."""
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         assert "de" in i18n_manager.get_available_languages()
 
     def test_loads_preference_from_config(self, i18n_flash_dir, en_binary_path, de_binary_path):
         """Manager respects saved preference on init."""
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "de"}, f)
+            json.dump({"selected_file": "de"}, f)
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         # Re-load preference
-        selected = mgr._load_language_preference()
+        selected = mgr._load_stored_preference()
         mgr.set_language(selected)
         assert mgr.get_language() == "de"
 
@@ -46,21 +48,21 @@ class TestI18nManagerInit:
         """If config says 'xx' but only 'en' exists, fall back to default."""
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "xx"}, f)
+            json.dump({"selected_file": "xx"}, f)
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
-        selected = mgr._load_language_preference()
+        mgr._scan_available_files()
+        selected = mgr._load_stored_preference()
         assert selected == "en"
 
     def test_handles_missing_flash_dir_gracefully(self, tmp_path):
         """Manager doesn't crash if /flash/i18n doesn't exist."""
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(tmp_path / "nonexistent")
+        mgr.FLASH_DIR = str(tmp_path / "nonexistent")
         mgr.FLASH_CONFIG_PATH = str(tmp_path / "nonexistent" / "config.json")
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         assert mgr.get_available_languages() == []
 
     def test_handles_missing_config_file(self, i18n_flash_dir, en_binary_path):
@@ -70,10 +72,10 @@ class TestI18nManagerInit:
             config_path.unlink()
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
-        selected = mgr._load_language_preference()
+        mgr._scan_available_files()
+        selected = mgr._load_stored_preference()
         assert selected == "en"
 
 
@@ -84,14 +86,14 @@ class TestLanguageSwitching:
     """set_language / get_language / get_available_languages"""
 
     def test_set_language_returns_true(self, i18n_manager, de_binary_path):
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         assert i18n_manager.set_language("de") is True
 
     def test_set_unavailable_returns_false(self, i18n_manager):
         assert i18n_manager.set_language("xx") is False
 
     def test_get_language_reflects_current(self, i18n_manager, de_binary_path):
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         i18n_manager.set_language("de")
         assert i18n_manager.get_language() == "de"
 
@@ -122,7 +124,7 @@ class TestTranslationLookup:
         assert i18n_manager.t(9999) == I18nManager.STR_MISSING
 
     def test_german_translation_returned(self, i18n_manager, de_binary_path, de_json_data):
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         i18n_manager.set_language("de")
         result = i18n_manager.t("MAIN_MENU_TITLE")
         expected = de_json_data["translations"]["MAIN_MENU_TITLE"]
@@ -136,16 +138,16 @@ class TestTranslationLookup:
     ):
         """German binary with missing keys -> falls back to English."""
         de_out = str(i18n_flash_dir / "lang_de.bin")
-        lang_compiler.json_to_binary(str(incomplete_de_json_path), Keys, de_out)
+        _c.json_to_binary(str(incomplete_de_json_path), Keys, de_out)
 
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("de")
 
         # Pick a key that's in the second half (not in incomplete DE)
@@ -164,26 +166,26 @@ class TestTranslationLookup:
     def test_returns_missing_when_not_setup(self):
         """Manager with no language files set returns STR_MISSING."""
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = "/nonexistent"
+        mgr.FLASH_DIR = "/nonexistent"
         mgr.FLASH_CONFIG_PATH = "/nonexistent/config.json"
-        mgr.current_lang_file = None
-        mgr.default_lang_file = None
+        mgr.current_file = None
+        mgr.default_file = None
         assert mgr.t("MAIN_MENU_TITLE") == I18nManager.STR_MISSING
 
     def test_corrupt_binary_returns_missing(self, i18n_flash_dir, en_binary_path):
         """Manager returns STR_MISSING when current language binary is corrupt."""
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         # Corrupt the English binary (overwrite with garbage)
         with open(en_binary_path, "wb") as f:
             f.write(b"GARBAGE_DATA")
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("en")
 
         # t() should not crash — returns STR_MISSING gracefully
@@ -194,7 +196,7 @@ class TestTranslationLookup:
         """Manager handles corrupt binary with integer key access too."""
         config_path = i18n_flash_dir / "language_config.json"
         with open(config_path, "w") as f:
-            json.dump({"selected_language": "en"}, f)
+            json.dump({"selected_file": "en"}, f)
 
         # Truncate the binary (valid header, missing index/data)
         with open(en_binary_path, "rb") as f:
@@ -203,9 +205,9 @@ class TestTranslationLookup:
             f.write(header)
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
+        mgr._scan_available_files()
         mgr.set_language("en")
 
         result = mgr.t(Keys.MAIN_MENU_TITLE)
@@ -224,15 +226,15 @@ class TestLanguagePreference:
         assert config_path.exists()
         with open(config_path) as f:
             data = json.load(f)
-        assert data["selected_language"] == "en"
+        assert data["selected_file"] == "en"
 
     def test_saves_german_preference(self, i18n_manager, de_binary_path, i18n_flash_dir):
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         i18n_manager.set_language("de")
         config_path = Path(i18n_manager.FLASH_CONFIG_PATH)
         with open(config_path) as f:
             data = json.load(f)
-        assert data["selected_language"] == "de"
+        assert data["selected_file"] == "de"
 
     def test_corrupt_config_falls_back(self, i18n_flash_dir, en_binary_path):
         """Corrupt JSON in config file -> default."""
@@ -240,10 +242,10 @@ class TestLanguagePreference:
         config_path.write_text("NOT JSON{{{")
 
         mgr = I18nManager()
-        mgr.FLASH_I18N_DIR = str(i18n_flash_dir)
+        mgr.FLASH_DIR = str(i18n_flash_dir)
         mgr.FLASH_CONFIG_PATH = str(config_path)
-        mgr._scan_available_languages()
-        selected = mgr._load_language_preference()
+        mgr._scan_available_files()
+        selected = mgr._load_stored_preference()
         assert selected == "en"
 
 
@@ -257,7 +259,7 @@ class TestLanguageName:
         assert i18n_manager.get_language_name("en") == "English"
 
     def test_german_name(self, i18n_manager, de_binary_path):
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         assert i18n_manager.get_language_name("de") == "Deutsch"
 
     def test_unavailable_returns_none(self, i18n_manager):
@@ -268,7 +270,7 @@ class TestLanguageName:
         # Create a broken binary
         broken = i18n_flash_dir / "lang_zz.bin"
         broken.write_bytes(b"LANG\x01\x00\x00\x00\x00\x00\x00\x00")  # Too small for name
-        i18n_manager._scan_available_languages()
+        i18n_manager._scan_available_files()
         if "zz" in i18n_manager.available_languages:
             result = i18n_manager.get_language_name("zz")
             # Should fall back to "zz" since file read fails

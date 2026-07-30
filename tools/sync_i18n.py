@@ -40,21 +40,28 @@ from typing import Dict, List, Set, Tuple
 
 
 # ---------------------------------------------------------------------------
-# Bootstrap: resolve repo root and make lang_compiler importable without
-# requiring the caller to set up PYTHONPATH.
+# Bootstrap: add the i18n directory to sys.path so lang_compiler.py is
+# importable as a standalone module (without triggering MockUI package init,
+# which pulls in micropython/lvgl unavailable in the CPython build env).
+# lang_compiler.py detects this via __package__ and loads its base class
+# by file path rather than relative import.
 # ---------------------------------------------------------------------------
 _SCRIPT_DIR = Path(__file__).resolve().parent   # …/tools/
 _REPO_ROOT = _SCRIPT_DIR.parent                 # …/specter-playground/
-_I18N_PKG_DIR = _REPO_ROOT / "scenarios" / "MockUI" / "src" / "MockUI" / "basic" / "i18n"
+_I18N_DIR = _REPO_ROOT / "scenarios" / "MockUI" / "src" / "MockUI" / "basic" / "i18n"
 
-sys.path.insert(0, str(_I18N_PKG_DIR))
+sys.path.insert(0, str(_I18N_DIR))
 
-from lang_compiler import (          # noqa: E402  (import after sys.path tweak)
-    extract_language_code_from_filename,
-    JSON_FILE_PREFIX,
-    JSON_FILE_SUFFIX,
-    FILL_PLACEHOLDER,
-)
+from lang_compiler import LangCompiler  # noqa: E402
+
+_compiler = LangCompiler()
+FILL_PLACEHOLDER = LangCompiler.FILL_PLACEHOLDER
+JSON_FILE_PREFIX = LangCompiler.JSON_FILE_PREFIX
+JSON_FILE_SUFFIX = LangCompiler.JSON_FILE_SUFFIX
+
+
+def extract_language_code_from_filename(filename):
+    return _compiler.extract_settings_name_from_filename(filename)
 
 
 class I18nSynchronizer:

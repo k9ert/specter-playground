@@ -12,11 +12,19 @@ FROZEN_MANIFEST_MOCKUI ?= ../../../../manifests/mockui.py
 DEBUG ?= 0
 USE_DBOOT ?= 0
 ADD_LANG ?=
+ADD_THEME ?=
 
 # Validate ADD_LANG to prevent shell injection (only lowercase letters and commas allowed)
 ifneq ($(ADD_LANG),)
 ifneq ($(shell echo "$(ADD_LANG)" | grep -E '^[a-z,]+$$'),$(ADD_LANG))
 $(error ADD_LANG contains invalid characters. Use only lowercase letters and commas, e.g. ADD_LANG=de,fr)
+endif
+endif
+
+# Validate ADD_THEME to prevent shell injection (lowercase letters, digits, underscores and commas)
+ifneq ($(ADD_THEME),)
+ifneq ($(shell echo "$(ADD_THEME)" | grep -E '^[a-z0-9_,]+$$'),$(ADD_THEME))
+$(error ADD_THEME contains invalid characters. Use only lowercase letters, digits, underscores and commas, e.g. ADD_THEME=ocean)
 endif
 endif
 
@@ -47,16 +55,35 @@ trim-icons:
 # i18n compilation
 build-i18n: sync-i18n
 	@echo Building i18n files...
+	@rm -rf build/flash_image/i18n
 	@mkdir -p build/flash_image/i18n
-	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py generate_keys languages/specter_ui_en.json
-	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_en.json && mv lang_en.bin ../../../../../../build/flash_image/i18n/
+	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py generate_keys languages/specter_ui_en.json translation_keys.py
+	@cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_en.json translation_keys.py && mv lang_en.bin ../../../../../../build/flash_image/i18n/
 	@if [ -n "$(ADD_LANG)" ]; then \
 		for lang in $(shell echo $(ADD_LANG) | tr ',' ' '); do \
 			if [ -f scenarios/MockUI/src/MockUI/basic/i18n/languages/specter_ui_$$lang.json ]; then \
 				echo "  Compiling $$lang..."; \
-				cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_$$lang.json && mv lang_$$lang.bin ../../../../../../build/flash_image/i18n/ || true; \
+				cd scenarios/MockUI/src/MockUI/basic/i18n && python3 lang_compiler.py compile languages/specter_ui_$$lang.json translation_keys.py && mv lang_$$lang.bin ../../../../../../build/flash_image/i18n/ || true; \
 			else \
 				echo "  Warning: Language file languages/specter_ui_$$lang.json not found"; \
+			fi; \
+		done; \
+	fi
+
+# Theme compilation: JSON → 3 binaries (colors_<name>.bin, fonts_<name>.bin, styles_<name>.bin)
+# The default theme (specter) is ALWAYS compiled; extra themes are opt-in via ADD_THEME.
+build-themes:
+	@echo Building theme files...
+	@rm -rf build/flash_image/themes
+	@mkdir -p build/flash_image/themes
+	cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_specter.json ../../../../../../build/flash_image/themes/
+	@if [ -n "$(ADD_THEME)" ]; then \
+		for theme in $(shell echo $(ADD_THEME) | tr ',' ' '); do \
+			if [ -f scenarios/MockUI/src/MockUI/basic/theming/themes/specter_ui_theme_$$theme.json ]; then \
+				echo "  Compiling $$theme..."; \
+				(cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_$$theme.json ../../../../../../build/flash_image/themes/) || true; \
+			else \
+				echo "  Warning: theme file scenarios/MockUI/src/MockUI/basic/theming/themes/specter_ui_theme_$$theme.json not found"; \
 			fi; \
 		done; \
 	fi
@@ -65,10 +92,11 @@ build-i18n: sync-i18n
 # Uses tools/make_fat_image.py (pure Python, no extra dependencies).
 # Matches MicroPython oofatfs f_mkfs(FM_FAT) output for STM32F469:
 #   512-byte sectors, 192 sectors (96KB), 1 FAT, 512 root entries, label "pybflash"
-build-flash-image: build-i18n
+build-flash-image: build-i18n build-themes
 	@echo Creating FAT12 filesystem image...
 	@echo "  Files to include:"
 	@ls -lh build/flash_image/i18n/
+	@ls -lh build/flash_image/themes/
 	python3 tools/make_fat_image.py --source build/flash_image --output build/flash_fs.img
 	@echo "✓ Filesystem image created: build/flash_fs.img"
 	@ls -lh build/flash_fs.img
@@ -172,7 +200,7 @@ mockui: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-flash-image $(MPY_DI
 	@ls -lh $(TARGET_DIR)/mockui.bin
 
 # unixport (simulator)
-unix: $(TARGET_DIR) mpy-cross build-i18n $(MPY_DIR)/ports/unix
+unix: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-themes $(MPY_DIR)/ports/unix
 	@echo Building binary with frozen files
 	make -C $(MPY_DIR)/ports/unix \
 		USER_C_MODULES=$(USER_C_MODULES) \
@@ -211,4 +239,4 @@ rag-index:
 rag-search:
 	cd .rag && .venv/bin/python search.py "$(QUERY)"
 
-.PHONY: all clean sync-i18n build-i18n rag-setup rag-index rag-search
+.PHONY: all clean sync-i18n build-i18n build-themes rag-setup rag-index rag-search

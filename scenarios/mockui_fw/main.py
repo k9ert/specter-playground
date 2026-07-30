@@ -27,14 +27,6 @@ from MockUI import SpecterGui, DeviceState, UIState, Wallet, Seed
 
 gc.collect()
 
-lv.theme_default_init(
-    None,
-    lv.palette_main(lv.PALETTE.BLUE_GREY),
-    lv.palette_main(lv.PALETTE.RED),
-    True,
-    lv.font_montserrat_16,
-)
-
 specter_state = DeviceState()
 specter_state.has_battery = True
 specter_state.battery_pct = 100
@@ -82,7 +74,7 @@ _test_wallet = Wallet(
 gc.collect()
 
 scr = SpecterGui(specter_state, ui_state)
-lv.screen_load(scr)
+
 
 # Start TCP control server when --control flag is passed (simulator only)
 if not _ON_HARDWARE and '--control' in sys.argv:

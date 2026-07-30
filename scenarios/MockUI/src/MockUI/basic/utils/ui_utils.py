@@ -5,7 +5,7 @@ without risk of circular imports.
 """
 import lvgl as lv
 import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
-
+from ..theming import get_font, get_palette_entries, SpecterFontPalette
 
 # ---------------------------------------------------------------------------
 # Widget helpers
@@ -15,66 +15,113 @@ def delete_all_children_of(widget):
     for i in reversed(range(widget.get_child_count())):
         widget.get_child(i).delete()
 
+def set_layout(obj, layout):
+    obj.set_layout(layout)
 
-def set_background_visible(obj, visible):
-    """Set background opacity to fully opaque or fully transparent."""
-    obj.set_style_bg_opa(lv.OPA.COVER if visible else lv.OPA.TRANSP, 0)
+def set_flex_flow(obj, flow):
+    obj.set_flex_flow(flow)
 
-
-def configure_as_bare(obj, width=None, height=None, transparent_bg=True):
-    """Zero padding, border, and radius on an existing lv.obj (mutating)."""
+def set_size(obj, width=None, height=None):
     if width is not None:
         obj.set_width(width)
     if height is not None:
         obj.set_height(height)
-    obj.set_style_pad_all(0, 0)
-    obj.set_style_border_width(0, 0)
-    obj.set_style_radius(0, 0)
-    set_background_visible(obj, not transparent_bg)
 
+def get_size(obj):
+    return obj.get_width(), obj.get_height()
 
-def configure_flex(obj,
-                   flow=lv.FLEX_FLOW.COLUMN,
-                   main=lv.FLEX_ALIGN.START,
-                   cross=lv.FLEX_ALIGN.CENTER,
-                   track=lv.FLEX_ALIGN.CENTER):
-    """Apply a flex layout to *obj* with sensible defaults.
+def set_pos(obj, x=None, y=None):
+    if x is not None:
+        obj.set_x(x)
+    if y is not None:
+        obj.set_y(y)
 
-    Defaults match the typical titled-menu body: column flow with
-    START / CENTER / CENTER alignment.
+def get_pos(obj):
+    return obj.get_x(), obj.get_y()
+
+def get_anim_duration(obj):
+    return obj.get_style_anim_duration(0)
+
+def set_scale(obj, scale):
+    obj.set_scale(scale)
+
+def set_align(obj, align):
+    obj.set_align(align)
+
+def set_scroll(obj, horizontal=True, vertical=True):
+    if horizontal and vertical:
+        obj.set_scroll_dir(lv.DIR.ALL)
+        obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
+    elif horizontal:
+        obj.set_scroll_dir(lv.DIR.HOR)
+        obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
+    elif vertical:
+        obj.set_scroll_dir(lv.DIR.VER)
+        obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.AUTO)
+    else:
+        obj.set_scroll_dir(lv.DIR.NONE)
+        obj.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
+
+def set_propagate_events(obj, propagate):
+    if propagate:
+        obj.add_flag(lv.obj.FLAG.EVENT_BUBBLE)
+    else:
+        obj.remove_flag(lv.obj.FLAG.EVENT_BUBBLE)
+
+def text_width(text, font):
+    """Calculate width of *text* in *font*, including kerning."""
+    n = len(text)
+    total = 0
+    for i in range(n):
+        next_cp = ord(text[i + 1]) if i + 1 < n else 0
+        total += font.get_glyph_width(ord(text[i]), next_cp)
+    return total
+
+def best_fonttype_for_size(text, max_w, max_h):
+    """Return *(font_type, display_text)* fitting *text* within max_w x max_h px.
+
+    Tries each font in font palette for a single-line fit.
+    Falls back to a balanced two-line word split at smallest font when
+    the available height allows two lines.  Always returns a valid pair.
     """
-    obj.set_flex_flow(flow)
-    obj.set_flex_align(main, cross, track)
+    # Fetch all palette fonts and filter out any that failed to load
+    all_font_keys = get_palette_entries(SpecterFontPalette).values()
+    loaded_fonts = []
+    for font_key in all_font_keys:
+        font, err = get_font(font_key)
+        if font is not None:
+            loaded_fonts.append((font_key, font))
 
+    # Sort largest-first by actual line height (theme-driven, not by index)
+    loaded_fonts.sort(key=lambda item: item[1].get_line_height(), reverse=True)
 
-# ---------------------------------------------------------------------------
-# Colour helpers
-# ---------------------------------------------------------------------------
+    #Try to use biggest font that fits in one line
+    for font_key, font in loaded_fonts:
+        if font.get_line_height() <= max_h and text_width(text, font) <= max_w:
+            return font_key, text
 
-def to_lv_color(color):
-    """Return *color* as an ``lv.color_t``.
+    #Try to split into two lines at smallest font
+    font_key = SpecterFontPalette.SMALL
+    f_small, err = get_font(font_key)
+    if f_small is not None:
+        if f_small.get_line_height() * 2 <= max_h:
+            words = text.split()
+            best_split = None
+            best_balance = None
+            for i in range(1, len(words)):
+                left = " ".join(words[:i])
+                right = " ".join(words[i:])
+                lw = text_width(left, f_small)
+                rw = text_width(right, f_small)
+                if lw <= max_w and rw <= max_w:
+                    balance = max(lw, rw)
+                    if best_balance is None or balance < best_balance:
+                        best_split = left + "\n" + right
+                        best_balance = balance
+            if best_split is not None:
+                return font_key, best_split
 
-    Accepts either an ``lv.color_t`` object or a hex string
-    (``"0xRRGGBB"`` or ``"#RRGGBB"``).
-    """
-    if isinstance(color, str):
-        val = int(color[1:], 16) if color.startswith("#") else int(color, 16)
-        return lv.color_hex(val)
-    return color
-
-
-def to_hex_str(color):
-    """Return *color* as a ``"0xRRGGBB"`` hex string.
-
-    Accepts either an ``lv.color_t`` object or a hex string
-    (``"0xRRGGBB"`` or ``"#RRGGBB"``).
-    """
-    if isinstance(color, str):
-        val = int(color[1:], 16) if color.startswith("#") else int(color, 16)
-        return "0x{:06X}".format(val)
-    c32 = lv.color_to32(color)
-    return "0x{:02X}{:02X}{:02X}".format(c32.ch.red, c32.ch.green, c32.ch.blue)
-
+    return font_key, text
 
 # ---------------------------------------------------------------------------
 # Randomness helpers

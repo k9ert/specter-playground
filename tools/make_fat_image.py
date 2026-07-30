@@ -77,16 +77,110 @@ def _pack_fat12(entries):
     return buf
 
 
-def _dos83(name):
-    """Convert a filename to FAT 8.3 format (11 bytes, space-padded)."""
-    name = name.upper()
+def _needs_lfn(name):
+    """Check if a filename requires Long File Name entries."""
+    if len(name) > 12:
+        return True
     if '.' in name:
         base, ext = name.rsplit('.', 1)
+        if len(base) > 8 or len(ext) > 3:
+            return True
+    elif len(name) > 8:
+        return True
+    # Check for lowercase or special chars that 8.3 can't represent
+    for c in name:
+        if c.islower() or c in ' +,;=[]':
+            return True
+    return False
+
+
+def _dos83(name, existing_short_names=None):
+    """Convert a filename to FAT 8.3 format (11 bytes, space-padded).
+    
+    If the name needs LFN, generate a ~N short name to avoid collisions.
+    existing_short_names: set of already-used 11-byte short names (for uniqueness).
+    """
+    if existing_short_names is None:
+        existing_short_names = set()
+    
+    upper_name = name.upper()
+    if '.' in upper_name:
+        base, ext = upper_name.rsplit('.', 1)
     else:
-        base, ext = name, ''
-    base = base[:8].ljust(8)
+        base, ext = upper_name, ''
     ext = ext[:3].ljust(3)
-    return (base + ext).encode('ascii')
+    
+    if not _needs_lfn(name):
+        # Simple 8.3 name
+        result = (base[:8].ljust(8) + ext).encode('ascii')
+        return result
+    
+    # Strip invalid chars for short name basis
+    basis = ''
+    for c in base:
+        if c.isalnum() or c in '_-':
+            basis += c
+    basis = basis[:6]  # Leave room for ~N
+    
+    # Generate unique ~N suffix
+    for n in range(1, 100):
+        suffix = f'~{n}'
+        short_base = (basis[:8 - len(suffix)] + suffix).ljust(8)
+        candidate = (short_base + ext).encode('ascii')
+        if candidate not in existing_short_names:
+            return candidate
+    
+    # Fallback (shouldn't happen with <100 files)
+    return (basis[:6] + '~1').ljust(8).encode('ascii') + ext.encode('ascii')
+
+
+def _lfn_checksum(short_name_11):
+    """Compute the LFN checksum over an 11-byte 8.3 directory name."""
+    chk = 0
+    for b in short_name_11:
+        chk = ((chk & 1) * 0x80 + (chk >> 1) + b) & 0xFF
+    return chk
+
+
+def _make_lfn_entries(long_name, short_name_11):
+    """Create LFN directory entries (in disk order: last ordinal first).
+    
+    Returns a list of 32-byte entries to prepend before the 8.3 entry.
+    """
+    ATTR_LFN = 0x0F
+    chk = _lfn_checksum(short_name_11)
+    
+    # Encode name as UTF-16LE, pad with 0xFFFF after null terminator
+    ucs2 = long_name.encode('utf-16-le')
+    # Add null terminator (2 bytes)
+    ucs2 += b'\x00\x00'
+    # Pad to multiple of 26 bytes (13 chars × 2 bytes each)
+    while len(ucs2) % 26 != 0:
+        ucs2 += b'\xFF\xFF'
+    
+    n_entries = len(ucs2) // 26
+    entries = []
+    
+    for i in range(n_entries):
+        ordinal = i + 1
+        if i == n_entries - 1:
+            ordinal |= 0x40  # Last LFN entry marker
+        
+        chunk = ucs2[i * 26:(i + 1) * 26]
+        entry = bytearray(32)
+        entry[0] = ordinal
+        entry[1:11] = chunk[0:10]    # Chars 1-5
+        entry[11] = ATTR_LFN
+        entry[12] = 0                # Type
+        entry[13] = chk              # Checksum
+        entry[14:26] = chunk[10:22]  # Chars 6-11
+        entry[26:28] = b'\x00\x00'   # First cluster (always 0)
+        entry[28:32] = chunk[22:26]  # Chars 12-13
+        entries.append(bytes(entry))
+    
+    # Reverse: on disk, highest ordinal comes first
+    entries.reverse()
+    return entries
 
 
 def _fat_date(year=2026, month=2, day=19):
@@ -212,12 +306,16 @@ def make_fat_image(source_dir, output_path, label=VOLUME_LABEL, total_sectors=TO
     date_val = _fat_date()
     time_val = _fat_time()
 
-    root_entries = []
-    # Volume label entry
-    root_entries.append(DirEntry(label.encode('ascii'), ATTR_VOLUME_ID, 0, 0, date_val, time_val))
+    root_entries = []  # list of (lfn_prefix_bytes, DirEntry)
+    # Volume label entry (never needs LFN)
+    vol_entry = DirEntry(label.encode('ascii'), ATTR_VOLUME_ID, 0, 0, date_val, time_val)
+    root_entries.append((b'', vol_entry))
 
-    # Map: subdir_name → (first_cluster, [DirEntry])
+    # Track short names per directory for uniqueness
+    root_short_names = set()
+    # Map: subdir_name → [(lfn_prefix_bytes, DirEntry)]
     subdirs = {}
+    subdir_short_names = {}  # per-subdir short name tracking
 
     # Separate files into root-level and one level of subdirectories
     for parts, data in files:
@@ -225,34 +323,51 @@ def make_fat_image(source_dir, output_path, label=VOLUME_LABEL, total_sectors=TO
             # Root-level file
             fname = parts[0]
             fc, _ = alloc_file(data)
-            root_entries.append(DirEntry(_dos83(fname), 0x20, fc, len(data), date_val, time_val))
-            # Store data for later sector writing
-            root_entries[-1]._data = data
-            root_entries[-1]._chain = _ if _ else []
+            short_name = _dos83(fname, root_short_names)
+            root_short_names.add(short_name)
+            e = DirEntry(short_name, 0x20, fc, len(data), date_val, time_val)
+            e._data = data
+            e._chain = _ if _ else []
+            # Generate LFN entries if needed
+            lfn_prefix = b''
+            if _needs_lfn(fname):
+                lfn_entries = _make_lfn_entries(fname, short_name)
+                lfn_prefix = b''.join(lfn_entries)
+            root_entries.append((lfn_prefix, e))
         elif len(parts) == 2:
             # One-level subdir
             dname, fname = parts[0].upper(), parts[1]
             if dname not in subdirs:
                 subdirs[dname] = []
+                subdir_short_names[dname] = set()
             fc, chain = alloc_file(data)
-            e = DirEntry(_dos83(fname), 0x20, fc, len(data), date_val, time_val)
+            short_name = _dos83(fname, subdir_short_names[dname])
+            subdir_short_names[dname].add(short_name)
+            e = DirEntry(short_name, 0x20, fc, len(data), date_val, time_val)
             e._data = data
             e._chain = chain
-            subdirs[dname].append(e)
+            # Generate LFN entries if needed
+            lfn_prefix = b''
+            if _needs_lfn(fname):
+                lfn_entries = _make_lfn_entries(fname, short_name)
+                lfn_prefix = b''.join(lfn_entries)
+            subdirs[dname].append((lfn_prefix, e))
         else:
             print(f"WARNING: Deeper than 1-level nesting not supported: {'/'.join(parts)}", file=sys.stderr)
 
     # Create subdir entries in root
     for dname, dentries in sorted(subdirs.items()):
-        # Build subdir cluster content (. and .. + file entries)
+        # Build subdir cluster content (. and .. + file entries with LFN)
         dot_cluster_placeholder = next_free_cluster  # will be updated after alloc
-        subdir_content_entries = [
-            DirEntry(b'.          ', ATTR_DIRECTORY, dot_cluster_placeholder, 0, date_val, time_val),
-            DirEntry(b'..         ', ATTR_DIRECTORY, 0, 0, date_val, time_val),  # root = cluster 0
-        ] + dentries
-
-        # Serialize subdir entries to bytes
-        subdir_bytes = b''.join(e.pack() for e in subdir_content_entries)
+        
+        # Serialize subdir content: dot entries + LFN/file entries
+        dot_entry = DirEntry(b'.          ', ATTR_DIRECTORY, dot_cluster_placeholder, 0, date_val, time_val)
+        dotdot_entry = DirEntry(b'..         ', ATTR_DIRECTORY, 0, 0, date_val, time_val)
+        
+        subdir_bytes = dot_entry.pack() + dotdot_entry.pack()
+        for lfn_prefix, fe in dentries:
+            subdir_bytes += lfn_prefix + fe.pack()
+        
         # Pad to cluster boundary
         cluster_bytes = spc * SECTOR_SIZE
         pad_len = (-len(subdir_bytes)) % cluster_bytes
@@ -262,17 +377,21 @@ def make_fat_image(source_dir, output_path, label=VOLUME_LABEL, total_sectors=TO
         fc_dir, chain_dir = alloc_file(subdir_bytes)
 
         # Fix up '.' entry first_cluster now that we know it
-        subdir_content_entries[0].first_cluster = fc_dir
-        # Re-serialize
-        subdir_bytes = b''.join(e.pack() for e in subdir_content_entries)
+        dot_entry.first_cluster = fc_dir
+        # Re-serialize with corrected '.' cluster
+        subdir_bytes = dot_entry.pack() + dotdot_entry.pack()
+        for lfn_prefix, fe in dentries:
+            subdir_bytes += lfn_prefix + fe.pack()
         pad_len = (-len(subdir_bytes)) % cluster_bytes
         subdir_bytes += b'\x00' * pad_len
 
-        # Add to root
-        e_dir = DirEntry(_dos83(dname), ATTR_DIRECTORY, fc_dir, 0, date_val, time_val)
+        # Add to root (directory names are always short/uppercase, no LFN needed)
+        dir_short_name = _dos83(dname, root_short_names)
+        root_short_names.add(dir_short_name)
+        e_dir = DirEntry(dir_short_name, ATTR_DIRECTORY, fc_dir, 0, date_val, time_val)
         e_dir._data = subdir_bytes
         e_dir._chain = chain_dir
-        root_entries.append(e_dir)
+        root_entries.append((b'', e_dir))
 
     # ---- Assemble image ----
     image = bytearray(b'\xFF' * (total_sectors * SECTOR_SIZE))
@@ -318,7 +437,9 @@ def make_fat_image(source_dir, output_path, label=VOLUME_LABEL, total_sectors=TO
         image[offset:offset + len(fat_sector_data)] = fat_sector_data
 
     # --- Root directory ---
-    root_bytes = b''.join(e.pack() for e in root_entries)
+    root_bytes = b''
+    for lfn_prefix, e in root_entries:
+        root_bytes += lfn_prefix + e.pack()
     # Pad to full root dir area
     root_area = ROOT_DIR_SECTORS * SECTOR_SIZE
     root_bytes = root_bytes[:root_area].ljust(root_area, b'\x00')
@@ -334,16 +455,13 @@ def make_fat_image(source_dir, output_path, label=VOLUME_LABEL, total_sectors=TO
             off = sec * SECTOR_SIZE
             image[off:off + len(chunk)] = chunk
 
-    for e in root_entries:
+    for _lfn_prefix, e in root_entries:
         if hasattr(e, '_chain') and e._chain:
             write_data_to_clusters(e._chain, e._data)
-        # Also handle subdir file entries
-        if e.attr == ATTR_DIRECTORY and hasattr(e, '_data'):
-            pass  # already handled above
 
     # Handle file entries inside subdirs
     for dname, dentries in subdirs.items():
-        for fe in dentries:
+        for _lfn_prefix, fe in dentries:
             if hasattr(fe, '_chain') and fe._chain:
                 write_data_to_clusters(fe._chain, fe._data)
 

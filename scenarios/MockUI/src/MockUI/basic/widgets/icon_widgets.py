@@ -1,38 +1,40 @@
 """Image helpers — lv.image wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..utils.ui_consts import BTC_ICON_WIDTH, BTC_ICON_ZOOM, WHITE_HEX
+from ..utils import set_scale
 
+def apply_icon(img, icon):
+    img.set_src(icon.get_image_dsc())
 
-def make_icon(parent, icon, color=WHITE_HEX, width=BTC_ICON_WIDTH, zoom=BTC_ICON_ZOOM):
+def make_icon(parent, icon, width=None, height=None):
     """Create an ``lv.image`` widget and apply *icon* to it.
 
     Args:
         parent: LVGL parent object.
-        icon:   Icon factory (e.g. ``BTC_ICONS.RELAY``) called with *color*,
-                or a pre-resolved ``Icon`` instance passed directly.
-        color:  Hex color string passed to the icon factory.  Defaults to
-                ``WHITE_HEX`` (standard Specter icon colour).  Pass ``None``
-                when *icon* is already a resolved ``Icon`` instance.
-        width:  Widget width in pixels.  Defaults to ``BTC_ICON_WIDTH``.
+        icon:   Icon factory (e.g. ``BTC_ICONS.RELAY``) or an ``Icon`` instance.
+        width:  Targeted width in pixels.  Defaults to *icon*'s native width.
+        height: Targeted height in pixels.  Defaults to *icon*'s native width.
+        zoom:   Zoom factor for the icon.  Defaults to ``BTC_ICON_ZOOM``.
 
     Returns:
         The created ``lv.image`` widget.
     """
-    resolved = icon(color) if color is not None else icon
-    img = lv.image(parent)
-    img.set_width(width)
-    resolved.apply_icon_to(img, zoom=zoom)
-    return img
-
-def set_visible(icon_widget, visible):
-    """Set *icon_widget* visible or hidden by adjusting its opacity.
-
-    Args:
-        icon_widget: The ``lv.image`` widget containing the icon.
-        visible:     Boolean visibility flag.
-    """
-    if visible:
-        icon_widget.set_style_opa(lv.OPA.COVER, 0)
+    """Apply *icon* bitmap and sizing to an existing ``lv.image`` widget."""
+    if width is None and height is None:
+        target_size = icon.width
+    elif height is None:
+        target_size = width
+    elif width is None:
+        target_size = height
+    elif width != height:
+        print("WARNING: make_icon called with non-square dimensions; falling back to smaller square.")
+        target_size = min(width, height)
     else:
-        icon_widget.set_style_opa(lv.OPA.TRANSP, 0)
+        target_size = width
+    scale = target_size * 256 // icon.width
+
+    img = lv.image(parent)
+    apply_icon(img, icon)
+    set_scale(img, scale)
+
+    return img

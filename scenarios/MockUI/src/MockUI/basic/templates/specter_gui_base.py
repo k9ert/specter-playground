@@ -3,9 +3,7 @@
 Two classes are provided so each consumer picks the right base:
 
 ``SpecterGuiMixin``
-    Pure-Python base.  Provides ``device_state``/``ui_state``/``i18n``/``t``/``on_navigate`` as
-    properties resolved from ``self.gui``.  Use for controllers that are not
-    LVGL widgets.
+    Pure-Python base.Use for controllers that are not LVGL widgets.
 
 ``SpecterGuiElement``
     ``lv.obj`` subclass with the same properties.  Use for concrete LVGL
@@ -16,7 +14,26 @@ installed onto both classes via the ``_install_gui_properties`` helper rather
 than being declared twice.
 """
 import lvgl as lv
+from .rebuildable import RebuildableObj
+#provide direct imports for convenience of consumer modules
 
+_gui_instance = None
+
+def get_gui():
+    """Return the bound SpecterGui instance, or raise if not yet bound."""
+    if _gui_instance is None:
+        raise RuntimeError("specter_gui_base.get_gui() called before SpecterGui was bound")
+    return _gui_instance
+
+def bind_gui(gui):
+    """Bind the global GUI instance.  Called by SpecterGui on initialization."""
+    global _gui_instance
+    if _gui_instance is not None:
+        raise RuntimeError("specter_gui_base.set_gui() called more than once")
+    _gui_instance = gui
+
+# Convenience imports for consumer modules.  Consumers can import these directly from specter_gui_base
+def t(key): return get_gui().i18n.t(key)
 
 def _install_gui_properties(cls):
     """Install the shared ``self.gui``-derived properties on *cls*.
@@ -27,6 +44,7 @@ def _install_gui_properties(cls):
     ``self.gui`` / ``self.gui.ui_state`` objects directly.
     """
     accessors = {
+        "gui":              lambda self: get_gui(),
         "device_state":     lambda self: self.gui.device_state,
         "ui_state":         lambda self: self.gui.ui_state,
         "current_menu":     lambda self: self.gui.ui_state.current_menu_id,
@@ -34,6 +52,7 @@ def _install_gui_properties(cls):
         "active_seed":      lambda self: self.gui.ui_state.active_seed,
         "active_wallet":    lambda self: self.gui.ui_state.active_wallet,
         "i18n":             lambda self: self.gui.i18n,
+        "theme":            lambda self: self.gui.theme,
         "t":                lambda self: self.gui.i18n.t,
         "on_navigate":      lambda self: self.gui.on_navigate,
         "keyboard_manager": lambda self: self.gui.keyboard_manager,
@@ -57,7 +76,7 @@ class SpecterGuiMixin:
 _install_gui_properties(SpecterGuiMixin)
 
 
-class SpecterGuiElement(lv.obj):
+class SpecterGuiElement(RebuildableObj):
     """``lv.obj`` subclass: same ``self.gui``-derived properties as ``SpecterGuiMixin``.
 
     Properties are installed by ``_install_gui_properties`` below.  Use this
@@ -69,5 +88,5 @@ class SpecterGuiElement(lv.obj):
     def refresh(self):
         pass  # optional helper for LVGL components to trigger a UI refresh after changing state
 
-
 _install_gui_properties(SpecterGuiElement)
+

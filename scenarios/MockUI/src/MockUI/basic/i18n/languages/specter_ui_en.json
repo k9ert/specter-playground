@@ -39,6 +39,7 @@
     "ADD_WALLET_THRESHOLD": "Threshold: ",
     "ADD_WALLET_SIGNERS": "Signers: ",
     "ADD_WALLET_CUSTOM" : "Custom",
+    "ADD_WALLET_ENABLE_INTERFACES": "Enable Interfaces",
     
     "ADD_SWITCH_WALLET_MENU_WALLETS_FOR_SEED": "Wallets for active seed",
     "ADD_SWITCH_WALLET_MENU_OTHER_WALLETS": "Other wallets",
@@ -51,13 +52,14 @@
     
     "ADD_SEED_GENERATE_SECTION": "Generate",
     "ADD_SEED_GENERATE_SEED": "New Seed",
+    "HELP_GENERATE_SEED": "This will create a new random seed for you.",
     "ADD_SEED_IMPORT_SECTION": "Import existing Seed from",
     
     "MANAGE_SW_SEED_SECTION_TITLE": "Seed",
     "MANAGE_SW_WALLET_SECTION_TITLE": "Wallet",
 
-    "PASSPHRASE_MENU_LABEL": "Passphrase:",
     "PASSPHRASE_MENU_CLEAR": "Clear",
+    "PASSPHRASE_MENU_ENABLE_DISABLE": "Enabled:",
     
     "SEEDPHRASE_MENU_SHOW": "Show Seed",
     "SEEDPHRASE_MENU_BACKUP": "Backup",
@@ -75,6 +77,8 @@
     "CONNECT_WALLETS_OTHER": "Other...",
     
     "DEVICE_MENU_ANIMATIONS": "Animations",
+    "DEVICE_MENU_DARK_MODE": "Dark Mode",
+    "DEVICE_MENU_THEME": "Select Theme",
     "DEVICE_MENU_DISPLAY": "Manage Display",
     "DEVICE_MENU_SOUNDS": "Manage Sounds",
     "DEVICE_MENU_DANGERZONE": "Dangerzone",
@@ -145,6 +149,7 @@
     "MENU_SETTINGS_SECURITY": "Security Settings",
     "MENU_LANGUAGE": "Select Language",
     "MENU_LOAD_NEW_LANGUAGE": "Load New Language",
+    "MENU_LOAD_NEW_THEME": "Load New Theme",
     
     "HARDWARE_SMARTCARD": "SmartCard",
     "HARDWARE_SD_CARD": "SD Card",

@@ -5,14 +5,18 @@ highlighting key interface elements and explaining their purpose.
 """
 
 from .ui_explainer import UIExplainer
+from ..utils.generic_utils import resolve_obj
 
 # Static tour step definitions: (element_spec, i18n_key, position)
-# element_spec is None, a dotted attribute-path string, or a (x, y, w, h) tuple.
+# element_spec is None or a dotted attribute-path string.
+#       None: create tour text window in center of screen (no highlight)
+#       str: resolve at runtime to a UI element (e.g. "navigation_bar")
+#            name has to be relative to gui
 # Resolved to runtime objects by GuidedTour.resolve_steps() before use.
 INTRO_TOUR_STEPS = [
-    (None,                          "TOUR_INTRO",       "center"),
-    ("navigation_bar",              "TOUR_WALLET_BAR",  "above"),
-    ((435, 143, 28, 28),            "TOUR_HELP_ICON",   "left"),
+    (None,                                                  "TOUR_INTRO",          "center"),
+    ("navigation_bar",                                      "TOUR_WALLET_BAR",     "above"),
+    ("app_screen.view.body.rows[1].right_cont.h_btn",       "TOUR_HELP_ICON",      "left"),
 ]
 
 
@@ -20,7 +24,7 @@ class GuidedTour:
     """Manages the startup guided tour.
     
     The tour highlights key UI elements and provides explanations for new users.
-    It runs once on first startup and can be dismissed or completed.
+    It runs once on first startup or when retriggered and can be dismissed or completed.
     
     Acts as the central controller - UIExplainer delegates navigation back here.
     
@@ -49,38 +53,36 @@ class GuidedTour:
 
     @staticmethod
     def resolve_steps(static_steps, nav):
-        """Resolve a static step definition list into a runtime steps list.
+        """Pre-process a static step definition list.
 
-        Each entry in static_steps is (element_spec, i18n_key, position) where
-        element_spec is one of:
-          - None                  -> no highlight (full-screen overlay)
-          - (x, y, w, h) tuple   -> manual screen coordinates, passed through
-          - "attr.path" string    -> resolved via getattr chain on nav
+        Translates i18n keys eagerly (text is stable). 
+        Element specs that are strings are kept as-is and resolved lazily at 
+        show-time via ``_resolve_element``, because screen-dependent paths (e.g.
+        ``app_screen.view.body.rows[1]``) are only valid while that screen is active.
 
-        Returns a list of (element, translated_text, position) tuples.
+        Returns a list of (element_spec, translated_text, position) tuples.
         """
         resolved = []
         for element_spec, key, position in static_steps:
-            if element_spec is None:
-                element = None
-            elif isinstance(element_spec, tuple):
-                if len(element_spec) != 4 or not all(isinstance(v, (int, float)) for v in element_spec):
-                    raise ValueError(
-                        "element_spec tuple must be (x, y, w, h) with 4 numeric values, got {!r}".format(element_spec)
-                    )
-                element = element_spec
-            elif isinstance(element_spec, str):
-                # Resolve dotted attribute path on nav (e.g. "device_bar.lock_btn")
-                element = nav
-                for part in element_spec.split("."):
-                    element = getattr(element, part)
-            else:
+            if element_spec is not None and not isinstance(element_spec, str):
                 raise TypeError(
                     "Invalid element_spec {!r}: expected None, tuple, or str".format(element_spec)
                 )
             text = nav.i18n.t(key)
-            resolved.append((element, text, position))
+            resolved.append((element_spec, text, position))
         return resolved
+
+    def _resolve_element(self, element_spec):
+        """Resolve a single element_spec to a runtime object (called at show-time)."""
+        if element_spec is None:
+            return None
+        # string path — resolve against nav now (current screen is live)
+        element = resolve_obj(element_spec, self.nav)
+        if element is None:
+            #if element cannot be resolved, log a warning and return None 
+            # (tour step will show centered without highlight)
+            print(f"Could not resolve element_spec '{element_spec}'")
+        return element
     
     def is_first(self):
         """Return True if currently on the first step."""
@@ -112,6 +114,7 @@ class GuidedTour:
     
     def _show_current(self):
         """Show the current step."""
-        element, text, position = self.steps[self.current_index]
+        element_spec, text, position = self.steps[self.current_index]
+        element = self._resolve_element(element_spec)
         self.current_explainer = UIExplainer(self, element, text, position)
         self.current_explainer.show()

@@ -1,57 +1,85 @@
 """Input helpers — lv.textarea wrappers with Specter default styling."""
 
 import lvgl as lv
-from ..utils.ui_consts import (
-    TITLE_ROW_HEIGHT,
-    TITLE_TA_WIDTH,
-    WHITE_HEX,
-    TITLE_FONT,
-    TEXT_FONT,
-    RED_HEX,
-    GREEN_HEX,
-    CONFIRMATION_SLIDER_HEIGHT,
+from .btn import Btn
+from ..symbol_lib import BTC_ICONS
+from ..templates.specter_gui_base import SpecterGuiElement
+from ..utils import (
+    set_size,
 )
-from ..utils.ui_utils import to_lv_color
+from ..theming import apply_style, remove_style
 
 ACCEPTED_CHARS = (
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     "0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~ "
 )
 
-
-def title_textarea(parent, accepted_chars=ACCEPTED_CHARS):
-    """Editable title-bar text area (TITLE_FONT, centred, 2px white border).
-
-    Intended for editable names in the title bar.
-    """
+def make_textarea(parent, accepted_chars=ACCEPTED_CHARS):
+    """Intended for editable names in the title bar."""
     ta = lv.textarea(parent)
-    ta.set_width(TITLE_TA_WIDTH)
-    ta.set_height(TITLE_ROW_HEIGHT)
-    ta.set_style_text_font(TITLE_FONT, 0)
-    ta.set_style_text_align(lv.TEXT_ALIGN.LEFT, 0)
-    ta.set_style_border_width(1, lv.PART.MAIN)
-    ta.set_style_border_color(WHITE_HEX, lv.PART.MAIN)
+    apply_style(ta, ["WIDGET.TEXT_EDIT"])
+    apply_style(ta, "WIDGET.TEXT_EDIT_CURSOR", lv.PART.CURSOR | lv.STATE.FOCUSED)
     ta.set_one_line(True)
     ta.set_accepted_chars(accepted_chars)
     return ta
 
+def make_password_textarea(parent, accepted_chars=ACCEPTED_CHARS):
+    pw_ta_container = SpecterGuiElement(parent)
+    apply_style(pw_ta_container, ["LAYOUT.FLEX_ROW", "LAYOUT.ALL_CENTERED", "LAYOUT.GROWS"])
 
-def form_textarea(parent, width=lv.pct(60), font=TEXT_FONT):
-    """Compact form input field (TEXT_FONT, height=50, 60% width by default).
-    """
-    ta = lv.textarea(parent)
-    ta.set_width(width)
-    ta.set_height(50)
-    ta.set_style_text_font(font, 0)
-    ta.set_style_border_width(1, lv.PART.MAIN)
-    ta.set_style_border_color(WHITE_HEX, lv.PART.MAIN)
-    return ta
+    """Intended for password/passphrase entry."""
+    pw_ta_container.ta = make_textarea(pw_ta_container, accepted_chars)
+    apply_style(pw_ta_container.ta, "LAYOUT.GROWS")
+    pw_ta_container.ta.set_password_bullet("*")
 
+    def set_pw_mode(new_mode):
+        pw_ta_container.ta.set_password_mode(new_mode)
+
+        if new_mode:
+            pw_ta_container.toggle_btn.update_icon(BTC_ICONS.VISIBLE)
+        else:
+            pw_ta_container.toggle_btn.update_icon(BTC_ICONS.HIDDEN)
+
+
+    pw_ta_container.toggle_btn = Btn(pw_ta_container,
+                     icon=BTC_ICONS.HIDDEN,
+                     background_style="APPEARANCE.TRANSPARENT",
+                     foreground_style="WIDGET.BUTTON_FG",
+                     callback=lambda: set_pw_mode(not pw_ta_container.ta.get_password_mode())
+                     )
+
+    set_pw_mode(True)
+    
+    return pw_ta_container.ta
+
+
+def make_switch(parent, init_value=False, setter_cb=None):
+    switch = lv.switch(parent)
+    apply_style(switch, "SWITCH.TRACK", lv.PART.MAIN)
+    apply_style(switch, "SWITCH.KNOB", lv.PART.KNOB)
+    apply_style(switch, "SWITCH.INDICATOR", lv.PART.INDICATOR)
+    apply_style(switch, "BG.SUCCESS", lv.PART.INDICATOR | lv.STATE.CHECKED)
+
+    apply_style(switch, "MODIFIER.MUTED_BG", lv.PART.INDICATOR | lv.STATE.DISABLED)
+
+    # Set initial state
+    if init_value:
+        switch.add_state(lv.STATE.CHECKED)
+    else:
+        switch.remove_state(lv.STATE.CHECKED)
+
+    def _make_toggle_cb(setter_cb):
+        def _cb(e):
+            is_on = bool(e.get_target_obj().has_state(lv.STATE.CHECKED))
+            if setter_cb is not None:
+                setter_cb(is_on)
+        return _cb
+    switch.add_event_cb(_make_toggle_cb(setter_cb), lv.EVENT.VALUE_CHANGED, None)
+    return switch
 
 def confirmation_slider(parent,
-                        width=lv.pct(100), height=CONFIRMATION_SLIDER_HEIGHT,
-                        on_max=None, max_value=100, max_color=GREEN_HEX, 
-                        on_min=None, min_value=-100, min_color=RED_HEX,
+                        on_max=None, max_value=100, max_style="BG.SUCCESS", 
+                        on_min=None, min_value=-100, min_style="BG.DANGER"
                         ):
     """Bidirectional confirmation slider.
     
@@ -61,9 +89,6 @@ def confirmation_slider(parent,
     
     Args:
         parent:         LVGL parent object.
-        optional:
-        width:          Slider width in pixels or lv.pct(x) (defaults to 100% of parent).
-        height:         Slider height in pixels (defaults to CONFIRMATION_SLIDER_HEIGHT).
 
         min_value:      Minimum slider value (left end), must be negative  (default:-100).
         max_value:      Maximum slider value (right end), must be positive (default: 100).
@@ -71,9 +96,8 @@ def confirmation_slider(parent,
         on_min:         Zero-argument callable invoked when slider reaches min threshold.
         on_max:         Zero-argument callable invoked when slider reaches max threshold .
         
-        min_color:      Color for min direction (defaults to RED_HEX).
-        max_color:      Color for max direction (defaults to GREEN_HEX).
-    
+        min_style:      Style string for min direction (defaults to "BG.DANGER").
+        max_style:      Style string for max direction (defaults to "BG.SUCCESS").
     The range is normalized so the larger absolute value becomes ±100. Start value is always at 0.
     
     returns the created slider
@@ -85,8 +109,12 @@ def confirmation_slider(parent,
             on_min=lambda: print("Rejected!"),
         )
     """
-    if min_value >= 0 or max_value <= 0:
-        raise ValueError("min_value must be negative and max_value must be positive.")
+    if min_value >= 0:
+        print("Warning: min_value should be negative for a confirmation slider. Got:", min_value)
+        min_value = -100
+    if max_value <= 0:
+        print("Warning: max_value should be positive for a confirmation slider. Got:", max_value)
+        max_value = 100
 
     abs_max = max(abs(min_value), abs(max_value))
     min_value = int(min_value * 100 / abs_max)
@@ -94,48 +122,35 @@ def confirmation_slider(parent,
 
     # Create slider
     slider = lv.slider(parent)
-    slider.set_width(width)
-    slider.set_height(height)
     slider.set_range(min_value, max_value)
     slider.set_mode(lv.slider.MODE.SYMMETRICAL)
     
+    apply_style(slider, "SLIDER.INDICATOR", lv.PART.INDICATOR)
+    apply_style(slider, "SLIDER.TRACK", lv.PART.MAIN)
+    apply_style(slider, "SLIDER.KNOB", lv.PART.KNOB)
+    
     # Start at 0
     slider.set_value(0, False)
+    apply_style(slider, max_style, lv.PART.INDICATOR)
 
     # Mutable closure state (can't set arbitrary attrs on C extension objects)
     state = {"value": 0, "min_triggered": False, "max_triggered": False}
 
-    # Calculate sizes for styling
-    knob_radius = height // 2
-    
-    # Main part (the track/background)+
-    slider.set_style_bg_opa(lv.OPA._30, lv.PART.MAIN)
-    slider.set_style_pad_left(knob_radius, lv.PART.MAIN)
-    slider.set_style_pad_right(knob_radius, lv.PART.MAIN)
-    
-    # Indicator part (the filled portion)
-    slider.set_style_bg_color(to_lv_color(max_color), lv.PART.INDICATOR)
-    slider.set_style_bg_opa(lv.OPA._70, lv.PART.INDICATOR)
-    
-    # Knob part (the draggable handle)
-    slider.set_style_bg_color(to_lv_color(WHITE_HEX), lv.PART.KNOB)
-    slider.set_style_bg_opa(lv.OPA.COVER, lv.PART.KNOB)
-    slider.set_style_pad_all(0, lv.PART.KNOB)
-    
     # Knob is only draggable, not clickable (prevents accidental taps)
     slider.add_flag(lv.obj.FLAG.ADV_HITTEST)
 
     # --- Callbacks (close over slider and factory params) ---
 
-    def _update_colors(value):
-        color = max_color if value >= 0 else min_color
-        slider.set_style_bg_color(to_lv_color(color), lv.PART.INDICATOR)
-        slider.set_style_bg_opa(lv.OPA._70, lv.PART.INDICATOR)
+    def _update_styling(value):
+        new_style = max_style if value >= 0 else min_style
+        old_style = min_style if value >= 0 else max_style
+        remove_style(slider, old_style, lv.PART.INDICATOR)
+        apply_style(slider, new_style, lv.PART.INDICATOR)
 
     def _on_value_changed(event):
         value = slider.get_value()
         if (state["value"] < 0 and value >= 0) or (state["value"] >= 0 and value < 0):
-            _update_colors(value)
+            _update_styling(value)
         state["value"] = value
 
         if value == min_value:
@@ -156,7 +171,7 @@ def confirmation_slider(parent,
         if not state["min_triggered"] and not state["max_triggered"]:
             slider.set_value(0, True)
             state["value"] = 0
-            _update_colors(0)
+            _update_styling(0)
 
     slider.add_event_cb(_on_value_changed, lv.EVENT.VALUE_CHANGED, None)
     slider.add_event_cb(_on_released, lv.EVENT.RELEASED, None)

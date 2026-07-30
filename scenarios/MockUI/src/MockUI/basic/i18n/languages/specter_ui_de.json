@@ -122,6 +122,10 @@
       "text": "Eigenes",
       "ref_en": "Custom"
     },
+    "ADD_WALLET_ENABLE_INTERFACES": {
+      "text": "Schnittstellen aktivieren",
+      "ref_en": "Enable Interfaces"
+    },
     "ADD_SWITCH_WALLET_MENU_WALLETS_FOR_SEED": {
       "text": "Wallets für aktiven Seed",
       "ref_en": "Wallets for active seed"
@@ -154,6 +158,10 @@
       "text": "Neue Seed",
       "ref_en": "New Seed"
     },
+    "HELP_GENERATE_SEED": {
+      "text": "Dies erstellt eine neue zufällige Seed für dich.",
+      "ref_en": "This will create a new random seed for you."
+    },
     "ADD_SEED_IMPORT_SECTION": {
       "text": "Importieren bestehende Seed von",
       "ref_en": "Import existing Seed from"
@@ -166,13 +174,13 @@
       "text": "Wallet",
       "ref_en": "Wallet"
     },
-    "PASSPHRASE_MENU_LABEL": {
-      "text": "Passphrase:",
-      "ref_en": "Passphrase:"
-    },
     "PASSPHRASE_MENU_CLEAR": {
       "text": "Löschen",
       "ref_en": "Clear"
+    },
+    "PASSPHRASE_MENU_ENABLE_DISABLE": {
+      "text": "Aktiviert:",
+      "ref_en": "Enabled:"
     },
     "SEEDPHRASE_MENU_SHOW": {
       "text": "Seedphrase anzeigen",
@@ -229,6 +237,14 @@
     "DEVICE_MENU_ANIMATIONS": {
       "text": "Animationen",
       "ref_en": "Animations"
+    },
+    "DEVICE_MENU_DARK_MODE": {
+      "text": "Dunkelmodus",
+      "ref_en": "Dark Mode"
+    },
+    "DEVICE_MENU_THEME": {
+      "text": "Theme wählen",
+      "ref_en": "Select Theme"
     },
     "DEVICE_MENU_DISPLAY": {
       "text": "Display konfigurieren",
@@ -477,6 +493,10 @@
     "MENU_LOAD_NEW_LANGUAGE": {
       "text": "Neue Sprache laden",
       "ref_en": "Load New Language"
+    },
+    "MENU_LOAD_NEW_THEME": {
+      "text": "Neues Theme laden",
+      "ref_en": "Load New Theme"
     },
     "HARDWARE_SMARTCARD": {
       "text": "SmartCard",
