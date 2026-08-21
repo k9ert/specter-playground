@@ -95,6 +95,7 @@
     "SLIDER.TRACK":       { "bg_opa": "_30" },
     "SLIDER.INDICATOR":   { "bg_opa": "_70" },
     "SLIDER.KNOB":        { "bg_color": "@ink", "bg_opa": "COVER", "pad_all": 0 },
-    "MODIFIER.MUTED":     { "opa": 100 }
+    "MODIFIER.MUTED":     { "opa": 100 },
+    "MODIFIER.CLICKED":   { "bg_color": "#110096", "bg_opa": "COVER" }
   }
 }

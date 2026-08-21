@@ -9,7 +9,7 @@ from .card_helpers import build_delete_slot
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style, remove_style, get_style
 from ..templates.specter_gui_base import SpecterGuiElement
-from ..utils import set_size, set_align, set_scroll
+from ..utils import apply_click_feedback, set_size, set_align, set_scroll
 
 # Wallet-card slot names (ordered as they appear left-to-right in default layout)
 WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete")
@@ -158,6 +158,7 @@ class WalletCard(SpecterGuiElement):
         # ── Build row ─────────────────────────────────────────────────────────
         self.text_edit = None
         if on_card_click is not None:
+            apply_click_feedback(self)
             self.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
 
         for slot in slots:
