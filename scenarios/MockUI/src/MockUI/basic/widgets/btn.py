@@ -17,7 +17,7 @@ from .icon_widgets import apply_icon, make_icon
 from .labels import make_label
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..theming import apply_style as t_apply_style, remove_style as t_remove_style
-from ..utils.ui_utils import set_size
+from ..utils.ui_utils import apply_click_feedback, set_size
 
 
 class Btn(SpecterGuiElement):
@@ -57,6 +57,7 @@ class Btn(SpecterGuiElement):
 
         if background_style is not None or foreground_style is not None:
             self.apply_style(background_style, foreground_style)
+        apply_click_feedback(self._btn)
 
         resolved_w = self._btn.get_style_width(lv.PART.MAIN)
         resolved_h = self._btn.get_style_height(lv.PART.MAIN)

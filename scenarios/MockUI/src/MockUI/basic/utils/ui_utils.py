@@ -5,7 +5,7 @@ without risk of circular imports.
 """
 import lvgl as lv
 import rng  # TODO: clarify if this should be encapsulated in a general HW/GUI interface
-from ..theming import get_font, get_palette_entries, SpecterFontPalette
+from ..theming import apply_style, get_font, get_palette_entries, SpecterFontPalette
 
 # ---------------------------------------------------------------------------
 # Widget helpers
@@ -67,6 +67,10 @@ def set_propagate_events(obj, propagate):
         obj.add_flag(lv.obj.FLAG.EVENT_BUBBLE)
     else:
         obj.remove_flag(lv.obj.FLAG.EVENT_BUBBLE)
+
+def apply_click_feedback(obj, part=0):
+    """Apply the theme's pressed-state feedback to an LVGL object."""
+    return apply_style(obj, "MODIFIER.CLICKED", part | lv.STATE.PRESSED)
 
 def text_width(text, font):
     """Calculate width of *text* in *font*, including kerning."""

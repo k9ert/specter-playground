@@ -121,6 +121,7 @@
     "SWITCH.KNOB":                {"style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "pad_all": -3, "radius": 32767},
     "MODIFIER.MUTED":             {"text_color": "shade(@NEUTRAL, -5)", "image_recolor": "shade(@NEUTRAL, -5)" },
     "MODIFIER.MUTED_BG":          {"bg_color": "shade(@NEUTRAL, -5)"},
+    "MODIFIER.CLICKED":           {"bg_color": "@SECONDARY", "bg_opa": "COVER"},
     "ANIM.HORIZONTAL":           { "anim_duration": 150 },
     "ANIM.VERTICAL":             { "anim_duration": 300 }
   }

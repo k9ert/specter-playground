@@ -14,7 +14,7 @@ __all__ = [
     "delete_all_children_of",
     "set_layout", "set_flex_flow",
     "set_size", "get_size", "set_pos", "get_pos", "get_anim_duration", "set_align",
-    "set_scroll", "set_propagate_events", "set_scale",
+    "set_scroll", "set_propagate_events", "apply_click_feedback", "set_scale",
     "text_width", "best_fonttype_for_size",
     "shuffle",
     "resolve_obj",

@@ -110,6 +110,7 @@
     "SWITCH.INDICATOR":           {"style": ["@APPEARANCE.VISIBLE", "@BG.DARK"], "pad_all": 0, "radius": 0},
     "SWITCH.KNOB":                {"style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "pad_all": -3, "radius": 0},
     "MODIFIER.MUTED":             {"text_color": "shade(@NEUTRAL, -5)", "image_recolor": "shade(@NEUTRAL, -5)" },
+    "MODIFIER.CLICKED":           {"bg_color": "@SECONDARY", "bg_opa": "COVER"},
     "ANIM.HORIZONTAL":           { "anim_duration": 150 },
     "ANIM.VERTICAL":             { "anim_duration": 300 }
   }

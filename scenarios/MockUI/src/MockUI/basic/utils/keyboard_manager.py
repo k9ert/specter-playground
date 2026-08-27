@@ -1,6 +1,7 @@
 import lvgl as lv
 from .keyboard_layouts import _full_layout, _alnum_layout
 from ..theming import apply_style
+from .ui_utils import apply_click_feedback
 class Layout:
     ALNUM = 0
     FULL = 1
@@ -130,6 +131,7 @@ class KeyboardManager:
         self.keyboard.add_flag(lv.obj.FLAG.FLOATING)
         apply_style(self.keyboard, "WIDGET.KEYBOARD", lv.PART.ITEMS)
         apply_style(self.keyboard, "WIDGET.KEYBOARD", lv.PART.MAIN)
+        apply_click_feedback(self.keyboard, lv.PART.ITEMS)
         self.keyboard.add_event_cb(self._commit, lv.EVENT.READY, None)
         self.keyboard.add_event_cb(self._cancel, lv.EVENT.CANCEL, None)
 

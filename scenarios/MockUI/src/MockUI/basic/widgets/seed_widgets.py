@@ -9,7 +9,7 @@ from .card_helpers import build_delete_slot
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style
-from ..utils import set_scroll
+from ..utils import apply_click_feedback, set_scroll
 
 SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
 
@@ -55,6 +55,7 @@ def passphrase_toggle(parent, seed):
     img = make_icon(parent, BTC_ICONS.PASSWORD)
     img.add_flag(lv.obj.FLAG.CLICKABLE)
     apply_style(img, ["WIDGET.INFO_ITEM", "FG.DEFAULT"])
+    apply_click_feedback(img)
     apply_style(img, "MODIFIER.MUTED", lv.STATE.CHECKED)
     img.set_state(lv.STATE.CHECKED, not seed.passphrase_active)
 
@@ -120,6 +121,7 @@ class SeedCard(SpecterGuiElement):
         # ── Build row ─────────────────────────────────────────────────────────
         self.text_edit = None
         if on_card_click is not None:
+            apply_click_feedback(self)
             self.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
 
         for slot in slots:
@@ -149,6 +151,7 @@ class SeedCard(SpecterGuiElement):
                     self.warn_img = make_icon(self, BTC_ICONS.ALERT_CIRCLE)
                     apply_style(self.warn_img, ["WIDGET.INFO_ITEM", "FG.WARNING"])
                     self.warn_img.add_flag(lv.obj.FLAG.CLICKABLE)
+                    apply_click_feedback(self.warn_img)
                     def _warn_cb(e):
                         e.stop_bubbling = 1
                         on_backup_warning()

@@ -5,6 +5,7 @@ from .btn import Btn
 from ..symbol_lib import BTC_ICONS
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..utils import (
+    apply_click_feedback,
     set_size,
 )
 from ..theming import apply_style, remove_style
@@ -19,6 +20,7 @@ def make_textarea(parent, accepted_chars=ACCEPTED_CHARS):
     ta = lv.textarea(parent)
     apply_style(ta, ["WIDGET.TEXT_EDIT"])
     apply_style(ta, "WIDGET.TEXT_EDIT_CURSOR", lv.PART.CURSOR | lv.STATE.FOCUSED)
+    apply_click_feedback(ta)
     ta.set_one_line(True)
     ta.set_accepted_chars(accepted_chars)
     return ta
@@ -59,6 +61,7 @@ def make_switch(parent, init_value=False, setter_cb=None):
     apply_style(switch, "SWITCH.KNOB", lv.PART.KNOB)
     apply_style(switch, "SWITCH.INDICATOR", lv.PART.INDICATOR)
     apply_style(switch, "BG.SUCCESS", lv.PART.INDICATOR | lv.STATE.CHECKED)
+    apply_click_feedback(switch, lv.PART.KNOB)
 
     apply_style(switch, "MODIFIER.MUTED_BG", lv.PART.INDICATOR | lv.STATE.DISABLED)
 
@@ -128,6 +131,7 @@ def confirmation_slider(parent,
     apply_style(slider, "SLIDER.INDICATOR", lv.PART.INDICATOR)
     apply_style(slider, "SLIDER.TRACK", lv.PART.MAIN)
     apply_style(slider, "SLIDER.KNOB", lv.PART.KNOB)
+    apply_click_feedback(slider, lv.PART.KNOB)
     
     # Start at 0
     slider.set_value(0, False)

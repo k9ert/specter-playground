@@ -1,7 +1,7 @@
 import lvgl as lv
 from ..basic import (
     GenericMenu, BTC_ICONS, MenuItem, SpecterGuiElement,
-    make_icon, apply_style, t
+    make_icon, apply_style, apply_click_feedback, t
 )
 
 class SettingsMenu(GenericMenu):
@@ -17,6 +17,7 @@ class SettingsMenu(GenericMenu):
             img = make_icon(self.row, icon)
             apply_style(img, "WIDGET.INFO_ITEM")
             img.add_flag(lv.obj.FLAG.CLICKABLE)
+            apply_click_feedback(img)
             img.add_event_cb(self._iface_ico_cb, lv.EVENT.CLICKED, None)
             return img
 

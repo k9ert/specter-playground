@@ -143,6 +143,7 @@ class SpecterStylePalette:
     class MODIFIER:
         MUTED    = 130   # disabled/unusable widgets
         MUTED_BG = 131   # disabled/unusable widgets
+        CLICKED  = 132   # temporary pressed-state feedback
 
     class ANIM:
         HORIZONTAL = 140   # anim_duration for horizontal slide/push transitions
