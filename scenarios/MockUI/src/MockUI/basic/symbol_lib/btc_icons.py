@@ -41,10 +41,10 @@ from .icons.brush import BRUSH
 # from .icons.calendar import CALENDAR
 # from .icons.camera import CAMERA
 # from .icons.car import CAR
-# from .icons.caret_down import CARET_DOWN
+from .icons.caret_down import CARET_DOWN
 from .icons.caret_left import CARET_LEFT
 from .icons.caret_right import CARET_RIGHT
-# from .icons.caret_up import CARET_UP
+from .icons.caret_up import CARET_UP
 # from .icons.cart import CART
 # from .icons.chair import CHAIR
 # from .icons.channel import CHANNEL
@@ -229,10 +229,10 @@ class BTC_ICONS:
 #     CALENDAR = CALENDAR
 #     CAMERA = CAMERA
 #     CAR = CAR
-#     CARET_DOWN = CARET_DOWN
+    CARET_DOWN = CARET_DOWN
     CARET_LEFT = CARET_LEFT
     CARET_RIGHT = CARET_RIGHT
-#     CARET_UP = CARET_UP
+    CARET_UP = CARET_UP
 #     CART = CART
 #     CHAIR = CHAIR
 #     CHANNEL = CHANNEL
