@@ -168,6 +168,27 @@ class SpecterGui(RebuildableObj):
         if self.navigation_bar:
             self.navigation_bar.refresh()
 
+    # ── Central item-deletion helpers ─────────────────────────────────────────
+    # All UI deletion call sites go through these so UI housekeeping (active
+    # selection, tree expansion state) stays in one place.
+
+    def delete_seed(self, seed):
+        """Remove *seed* from the device and clean up related UI state."""
+        self.device_state.remove_seed(seed)
+        if self.ui_state.active_seed is seed:
+            self.ui_state.active_seed = None
+        self.ui_state.is_item_expanded.pop(
+            (Context.SEED, seed.get_fingerprint()), None)
+        self.refresh_ui()
+
+    def delete_wallet(self, wallet):
+        """Remove *wallet* from the device and clean up related UI state."""
+        self.device_state.remove_wallet(wallet)
+        if self.ui_state.active_wallet is wallet:
+            self.ui_state.active_wallet = None
+        self.ui_state.is_item_expanded.pop((Context.WALLET, wallet.label), None)
+        self.refresh_ui()
+
     def navigate_to(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
         # Drop all input while animating
         if self.ui_state._is_animating:

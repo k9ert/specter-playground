@@ -30,7 +30,7 @@ from .seed_dropup import SeedDropUp
 from .wallet_dropup import WalletDropUp
 from ..utils import (
     delete_all_children_of,
-    set_scroll
+    get_size, set_scroll
 )
 from ..symbol_lib import BTC_ICONS
 from ..widgets import Btn, modal_overlay
@@ -86,7 +86,9 @@ class NavigationBar(SpecterGuiElement):
         if self._backdrop is not None:
             return self._backdrop
         
-        panel_h = self.gui.get_height() - self.get_height()
+        _, gui_h = get_size(self.gui)
+        _, nav_h = get_size(self)
+        panel_h = gui_h - nav_h
         self._backdrop = modal_overlay(height=panel_h)
         self._backdrop.add_event_cb(self._backdrop_tap_cb, lv.EVENT.CLICKED, None)
         return self._backdrop
@@ -165,8 +167,7 @@ class NavigationBar(SpecterGuiElement):
             seed_open = self._seed_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
             wallet_open = self._wallet_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
 
-            no_seed_loaded = (self.gui.device_state is None
-                              or len(self.gui.device_state.loaded_seeds) == 0)
+            no_seed_loaded = not self.gui.device_state.loaded_seeds
 
             # (name, filled icon, outline icon, is-filled condition, is-disabled condition)
             icon_table = [
