@@ -23,6 +23,8 @@ Files that violate this rule are skipped during scanning.
 
 import os
 
+import lvgl as lv
+
 from .theme_compiler import ThemeCompiler, SpecterStylePalette, ColorMode
 from .theme_schema import StyleRole
 from ..templates.settings_file_compiler import collect_int_constants
@@ -148,6 +150,14 @@ class ThemeManager(SettingFileManager):
         if cache is not None and style is not None:
             cache[cache_key] = style
         return style
+
+    def get_style_num(self, style_key, prop):
+        """Read one numeric property straight from a base style."""
+        if isinstance(style_key, str):
+            style_key = self.COMPILER.str_to_style_ind(style_key)
+        value = lv.style_value_t()
+        self.get_style(style_key).get_prop(prop, value)
+        return value.num
     
     def __getitem__(self, key):
         """Allow theme_manager['KEY']"""
@@ -292,6 +302,9 @@ def remove_style(obj, keys, selector=0, role=None):
 
 def get_style(style_key, role=None):
     return get_theme_manager().get_style(style_key, role=role)
+
+def get_style_num(style_key, prop):
+    return get_theme_manager().get_style_num(style_key, prop)
 
 def get_color(palette_idx):
     return get_theme_manager().get_color(palette_idx)
