@@ -21,7 +21,7 @@ class Wallet:
 
     def __init__(self, label, descriptor=None, isMultiSig=False, net="mainnet",
                  required_fingerprints=None, threshold=None,
-                 has_been_synched=False, account=0):
+                 has_been_synched=False, account=0, derivation_path=None):
         self.label = label
         self.descriptor = descriptor
         self.isMultiSig = isMultiSig
@@ -34,6 +34,31 @@ class Wallet:
         # explicitly exported via Connect Companion App flow.
         self.has_been_synched = has_been_synched
         self.account = account
+        # BIP32-style path string (e.g. "m/84'/0'/0'"); mock only for now.
+        self.derivation_path = derivation_path
+
+    def derivation_parent(self, all_wallets):
+        """Mock parent discovery via derivation sub-paths.
+
+        Returns the wallet whose derivation path is the longest strict prefix
+        of this wallet's path (segment-wise), or ``None``.  Later replaced by
+        real descriptor analysis.
+        """
+        if not self.derivation_path:
+            return None
+        mine = self.derivation_path.split("/")
+        best = None
+        best_len = 0
+        for other in all_wallets:
+            if other is self or not other.derivation_path:
+                continue
+            theirs = other.derivation_path.split("/")
+            if (len(theirs) < len(mine)
+                    and len(theirs) > best_len
+                    and mine[:len(theirs)] == theirs):
+                best = other
+                best_len = len(theirs)
+        return best
 
     def is_standard(self):
         """Check if this is the default "Standard" wallet (which has no descriptor)."""

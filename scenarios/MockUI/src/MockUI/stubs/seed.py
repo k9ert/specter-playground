@@ -46,3 +46,29 @@ class Seed:
     def get_fingerprints(seeds):
         """Return list of fingerprints for a list of seeds."""
         return [seed.get_fingerprint() for seed in seeds]
+
+    def known_bip85_derivations(self, all_seeds):
+        """Mock BIP85 child discovery: return seeds directly derived from this one.
+
+        Mock rule (stable and easy to control in fixtures): another seed is a
+        candidate when its label shares this seed's first 3 characters and
+        sorts lexicographically after it; a candidate belongs to the closest
+        such ancestor, so this returns direct children only.  Later replaced
+        by real BIP85 derivation records.
+        """
+        prefix = self.label[:3]
+        children = []
+        for seed in all_seeds:
+            if (seed is self
+                    or seed.label[:3] != prefix
+                    or seed.label <= self.label):
+                continue
+            # A closer intermediate parent (label between ours and the
+            # candidate's) makes the candidate that ancestor's child instead.
+            closer = [other for other in all_seeds
+                      if other is not seed
+                      and other.label[:3] == prefix
+                      and self.label < other.label < seed.label]
+            if not closer:
+                children.append(seed)
+        return children
