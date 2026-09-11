@@ -72,6 +72,19 @@ def apply_click_feedback(obj, part=0):
     """Apply the theme's pressed-state feedback to an LVGL object."""
     return apply_style(obj, "MODIFIER.CLICKED", part | lv.STATE.PRESSED)
 
+def make_floating_overlay(parent):
+    """Return a transparent layer that is ignored by the parent's layout.
+
+    Used for decorative layers that paint behind or
+    over sibling content without taking part in its layout.
+    """
+    layer = lv.obj(parent)
+    apply_style(layer, ["APPEARANCE.TRANSPARENT", "LAYOUT.BARE"])
+    layer.add_flag(lv.obj.FLAG.FLOATING)
+    layer.add_flag(lv.obj.FLAG.IGNORE_LAYOUT)
+    set_scroll(layer, horizontal=False, vertical=False)
+    return layer
+
 def text_width(text, font):
     """Calculate width of *text* in *font*, including kerning."""
     n = len(text)
