@@ -49,6 +49,8 @@
 
     "GENERATE_SEED_FINGERPRINT": "Fingerprint: ",
     "GENERATE_SEED_INFO": "A new 24-word seed will be generated. You can back it up after creation.",
+    "FINGERPRINT_INFO_TITLE": "Key fingerprint",
+    "FINGERPRINT_INFO_TEXT": "This fingerprint identifies the loaded key:\n\n%s",
     
     "ADD_SEED_GENERATE_SECTION": "Generate",
     "ADD_SEED_GENERATE_SEED": "New Seed",
