@@ -12,7 +12,7 @@
     "NEUTRAL":    "#7D91A5",
     "SUCCESS":    "#31D39A",
     "WARNING":    "#F5B84B",
-    "DANGER":     "#FF6878",
+    "DANGER":     "#F00000",
     "CANVAS":     "#081A2A",
     "INK":        "#F5F8FC"
   },
@@ -57,7 +57,7 @@
     "WIDGET.MENU_SECTION_HEADER": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.LIGHT", "@TEXT.SMALL", "@TEXT.LEFT"], "pad_top": 8, "pad_bottom": 4, "pad_left": 0 },
     "WIDGET.MENU_BUTTON":         { "style": ["@APPEARANCE.VISIBLE", "@BG.DEFAULT", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_ROW"], "height": 68, "flex_cross_place": "CENTER", "flex_track_place": "CENTER", "pad_left": 12, "pad_top": 12, "pad_bottom": 12, "pad_right": 8, "pad_column": 10, "border_width": 1, "border_color": "@TERTIARY", "radius": 16 },
     "WIDGET.MENU_BUTTON_FG":      { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.DEFAULT", "@TEXT.LEFT"]},
-    "WIDGET.MENU_ICON":           { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "bg_color": "@PRIMARY", "radius": 12, "border_width": 0, "width": 44, "height": 44 },
+    "WIDGET.MENU_ICON":           { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT"], "radius": 12, "border_width": 0, "width": 44, "height": 44 },
     "WIDGET.MENU_LABEL":          { "style": ["@WIDGET.MENU_BUTTON_FG", "@LAYOUT.GROWS", "@TEXT.LEFT"], "pad_left": 12},
     "WIDGET.MENU_SWITCH":         { "style": ["@APPEARANCE.TRANSPARENT", "@BG.DEFAULT", "@FG.DEFAULT", "@TEXT.DEFAULT"], "pad_gap": 10, "pad_left": 10 },
     "WIDGET.SUBMENU_INDICATOR":   { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT"] },
