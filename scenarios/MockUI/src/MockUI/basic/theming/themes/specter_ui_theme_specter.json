@@ -35,7 +35,6 @@
     "CONTAINER.TITLE_BAR":        { "style": ["@APPEARANCE.VISIBLE", "@BG.DARK", "@LAYOUT.BARE", "@LAYOUT.FLEX_ROW", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.ALL_CENTERED"], "height": "pct(8)"},
     "CONTAINER.MENU_CONTAINER":   { "style": ["@LAYOUT.FLEX_COL", "@LAYOUT.START", "@LAYOUT.GROWS", "@LAYOUT.BARE"], "pad_left": 10, "pad_right": 10, "pad_row": 10, "pad_bottom": 10},
     "CONTAINER.MENU_ROW":         { "style": ["@LAYOUT.BARE", "@LAYOUT.FLEX_ROW", "@LAYOUT.START", "@LAYOUT.PARENT_WIDTH"], "height": "SIZE_CONTENT", "pad_left": 0, "pad_right": 0, "pad_column": 10 },
-    "CONTAINER.MENU_BUTTON_RHS":  { "style": ["@LAYOUT.BARE", "@LAYOUT.FLEX_ROW"], "width": "SIZE_CONTENT", "height": "SIZE_CONTENT", "flex_cross_place": "CENTER", "pad_left": 0, "pad_right": 0, "pad_column": 10 },
     "CONTAINER.MAIN_MENU":        {},
     "CONTAINER.INTERFACE_STATUS": { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED", "@LAYOUT.PARENT_WIDTH"], "height": "SIZE_CONTENT", "pad_column": 10},
     "CONTAINER.PIN_SCREEN":       { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@LAYOUT.FLEX_COL", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.ALL_CENTERED"] },
@@ -53,7 +52,8 @@
     "WIDGET.TEXT_EDIT":           { "style": ["@APPEARANCE.VISIBLE", "@TEXT.CENTER", "@FG.DEFAULT", "@BG.DEFAULT"], "border_width": 1, "border_color": "@INK", "pad_top": 10, "pad_bottom": 10,
                                     "roles": { "CURSOR": { "bg_opa": "TRANSP", "border_side": "LEFT", "border_width": 2, "border_color": "@INK", "anim_duration": 400 } } },
     "WIDGET.INFO_ITEM":           { "style": ["@APPEARANCE.TRANSPARENT", "@FG.HIGHLIGHT", "@TEXT.SMALL"], "text_align": "CENTER" },
-    "WIDGET.HELP_ICON":           { "style": ["@APPEARANCE.TRANSPARENT", "@FG.LIGHT"], "width": 70, "height": 55 },
+    "WIDGET.ICON_BUTTON":         { "style": ["@APPEARANCE.TRANSPARENT"],
+                                    "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.TITLE"], "width": 70, "height": 55 } } },
     "WIDGET.MENU_SECTION_HEADER": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.HIGHLIGHT", "@TEXT.DEFAULT", "@TEXT.LEFT"], "pad_top": 6, "pad_bottom": 3, "pad_left": 0 },
     "WIDGET.MENU_BUTTON":         { "style": ["@APPEARANCE.VISIBLE", "@BG.DEFAULT", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_ROW"], "height": "SIZE_CONTENT", "flex_cross_place": "CENTER", "flex_track_place": "CENTER", "pad_left": 10, "pad_top": 15, "pad_bottom": 15, "pad_right": 0, "pad_column": 5, "border_width": 0, "border_color": "@INK", "radius": 20,
                                     "roles": {
@@ -61,9 +61,8 @@
                                       "ICON":      { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "bg_color": "@QUATERNARY", "radius": 15, "border_width": 0, "width": 55, "height": 55 },
                                       "LABEL":     { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.DEFAULT", "@TEXT.LEFT", "@LAYOUT.GROWS"], "pad_left": 20 },
                                       "INDICATOR": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT"] },
-                                      "RHS":       { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"] }
+                                      "RHS":       { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"], "width": "SIZE_CONTENT", "height": "SIZE_CONTENT", "pad_left": 0, "pad_right": 0, "pad_column": 10 }
                                     } },
-    "WIDGET.MENU_ICON":           { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "bg_color": "@QUATERNARY", "radius": 15, "border_width": 0, "width": 55, "height": 55 },
     "WIDGET.MENU_SWITCH":         { "style": ["@APPEARANCE.TRANSPARENT", "@BG.DEFAULT", "@FG.DEFAULT", "@TEXT.DEFAULT"], "pad_gap": 10, "pad_left": 10 },
     "WIDGET.DROP_UP_ADDBTN":      { "style": ["@APPEARANCE.VISIBLE", "@BG.HIGHLIGHT", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"], "width": "SIZE_CONTENT", "border_width": 0, "border_color": "@INK", "radius": 30, "height": "SIZE_CONTENT", "pad_top": 5, "pad_bottom": 5, "pad_left": 30, "pad_right": 30, "pad_column": 5,
                                     "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.DEFAULT"] } } },
@@ -74,13 +73,6 @@
     "WIDGET.DELETE_BUTTON":       { "style": ["@APPEARANCE.VISIBLE", "@BG.DANGER", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"], "width": 50, "height": 50, "radius": 15,
                                     "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.TITLE"] } } },
     "WIDGET.MODAL_BODY":          { "style": ["@TEXT.BODY", "@TEXT.DEFAULT", "@TEXT.CENTER", "@LAYOUT.PARENT_WIDTH"] },
-    "WIDGET.BATTERY":             { "style": ["@APPEARANCE.TRANSPARENT"],
-                                    "roles": {
-                                      "LEVEL":    { "style": ["@FG.DEFAULT"] },
-                                      "LEVEL_BG": { "style": ["@FG.DEFAULT"] },
-                                      "LEVEL_OL": { "style": ["@FG.DEFAULT"] },
-                                      "CHARGE":   { "style": ["@FG.DEFAULT"] }
-                                    } },
     "WIDGET.SLIDER":              { "style": ["@APPEARANCE.VISIBLE"],
                                     "roles": {
                                       "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.DARK", "@LAYOUT.PARENT_WIDTH"], "height": 75, "pad_all": 0, "radius": 32767 },

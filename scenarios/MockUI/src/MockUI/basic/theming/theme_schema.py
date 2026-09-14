@@ -59,10 +59,9 @@ class SpecterStylePalette:
         BUTTON                =  5
         TEXT_EDIT             =  7
         INFO_ITEM             =  9
-        HELP_ICON             = 10
+        ICON_BUTTON           = 10   # transparent-bg clickable icon (toggle, delete, help)
         MENU_SECTION_HEADER   = 11
         MENU_BUTTON           = 12
-        MENU_ICON             = 14
         MENU_SWITCH           = 16
         DROP_UP_ADDBTN        = 18
         KEYBOARD              = 20
@@ -70,7 +69,6 @@ class SpecterStylePalette:
         PIN_DISPLAY           = 23
         DELETE_BUTTON         = 24
         MODAL_BODY            = 26
-        BATTERY               = 27
         SLIDER                = 28
         SWITCH                = 29
         # reserved till 40
@@ -164,7 +162,6 @@ class SpecterStylePalette:
         TITLE_BAR           = 170
         MENU_CONTAINER      = 171
         MENU_ROW            = 172
-        MENU_BUTTON_RHS     = 173
         MAIN_MENU           = 174
         INTERFACE_STATUS    = 175
         PIN_SCREEN          = 176

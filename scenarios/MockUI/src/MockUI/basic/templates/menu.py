@@ -94,7 +94,7 @@ class GenericMenu(TitledScreen):
 
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
-            apply_style(row.ico, "WIDGET.MENU_ICON")
+            apply_style(row.ico, "WIDGET.MENU_BUTTON", role="ICON")
 
             if item.modifier == "Danger":
                 apply_style(row.ico, "FG.DANGER")
@@ -121,7 +121,7 @@ class GenericMenu(TitledScreen):
 
         if item.icon and isinstance(item.icon, Icon):
             row.ico = make_icon(row, item.icon)
-            apply_style(row.ico, "WIDGET.MENU_ICON")
+            apply_style(row.ico, "WIDGET.MENU_BUTTON", role="ICON")
         row.lbl = make_label(row, item.text)
         # FG role of MENU_BUTTON (consistent with the button-row label styling)
         apply_style(row.lbl, "WIDGET.MENU_BUTTON", role="FG")
@@ -169,7 +169,7 @@ class GenericMenu(TitledScreen):
         # Build children in visual left-to-right order
         if item.icon:
             btn.ico = make_icon(btn._btn, item.icon)
-            apply_style(btn.ico, "WIDGET.MENU_ICON")
+            apply_style(btn.ico, "WIDGET.MENU_BUTTON", role="ICON")
 
         btn.lbl = make_label(btn._btn, item.text)
         apply_style(btn.lbl, "WIDGET.MENU_BUTTON", role="LABEL")
@@ -177,7 +177,7 @@ class GenericMenu(TitledScreen):
 
         # Right-side container: [suffixes...] [help?]
         btn.right_cont = SpecterGuiElement(btn._btn)
-        apply_style(btn.right_cont, "CONTAINER.MENU_BUTTON_RHS")
+        apply_style(btn.right_cont, "WIDGET.MENU_BUTTON", role="RHS")
         btn.right_cont.remove_flag(lv.obj.FLAG.CLICKABLE)
         
         btn.right_cont.suf = []
@@ -211,7 +211,6 @@ class GenericMenu(TitledScreen):
                     icon=BTC_ICONS.QUESTION_CIRCLE,
                     callback=lambda: button_modal(text=help_text),
                     consume_click=True,
-                    style="APPEARANCE.TRANSPARENT",
+                    style="WIDGET.ICON_BUTTON",
                 )
-        apply_style(h_btn._ico, "WIDGET.HELP_ICON")
         return h_btn

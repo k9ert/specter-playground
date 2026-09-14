@@ -171,7 +171,7 @@ class ThemeManager(SettingFileManager):
                       ``apply_style(ta, "WIDGET.TEXT_EDIT",
                       lv.PART.CURSOR | lv.STATE.FOCUSED, role="CURSOR")``.
         """
-        if isinstance(keys, (int, str)):
+        if not isinstance(keys, (list, tuple)):
             keys = [keys]
         for key in keys:
             if key is None:
@@ -184,7 +184,7 @@ class ThemeManager(SettingFileManager):
         """Remove one or more style keys from an LVGL widget.
 
         Arguments mirror :meth:`apply_style`."""
-        if isinstance(keys, (int, str)):
+        if not isinstance(keys, (list, tuple)):
             keys = [keys]
         for key in keys:
             if key is None:

@@ -45,7 +45,7 @@ def make_password_textarea(parent, accepted_chars=ACCEPTED_CHARS):
 
     pw_ta_container.toggle_btn = Btn(pw_ta_container,
                      icon=BTC_ICONS.HIDDEN,
-                     style="APPEARANCE.TRANSPARENT",
+                     style="WIDGET.ICON_BUTTON",
                      callback=lambda: set_pw_mode(not pw_ta_container.ta.get_password_mode())
                      )
 

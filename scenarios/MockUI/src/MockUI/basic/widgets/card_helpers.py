@@ -17,7 +17,7 @@ def build_delete_slot(row, on_delete):
     """
     btn = Btn(row,
               icon=BTC_ICONS.TRASH,
-              style="APPEARANCE.TRANSPARENT",
+              style="WIDGET.ICON_BUTTON",
               callback=on_delete,
               consume_click=True)
     return btn

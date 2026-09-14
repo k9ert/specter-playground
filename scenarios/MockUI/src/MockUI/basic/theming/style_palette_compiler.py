@@ -520,16 +520,29 @@ _ROLE_ENTRY_SIZE = 3          # role table entry: role_code u8 + offset u16
 
 
 def _read_entry_header(f, entry_off):
-    """Read a style entry's framing byte at *entry_off*.
+    """Read a style entry's framing byte (and role table) at *entry_off*.
 
-    Returns ``(is_container, count)``: for a leaf, *count* is op_count; for a
-    container, *count* is role_count.  Returns None on EOF."""
+    Returns ``(is_container, count, role_table)``:
+      - leaf:      ``(False, op_count, None)``
+      - container: ``(True, role_count, {role_code: abs_body_off, ...})``
+    Returns None on EOF/truncation."""
     f.seek(entry_off)
     raw = f.read(1)
     if not raw:
         return None
     first = raw[0]
-    return (bool(first & _CONTAINER_FLAG), first & 0x7F)
+    if not (first & _CONTAINER_FLAG):
+        return (False, first, None)
+    role_count = first & 0x7F
+    role_table = {}
+    for i in range(role_count):
+        f.seek(entry_off + 1 + i * _ROLE_ENTRY_SIZE)
+        code_raw = f.read(1)
+        off_raw = f.read(2)
+        if len(code_raw) < 1 or len(off_raw) < 2:
+            return None
+        role_table[code_raw[0]] = entry_off + struct.unpack("<H", off_raw)[0]
+    return (True, role_count, role_table)
 
 
 def _style_body_length(f, pos):
@@ -550,43 +563,54 @@ def _entry_length(f, entry_off):
     header = _read_entry_header(f, entry_off)
     if header is None:
         return None
-    is_container, count = header
+    is_container, count, role_table = header
     if not is_container:
         return 1 + count * 3                      # leaf: count = op_count
     if count == 0:
         return 1
-    # The last style body in the table is the entry's tail; offset is relative
-    # to the entry start, so the entry length is last_offset + last_body_length.
-    f.seek(entry_off + 1 + (count - 1) * _ROLE_ENTRY_SIZE + 1)
-    last_off = struct.unpack("<H", f.read(2))[0]
-    body_len = _style_body_length(f, entry_off + last_off)
+    # The last style body in the table is the entry's tail; offsets are absolute.
+    last_body_off = max(role_table.values())
+    body_len = _style_body_length(f, last_body_off)
     if body_len is None:
         return None
-    return last_off + body_len
+    return (last_body_off - entry_off) + body_len
 
 
 def _read_role_offset(f, entry_off, role_code):
     """Return the absolute file position of *role_code*'s style body in the
-    container entry at *entry_off*, or None if the entry is a leaf / has no such
-    role.
+    entry at *entry_off*, or None if the entry is a leaf / has no such role.
 
     Defaults to MAIN (code 0) when *role_code* is None."""
     want = StyleRole.MAIN if role_code is None else role_code
     header = _read_entry_header(f, entry_off)
     if header is None:
         return None
-    is_container, role_count = header
+    is_container, _, role_table = header
     if not is_container:
-        # Leaf: the entry IS a single style body (op_count at entry_off).  Only
-        # MAIN exists, starting at the entry start.
+        # Leaf: the entry IS a single style body.  Only MAIN exists.
         return entry_off if want == StyleRole.MAIN else None
-    for i in range(role_count):
-        f.seek(entry_off + 1 + i * _ROLE_ENTRY_SIZE)
-        code = f.read(1)[0]
-        off = struct.unpack("<H", f.read(2))[0]
-        if code == want:
-            return entry_off + off
-    return None
+    return role_table.get(want)
+
+
+def _read_op_list(f, op_count):
+    """Read *op_count* 3-byte ops from *f* (positioned after the count byte).
+    Returns list of (prop_id, val_type, index) or None on truncation."""
+    ops_raw = f.read(op_count * 3)
+    if len(ops_raw) < op_count * 3:
+        print("Warning: truncated style ops data")
+        return None
+    return [(ops_raw[i*3], ops_raw[i*3+1], ops_raw[i*3+2])
+            for i in range(op_count)]
+
+
+def _read_style_body(f, pos):
+    """Read one style body at absolute offset *pos* (``[op_count][ops]``).
+    Returns list of (prop_id, val_type, index) or None on truncation/EOF."""
+    f.seek(pos)
+    raw = f.read(1)
+    if not raw:
+        return None
+    return _read_op_list(f, raw[0])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -666,6 +690,26 @@ def _open_lit_dict(f):
     except Exception as e:
         print("Warning: exception occurred while opening LIT dict:" + str(e))
         return (-1, 0)
+
+
+def _read_lit_string(f, lit_idx):
+    """Read one LIT string by index from an already-open styles binary handle."""
+    try:
+        block_off, count = _open_lit_dict(f)
+        if block_off < 0:
+            print("Warning: LIT dict not found")
+            return None
+        if lit_idx < 0 or lit_idx >= count:
+            print("Warning: LIT index {} out of range".format(lit_idx))
+            return None
+        f.seek(block_off + _DICT_MARKER_SIZE + _DICT_COUNT_SIZE
+               + lit_idx * _DICT_ENTRY_OFFSET_SIZE)
+        entry_off = struct.unpack("<H", f.read(_DICT_ENTRY_OFFSET_SIZE))[0]
+        f.seek(block_off + entry_off)
+        return read_cstring(f)
+    except Exception as e:
+        print("Warning: _read_lit_string failed: " + str(e))
+        return None
 
 
 def read_lit_dict_from_binary(file_path):
@@ -856,24 +900,36 @@ class StylePaletteCompiler(ThemeSectionCompiler):
         return buf
 
     def reconstruct_setting_from_binary(self, f):
-        """Read raw style ops at the current file position.
+        """Read a style entry at the current file position.
 
-        Returns list of (prop_id, val_type, index) tuples, or None on error.
-        To build an lv.style_t use read_setting_from_binary(),
-        which keeps the file open while applying the ops.
-        """
+        Leaf entry (first byte high bit clear): returns a flat list of
+        (prop_id, val_type, index) op tuples — the style body.
+
+        Role container (first byte = ``0x80|role_count``): reads the role table
+        and each role body, returning a dict ``{role_code: [ops...]}``.  The
+        dict is non-None on success, which is all the generic framework callers
+        (``validate_binary_file``, base ``read_setting_from_binary``) require —
+        they only check for None / exception.
+
+        Returns None on error."""
         try:
-            raw = f.read(1)
-            if not raw:
-                print("Warning: unexpected EOF reading style op_count")
+            entry_off = f.tell()
+            header = _read_entry_header(f, entry_off)
+            if header is None:
+                print("Warning: unexpected EOF reading style entry")
                 return None
-            op_count = raw[0]
-            ops_raw = f.read(op_count * 3)
-            if len(ops_raw) < op_count * 3:
-                print("Warning: truncated style ops data")
-                return None
-            return [(ops_raw[i*3], ops_raw[i*3+1], ops_raw[i*3+2])
-                    for i in range(op_count)]
+            is_container, count, role_table = header
+            if not is_container:
+                # Leaf: count is op_count; body starts at the entry.
+                return _read_style_body(f, entry_off)
+            # Container: read each role's body via the parsed role table.
+            roles = {}
+            for code, body_off in role_table.items():
+                ops = _read_style_body(f, body_off)
+                if ops is None:
+                    return None
+                roles[code] = ops
+            return roles
         except Exception as e:
             print("Warning: reconstruct_setting_from_binary failed: " + str(e))
             return None
@@ -933,7 +989,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             if body_pos is None:
                 return (None, f"role_{role_code}_not_found_{style_index}")
             f.seek(body_pos)
-            result = self.reconstruct_setting_from_binary(f)
+            result = _read_style_body(f, body_pos)
             if result is None:
                 return (None, f"read_ops_failed_{style_index}")
             return (result, None)
@@ -1018,25 +1074,6 @@ class StylePaletteCompiler(ThemeSectionCompiler):
         print("  LIT dict entries: {}".format(len(lits)))
         return (True, None)
 
-    def _read_lit_string_from_handle(self, f, lit_idx):
-        """Internal: read one LIT string from an already-open file handle."""
-        try:
-            block_off, count = _open_lit_dict(f)
-            if block_off < 0:
-                print("Warning: LIT dict not found")
-                return None
-            if lit_idx < 0 or lit_idx >= count:
-                print("Warning: LIT index {} out of range".format(lit_idx))
-                return None
-            f.seek(block_off + _DICT_MARKER_SIZE + _DICT_COUNT_SIZE
-                   + lit_idx * _DICT_ENTRY_OFFSET_SIZE)
-            entry_off = struct.unpack("<H", f.read(_DICT_ENTRY_OFFSET_SIZE))[0]
-            f.seek(block_off + entry_off)
-            return read_cstring(f)
-        except Exception as e:
-            print("Warning: _read_lit_string_from_handle failed: " + str(e))
-            return None
-
     def _resolve_op(self, f, prop_id, val_type, index, context):
         """Resolve one op value using *context* for palette refs and *f* for LIT reads."""
         if val_type == VAL_COLOR_PAL:
@@ -1044,7 +1081,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
         if val_type == VAL_FONT_PAL:
             return context.get_font(index)
         if val_type == VAL_LIT:
-            lit_str = self._read_lit_string_from_handle(f, index)
+            lit_str = _read_lit_string(f, index)
             if lit_str is None:
                 return None
             # For ARRAY attrs, resolve elements as INT literals (supports FR(N), pct(N), etc.)
