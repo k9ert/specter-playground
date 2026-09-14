@@ -18,13 +18,16 @@ lv.EVENT.DELETE    = 103
 class _FLAG:
     HIDDEN    = 10
     CLICKABLE = 11
+    FLOATING  = 12
 
 
 class _STATE:
     FOCUSED = 20
+    PRESSED = 21
 
 
 class _PART:
+    MAIN  = 29
     ITEMS = 30
 
 
@@ -88,6 +91,7 @@ class MockTextarea:
         self.set_text_calls.append(t)
         self._text = t
     def add_state(self, s):           self._states.add(s)
+    def remove_state(self, s):        self._states.discard(s)
     def add_event_cb(self, cb, ev, ud):
         dsc = _EventDsc(cb, ev)
         self._event_cbs.append(dsc)
@@ -117,11 +121,14 @@ def nav():
 
 
 @pytest.fixture()
-def manager(nav):
+def manager(nav, monkeypatch):
     original_kb = lv.keyboard
     lv.keyboard = MockKeyboard
-    from MockUI.basic.utils.keyboard_manager import KeyboardManager
-    km = KeyboardManager(nav)
+    from MockUI.basic.utils import keyboard_manager as km_module
+    # Neutralize theming: unit tests run with mock objects, no compiled themes.
+    monkeypatch.setattr(km_module, "apply_style", lambda *a, **k: None)
+    monkeypatch.setattr(km_module, "apply_click_feedback", lambda *a, **k: None)
+    km = km_module.KeyboardManager(nav)
     yield km
     lv.keyboard = original_kb
 

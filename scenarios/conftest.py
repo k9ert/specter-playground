@@ -41,6 +41,14 @@ if "lvgl" not in sys.modules:
             return 0
         def __index__(self):
             return 0
+        def __or__(self, other):
+            return 0
+        def __ror__(self, other):
+            return 0
+        def __and__(self, other):
+            return 0
+        def __rand__(self, other):
+            return 0
 
     class LvMockObj(_LvSentinel):
         """Mock LVGL base object."""
