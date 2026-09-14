@@ -31,6 +31,24 @@ class SpecterFontPalette:
     SMALL = 2
 
 
+class StyleRole:
+    """Fixed role codes (u8) for composite widgets"""
+    MAIN      = 0
+    FG        = 1
+    ICON      = 2
+    LABEL     = 3
+    INDICATOR = 4
+    RHS       = 5
+    LEVEL     = 6
+    LEVEL_BG  = 7
+    LEVEL_OL  = 8
+    CHARGE    = 9
+    TRACK     = 10
+    KNOB      = 11
+    CURSOR    = 12
+    ITEMS     = 13
+
+
 class SpecterStylePalette:
     """Integer style-token keys.  Pass to ``apply_style(obj, key)``."""
 
@@ -38,29 +56,23 @@ class SpecterStylePalette:
         SCREEN_TITLE          =  1
         OVERLAY               =  2
         NAVBAR_BUTTON         =  3
-        NAVBAR_BUTTON_FG      =  4
         BUTTON                =  5
-        BUTTON_FG             =  6
         TEXT_EDIT             =  7
-        TEXT_EDIT_CURSOR      =  8        
         INFO_ITEM             =  9
         HELP_ICON             = 10
         MENU_SECTION_HEADER   = 11
         MENU_BUTTON           = 12
-        MENU_BUTTON_FG        = 13        
         MENU_ICON             = 14
-        MENU_LABEL            = 15
         MENU_SWITCH           = 16
-        SUBMENU_INDICATOR     = 17
         DROP_UP_ADDBTN        = 18
-        DROP_UP_ADDBTN_FG     = 19
         KEYBOARD              = 20
         PIN_BUTTON            = 21
-        PIN_BUTTON_FG         = 22
         PIN_DISPLAY           = 23
         DELETE_BUTTON         = 24
-        DELETE_BUTTON_FG      = 25
         MODAL_BODY            = 26
+        BATTERY               = 27
+        SLIDER                = 28
+        SWITCH                = 29
         # reserved till 40
 
     class TEXT:
@@ -126,18 +138,6 @@ class SpecterStylePalette:
         WALLET   = 101
         MAIN     = 102
         SETTINGS = 103
-        # reserved till 110
-
-    class SLIDER:
-        TRACK     = 110   # apply with lv.PART.MAIN
-        INDICATOR = 111   # apply with lv.PART.INDICATOR
-        KNOB      = 112   # apply with lv.PART.KNOB
-        # reserved till 120
-
-    class SWITCH:
-        TRACK     = 120   # apply with lv.PART.MAIN
-        INDICATOR = 121   # apply with lv.PART.INDICATOR
-        KNOB      = 122   # apply with lv.PART.KNOB
         # reserved till 130
 
     class MODIFIER:

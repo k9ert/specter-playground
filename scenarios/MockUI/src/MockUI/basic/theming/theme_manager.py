@@ -24,6 +24,7 @@ Files that violate this rule are skipped during scanning.
 import os
 
 from .theme_compiler import ThemeCompiler, SpecterStylePalette, ColorMode
+from .theme_schema import StyleRole
 from ..templates.settings_file_compiler import collect_int_constants
 from ..templates.settings_file_manager import SettingFileManager
 
@@ -111,12 +112,42 @@ class ThemeManager(SettingFileManager):
         print(f"Error: Invalid color mode '{mode}' (must be a ColorMode constant)")
         return False
 
-    def get_style(self, style_key):
-        """Return ``lv.style_t`` for *style_key*, using the cache when available."""
+    def get_style(self, style_key, role=None):
+        """Return ``lv.style_t`` for *style_key*, using the cache when available.
+
+        *style_key*: int slot or string (``"WIDGET.BUTTON"``).
+        *role*: optional ``StyleRole`` code or name (``"FG"``) selecting a role
+        within the style's container; ``None``/``"MAIN"`` = the style's own
+        body.  Roles are cached separately from the base style.
+
+        Returns None (with a warning) for unknown keys or role names.  A valid
+        role that the theme does not define resolves via the usual
+        current-theme → default-theme chain, like any other style."""
+        if isinstance(style_key, str):
+            key_name = style_key
+            style_key = self.COMPILER.str_to_style_ind(style_key)
+            if style_key is None:
+                print(f"Warning: unknown style key '{key_name}'")
+                return None
+        role_code = None
+        if role is not None:
+            if isinstance(role, str):
+                role_code = getattr(StyleRole, role.upper(), None)
+                if not isinstance(role_code, int):
+                    print(f"Warning: unknown role '{role}'")
+                    return None
+            else:
+                role_code = role
+            if not role_code:
+                role_code = None  # MAIN (0) is the style's own body
         cache = getattr(self, '_style_cache', None)
-        if cache is not None and style_key in cache:
-            return cache[style_key]
-        return self.get_setting(style_key)
+        cache_key = (style_key, role_code) if role_code else style_key
+        if cache is not None and cache_key in cache:
+            return cache[cache_key]
+        style = self.get_setting(style_key, role_code=role_code)
+        if cache is not None and style is not None:
+            cache[cache_key] = style
+        return style
     
     def __getitem__(self, key):
         """Allow theme_manager['KEY']"""
@@ -126,40 +157,39 @@ class ThemeManager(SettingFileManager):
         """Allow theme_manager('KEY')"""
         return self.get_style(key)    
 
-    def apply_style(self, obj, keys, selector=0):
-        """Apply one or more SPECTER_STYLES keys to an LVGL widget.
+    def apply_style(self, obj, keys, selector=0, role=None):
+        """Apply one or more style keys to an LVGL widget.
 
         Args:
             obj:      LVGL widget (any object with ``add_style``).
-            keys:     A single int (``SPECTER_STYLES.*``) or
-                      string (``"BG.INVISIBLE"``) or
-                      a list of ints or strings.
-                    
+            keys:     A single key or a list of keys.  Each key is an int slot,
+                      a string (``"BG.INVISIBLE"``), or an already-resolved
+                      ``lv.style_t`` (applied as-is).
             selector: LVGL part/state selector (default 0 = MAIN/DEFAULT).
+            role:     optional ``StyleRole`` code or name (``"FG"``) — resolves
+                      each key to that role within the style's container, e.g.
+                      ``apply_style(ta, "WIDGET.TEXT_EDIT",
+                      lv.PART.CURSOR | lv.STATE.FOCUSED, role="CURSOR")``.
         """
-        if isinstance(keys, int):
+        if isinstance(keys, (int, str)):
             keys = [keys]
-        if isinstance(keys, str):
-            # resolve e.g. "BG.INVISIBLE" to the corresponding integer key
-            keys = [self.COMPILER.str_to_style_ind(keys)]
         for key in keys:
-            if isinstance(key, str):
-                key = self.COMPILER.str_to_style_ind(key)
-            style = self.get_style(key)
+            if key is None:
+                continue
+            style = self.get_style(key, role=role) if isinstance(key, (int, str)) else key
             if style is not None:
                 obj.add_style(style, selector)
 
-    def remove_style(self, obj, keys, selector=0):
-        """Remove one or more SPECTER_STYLES keys from an LVGL widget."""
-        if isinstance(keys, int):
+    def remove_style(self, obj, keys, selector=0, role=None):
+        """Remove one or more style keys from an LVGL widget.
+
+        Arguments mirror :meth:`apply_style`."""
+        if isinstance(keys, (int, str)):
             keys = [keys]
-        if isinstance(keys, str):
-            # resolve e.g. "BG.INVISIBLE" to the corresponding integer key
-            keys = [self.COMPILER.str_to_style_ind(keys)]
         for key in keys:
-            if isinstance(key, str):
-                key = self.COMPILER.str_to_style_ind(key)
-            style = self.get_style(key)
+            if key is None:
+                continue
+            style = self.get_style(key, role=role) if isinstance(key, (int, str)) else key
             if style is not None:
                 obj.remove_style(style, selector)
 
@@ -201,15 +231,18 @@ class ThemeManager(SettingFileManager):
             return True
         return False
 
-    def get_setting(self, style_key):
-        """Read one ``lv.style_t`` live from binary — try current, fall back to default."""
+    def get_setting(self, style_key, role_code=None):
+        """Read one ``lv.style_t`` live from binary — try current, fall back to default.
+
+        *role_code*: a ``StyleRole`` code selecting a role within the style's
+        container; ``None`` = MAIN (the style's own body)."""
         value, _err = self.COMPILER.read_setting_from_binary(
             self.current_colors_file, self.current_fonts_file,
-            self.current_file, style_key, self.mode)
+            self.current_file, style_key, self.mode, role_code=role_code)
         if value is None:
             value, _err = self.COMPILER.read_setting_from_binary(
                 self.default_colors_file, self.default_fonts_file,
-                self.default_file, style_key, self.mode)
+                self.default_file, style_key, self.mode, role_code=role_code)
         return value
 
     # ── Persistence hooks (SettingFileManager) ────────────────────────────────
@@ -251,14 +284,14 @@ def get_theme_manager():
     """Return the global ThemeManager singleton."""
     return ThemeManager.get_instance()
 
-def apply_style(obj, keys, selector=0):
-    return get_theme_manager().apply_style(obj, keys, selector)
+def apply_style(obj, keys, selector=0, role=None):
+    return get_theme_manager().apply_style(obj, keys, selector, role=role)
 
-def remove_style(obj, keys, selector=0):
-    return get_theme_manager().remove_style(obj, keys, selector)
+def remove_style(obj, keys, selector=0, role=None):
+    return get_theme_manager().remove_style(obj, keys, selector, role=role)
 
-def get_style(style_key):
-    return get_theme_manager().get_style(style_key)
+def get_style(style_key, role=None):
+    return get_theme_manager().get_style(style_key, role=role)
 
 def get_color(palette_idx):
     return get_theme_manager().get_color(palette_idx)

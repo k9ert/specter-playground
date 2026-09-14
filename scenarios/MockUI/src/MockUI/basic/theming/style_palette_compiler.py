@@ -8,12 +8,33 @@ format for flash storage and reconstructs lv.style_t objects at runtime.
 Binary format for the styles section:
   [HEADER 44 bytes]  b"STYL" | version u32le | key_count u32le | name (32)
   [STYLE INDEX]      key_count x 4-byte absolute file offsets (0xFFFFFFFF = absent)
-  [STYLE ENTRIES]    for each: op_count u8, then op_count x 3-byte ops
+  [STYLE ENTRIES]    one entry per key — either a leaf or a role container (below)
   [LIT DICT header]  b"DICT" | lit_count u16le |
   [LIT INDEX]        lit_count x 2-byte offsets from start of DICT block
   [LIT_ENTRIES]      for each: key (null-terminated UTF-8), value (null-terminated UTF-8)
 
-Each 3-byte op:  prop_id u8 | val_type u8 | index u8
+STYLE ENTRIES
+-------------
+
+The high bit of an entry's first byte selects the framing (0 = leaf, 1 = role
+container); the remaining 7 bits are op_count / role_count respectively, so a
+style is capped at MAX_OPS = 127 ops.
+
+A style's properties are encoded as a list of 3-byte ops:
+  op =  prop_id u8 | val_type u8 | index u8
+
+  Leaf (0):
+    byte0     op_count (high bit 0)
+    ops       op_count x 3-byte op
+
+  Container (1) — a style and its roles in one entry:
+    byte0     0x80 | role_count
+    table     role_count x { role_code u8 | offset u16le }   (sorted by role_code)
+    styles    role_count style bodies, inline, each = [op_count u8][ops]
+
+  role_code   a StyleRole u8; MAIN (0) is the style's own body.
+  offset      a role style's byte position relative to the entry start — read
+              by seeking entry_start + offset, without parsing other roles.
 
 val_type constants:
   0x01 COLOR_PAL  — index into SpecterColorPalette
@@ -42,10 +63,12 @@ import struct
 
 if '.' in __name__:
     from .theme_section_compiler import ThemeSectionCompiler
-    from .theme_schema import SpecterStylePalette, SpecterColorPalette, SpecterFontPalette
+    from .theme_schema import (
+        SpecterStylePalette, SpecterColorPalette, SpecterFontPalette, StyleRole,
+    )
     from ..templates.settings_file_compiler import (
         MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, HEADER_SIZE, OFFSET_SIZE,
-        read_cstring
+        read_cstring, collect_int_constants
     )
     from .color_palette_compiler import to_lv_color, shade, color_ref_to_palette_idx
     from .font_palette_compiler import font_ref_to_palette_idx
@@ -56,7 +79,9 @@ else:
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent.parent / "utils"))
     _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
     from theme_section_compiler import ThemeSectionCompiler
-    from theme_schema import SpecterStylePalette, SpecterColorPalette, SpecterFontPalette
+    from theme_schema import (
+        SpecterStylePalette, SpecterColorPalette, SpecterFontPalette, StyleRole,
+    )
     from settings_file_compiler import (
         MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, HEADER_SIZE, OFFSET_SIZE,
         read_cstring, collect_int_constants
@@ -163,10 +188,10 @@ _INT_ATTRS = (
     "min_height",            # 0x7E
     "max_height",            # 0x7F
     "transform_rotation",    # 0x80
-    "transform_scale_x",    # 0x81
-    "transform_scale_y",    # 0x82
-    "transform_skew_x",     # 0x83
-    "transform_skew_y",     # 0x84
+    "transform_scale_x",     # 0x81
+    "transform_scale_y",     # 0x82
+    "transform_skew_x",      # 0x83
+    "transform_skew_y",      # 0x84
     "translate_x",           # 0x85
     "translate_y",           # 0x86
     "margin_left",           # 0x87
@@ -327,7 +352,7 @@ def _encode_value(attr_name, group, raw_val, lit_builder):
 # Runtime-side helpers (device path — if/elif avoids dict heap allocation)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _group_from_prop_id(prop_id):
+def _prop_id_to_group(prop_id):
     """Return group constant for *prop_id*, or None if unknown."""
     if 0x01 <= prop_id <= 0x1F:
         return _GRP_COLOR
@@ -346,7 +371,7 @@ def _group_from_prop_id(prop_id):
     return None
 
 
-def _attr_name_from_prop_id(prop_id):
+def _prop_id_to_attr_name(prop_id):
     """Return the LVGL attribute name for *prop_id*, or None."""
     if 0x01 <= prop_id <= 0x1F:
         idx = prop_id - _COLOR_BASE
@@ -437,7 +462,7 @@ def _resolve_shade_expr(expr, context):
 def _resolve_lit(lit_str, prop_id, context):
     """Resolve a LIT dict string to the correct Python/LVGL value.
     *context* is a ThemeCompiler instance (provides get_color). Returns None on error."""
-    group = _group_from_prop_id(prop_id)
+    group = _prop_id_to_group(prop_id)
     if group == _GRP_COLOR:
         if lit_str.startswith("shade("):
             return _resolve_shade_expr(lit_str, context)
@@ -484,6 +509,84 @@ def _resolve_int_lit(lit_str):
     except ValueError:
         print("Warning: expected int literal, got: " + lit_str)
         return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Style-entry framing (leaf vs. role container) — runtime-side read helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+_CONTAINER_FLAG = 0x80        # high bit of an entry's first byte marks a container
+_ROLE_ENTRY_SIZE = 3          # role table entry: role_code u8 + offset u16
+
+
+def _read_entry_header(f, entry_off):
+    """Read a style entry's framing byte at *entry_off*.
+
+    Returns ``(is_container, count)``: for a leaf, *count* is op_count; for a
+    container, *count* is role_count.  Returns None on EOF."""
+    f.seek(entry_off)
+    raw = f.read(1)
+    if not raw:
+        return None
+    first = raw[0]
+    return (bool(first & _CONTAINER_FLAG), first & 0x7F)
+
+
+def _style_body_length(f, pos):
+    """Byte length of a style body starting at *pos* ([op_count][ops]).
+
+    Returns None on EOF (no body at *pos*)."""
+    f.seek(pos)
+    raw = f.read(1)
+    if not raw:
+        return None
+    return 1 + raw[0] * 3
+
+
+def _entry_length(f, entry_off):
+    """Total byte length of the style entry at *entry_off* (leaf or container).
+
+    Returns None if there is no entry at *entry_off* (EOF)."""
+    header = _read_entry_header(f, entry_off)
+    if header is None:
+        return None
+    is_container, count = header
+    if not is_container:
+        return 1 + count * 3                      # leaf: count = op_count
+    if count == 0:
+        return 1
+    # The last style body in the table is the entry's tail; offset is relative
+    # to the entry start, so the entry length is last_offset + last_body_length.
+    f.seek(entry_off + 1 + (count - 1) * _ROLE_ENTRY_SIZE + 1)
+    last_off = struct.unpack("<H", f.read(2))[0]
+    body_len = _style_body_length(f, entry_off + last_off)
+    if body_len is None:
+        return None
+    return last_off + body_len
+
+
+def _read_role_offset(f, entry_off, role_code):
+    """Return the absolute file position of *role_code*'s style body in the
+    container entry at *entry_off*, or None if the entry is a leaf / has no such
+    role.
+
+    Defaults to MAIN (code 0) when *role_code* is None."""
+    want = StyleRole.MAIN if role_code is None else role_code
+    header = _read_entry_header(f, entry_off)
+    if header is None:
+        return None
+    is_container, role_count = header
+    if not is_container:
+        # Leaf: the entry IS a single style body (op_count at entry_off).  Only
+        # MAIN exists, starting at the entry start.
+        return entry_off if want == StyleRole.MAIN else None
+    for i in range(role_count):
+        f.seek(entry_off + 1 + i * _ROLE_ENTRY_SIZE)
+        code = f.read(1)[0]
+        off = struct.unpack("<H", f.read(2))[0]
+        if code == want:
+            return entry_off + off
+    return None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -540,9 +643,14 @@ def _open_lit_dict(f):
             off = struct.unpack("<I", f.read(OFFSET_SIZE))[0]
             if off == 0xFFFFFFFF or off < style_index_end:
                 continue
-            f.seek(off)
-            op_count = struct.unpack("B", f.read(1))[0]
-            block_off = off + 1 + op_count * 3
+            entry_len = _entry_length(f, off)
+            if entry_len is None:
+                # The entry is present but unreadable 
+                # -> the binary is corrupt, and the LIT dict offset
+                # can't be derived. Fail rather than guess.
+                print("Warning: style entry {} unreadable (corrupt styles binary)".format(i))
+                return (-1, 0)
+            block_off = off + entry_len
             break
 
         f.seek(block_off)
@@ -555,7 +663,8 @@ def _open_lit_dict(f):
             return (-1, 0)
         return (block_off, struct.unpack("<H", raw_lit_count)[0])
 
-    except Exception:
+    except Exception as e:
+        print("Warning: exception occurred while opening LIT dict:" + str(e))
         return (-1, 0)
 
 
@@ -615,20 +724,35 @@ class StylePaletteCompiler(ThemeSectionCompiler):
         # LIT dict accumulator: populated during json_to_binary, cleared after
         self._lit_builder = []
 
-    def convert_setting_to_binary(self, entry):
-        """Encode one style dict into binary ops.
+    # Max ops in a single style body. op_count shares its byte with the
+    # role-container flag (high bit), so op_count is limited to 7 bits (127).
+    # This is a designed cap: the compiler supports ~103 distinct settable
+    # properties (so a style cannot exceed ~110 ops).
+    # Exceeding it is a hard compile error, not silent truncation.
+    MAX_OPS = 127
+
+    def _encode_style_body(self, entry):
+        """Encode a plain style dict (no ``roles`` block) into a style body.
 
         *entry* is a dict: { "style": "@OTHER"|["@A","@B"], "bg_color": ..., ... }
-        Returns bytearray: [op_count u8] + [op_count x 3-byte ops].
-
-        For ARRAY attrs, emits a header op (prop_id, VAL_ARRAY, length) followed
-        by N element ops (prop_id, VAL_LIT, lit_index).
+        Returns a bytearray ``[op_count u8][op_count x 3-byte ops]`` (op_count
+        high bit clear).  op_count must fit in 7 bits (the high bit is the
+        container flag at the entry level); exceeding MAX_OPS is a hard compile
+        error.
         """
-        if not isinstance(entry, dict):
-            print("Warning: style entry is not a dict, skipping")
-            return bytearray(b"\x00")
+        # Reserve byte 0 for op_count; written once the count is final.
+        buf = bytearray(b"\x00")
+        op_count = 0
 
-        ops = []
+        def add_op(prop_id, val_type, index):
+            nonlocal op_count
+            if index > 255:
+                print("Warning: index {} > 255 for prop 0x{:02X} — skipping".format(index, prop_id))
+                return
+            buf.append(prop_id)
+            buf.append(val_type)
+            buf.append(index)
+            op_count += 1
 
         for key, raw_val in entry.items():
             if key == "style":
@@ -644,7 +768,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
                     if style_idx > 255:
                         print("Warning: style index {} > 255 for '{}' — skipping".format(style_idx, ref))
                         continue
-                    ops.append((PROP_STYLE_INHERIT, VAL_STYLE_PAL, style_idx))
+                    add_op(PROP_STYLE_INHERIT, VAL_STYLE_PAL, style_idx)
                 continue
 
             prop_id, group = _attr_to_prop_id(key)
@@ -662,31 +786,73 @@ class StylePaletteCompiler(ThemeSectionCompiler):
                 if len(elements) > 255:
                     print("Warning: array too long for '{}' — skipping".format(key))
                     continue
-                # Header op: prop_id, VAL_ARRAY, length
-                ops.append((prop_id, VAL_ARRAY, len(elements)))
-                # Element ops: prop_id repeated, val_type, lit_index
+                # Header op: prop_id, VAL_ARRAY, length; then one op per element
+                # (prop_id repeated, val_type, lit_index)
+                add_op(prop_id, VAL_ARRAY, len(elements))
                 for val_type, index in elements:
-                    if index > 255:
-                        print("Warning: LIT index {} > 255 in array '{}' — skipping element".format(index, key))
-                        continue
-                    ops.append((prop_id, val_type, index))
+                    add_op(prop_id, val_type, index)
             else:
                 val_type, index = result
-                if index > 255:
-                    print("Warning: LIT index {} > 255 for '{}' — skipping".format(index, key))
-                    continue
-                ops.append((prop_id, val_type, index))
+                add_op(prop_id, val_type, index)
 
-        if len(ops) > 255:
-            print("Warning: style has {} ops, truncating to 255".format(len(ops)))
-            ops = ops[:255]
+            if op_count > self.MAX_OPS:
+                raise ValueError(
+                    "style has > {} ops (op_count high bit is the role-container "
+                    "flag)".format(self.MAX_OPS))
 
+        # Write the reserved op_count byte now that the count is final.
+        buf[0] = op_count
+        return buf
+
+    def convert_setting_to_binary(self, entry):
+        """Encode one style entry into binary.
+
+        A style without a ``roles`` block is encoded as a leaf
+        ``[op_count][ops]`` (op_count high bit clear).
+
+        A style with a ``roles`` block is encoded as a role container:
+        ``[0x80|role_count][role_count x (role_code u8, offset u16)]`` then each
+        role's style body inline.  ``MAIN`` (code 0) holds the style's own ops;
+        offsets are byte positions within this entry.
+        """
+        if not isinstance(entry, dict):
+            print("Warning: style entry is not a dict, skipping")
+            return bytearray(b"\x00")
+
+        roles = entry.get("roles")
+        main_body = self._encode_style_body({k: v for k, v in entry.items() if k != "roles"})
+
+        if not roles:
+            # Leaf — high bit clear, no role table.
+            return main_body
+
+        # ── Container: build each role's style body, then table + bodies inline ──
+        role_codes = collect_int_constants(StyleRole)
+
+        # body list: MAIN first, then roles sorted by role_code (stable order).
+        bodies = [(StyleRole.MAIN, main_body)]
+        for role_name, role_entry in sorted(
+                roles.items(), key=lambda kv: role_codes.get(str(kv[0]).upper(), 0xFF)):
+            code = role_codes.get(str(role_name).upper())
+            if code is None:
+                print("Warning: unknown role '{}' — skipped (known: {})"
+                      .format(role_name, sorted(role_codes)))
+                continue
+            if not isinstance(role_entry, dict):
+                print("Warning: role '{}' entry is not a dict — skipped".format(role_name))
+                continue
+            bodies.append((code, self._encode_style_body(role_entry)))
+
+        header_size = 1 + len(bodies) * 3  # flag|count byte + per-role (code, offset u16)
         buf = bytearray()
-        buf.append(len(ops))
-        for prop_id, val_type, index in ops:
-            buf.append(prop_id)
-            buf.append(val_type)
-            buf.append(index)
+        buf.append(0x80 | len(bodies))
+        offset = header_size
+        for code, body in bodies:
+            buf.append(code)
+            buf.extend(struct.pack("<H", offset))
+            offset += len(body)
+        for code, body in bodies:
+            buf.extend(body)
         return buf
 
     def reconstruct_setting_from_binary(self, f):
@@ -712,20 +878,22 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             print("Warning: reconstruct_setting_from_binary failed: " + str(e))
             return None
 
-    def read_setting_from_binary(self, file_path, style_idx, context=None):
-        """Override: build one lv.style_t from a styles binary file.
+    def read_setting_from_binary(self, file_path, style_idx, context=None, role_code=None):
+        """Build one lv.style_t from a styles binary file.
 
         *context*: ThemeCompiler providing get_color / get_font.
+        *role_code*: a ``StyleRole`` code selecting a role within the style's
+        role container; ``None`` = the MAIN role (the style's own body).
 
         Returns (lv.style_t, None) or (None, error_str).
         """
         if context is None:
             return (None, "context_required")
-        
-        with open(file_path, "rb") as f:
-            return self._reconstruct_style_from_handle(f, style_idx, context)
 
-    def _reconstruct_style_from_handle(self, f, style_idx, context, s=None, in_progress=None):
+        with open(file_path, "rb") as f:
+            return self._reconstruct_style_from_handle(f, style_idx, context, role_code=role_code)
+
+    def _reconstruct_style_from_handle(self, f, style_idx, context, s=None, in_progress=None, role_code=None):
         """Internal: build one lv.style_t from an already-open file handle."""
         if in_progress is None:
             in_progress = set()
@@ -733,7 +901,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             return (None, "cycle_detected")
         in_progress.add(style_idx)
         try:
-            ops, err = self._read_ops_from_handle(f, style_idx)
+            ops, err = self._read_ops_from_handle(f, style_idx, role_code)
             if ops is None:
                 return (None, err)
             if s is None:
@@ -744,8 +912,8 @@ class StylePaletteCompiler(ThemeSectionCompiler):
         finally:
             in_progress.discard(style_idx)
 
-    def _read_ops_from_handle(self, f, style_index):
-        """Internal: read ops from an already-open file handle."""
+    def _read_ops_from_handle(self, f, style_index, role_code=None):
+        """Internal: read the ops of one role (default MAIN) of a style entry."""
         try:
             f.seek(0)
             magic = f.read(MAGIC_SIZE)
@@ -761,7 +929,10 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             entry_off = struct.unpack("<I", f.read(OFFSET_SIZE))[0]
             if entry_off == 0xFFFFFFFF:
                 return (None, f"style_not_found_{style_index}")
-            f.seek(entry_off)
+            body_pos = _read_role_offset(f, entry_off, role_code)
+            if body_pos is None:
+                return (None, f"role_{role_code}_not_found_{style_index}")
+            f.seek(body_pos)
             result = self.reconstruct_setting_from_binary(f)
             if result is None:
                 return (None, f"read_ops_failed_{style_index}")
@@ -796,7 +967,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
                 # Auto-append LV_GRID_TEMPLATE_LAST for grid track descriptors
                 if hasattr(lv, "GRID_TEMPLATE_LAST"):
                     elements.append(lv.GRID_TEMPLATE_LAST)
-                attr_name = _attr_name_from_prop_id(prop_id)
+                attr_name = _prop_id_to_attr_name(prop_id)
                 if attr_name is None:
                     print("Warning: unknown array prop_id 0x{:02X}".format(prop_id))
                     continue
@@ -809,7 +980,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
                 except Exception as e:
                     print("Warning: set_{}({}) failed: {}".format(attr_name, elements, e))
                 continue
-            attr_name = _attr_name_from_prop_id(prop_id)
+            attr_name = _prop_id_to_attr_name(prop_id)
             if attr_name is None:
                 print("Warning: unknown prop_id 0x{:02X}".format(prop_id))
                 continue
@@ -877,7 +1048,7 @@ class StylePaletteCompiler(ThemeSectionCompiler):
             if lit_str is None:
                 return None
             # For ARRAY attrs, resolve elements as INT literals (supports FR(N), pct(N), etc.)
-            group = _group_from_prop_id(prop_id)
+            group = _prop_id_to_group(prop_id)
             if group == _GRP_ARRAY:
                 return _resolve_int_lit(lit_str)
             return _resolve_lit(lit_str, prop_id, context)
