@@ -177,7 +177,7 @@ class WalletCard(SpecterGuiElement):
                     self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
                     self.text_edit = self.name_widget
                 else:
-                    self.name_widget = make_label(self, wallet.label, styles=["WIDGET.MENU_BUTTON_FG", "TEXT.TITLE", "TEXT.LEFT"])
+                    self.name_widget = make_label(self, wallet.label, styles=[get_style("WIDGET.MENU_BUTTON", role="FG"), "TEXT.TITLE", "TEXT.LEFT"])
                 
                 apply_style(self.name_widget, "LAYOUT.GROWS")
                 # when all slots are builtcthe actual width of the name widget

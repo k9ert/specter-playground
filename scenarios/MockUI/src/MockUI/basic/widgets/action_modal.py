@@ -87,11 +87,11 @@ def button_modal(text, title=None, buttons=None, auto_close=True, parent=None):
         )
 
         if item.modifier == "Danger":
-            btn.apply_style(background_style="BG.DANGER")
+            apply_style(btn._btn, "BG.DANGER")
         elif item.modifier == "Warning":
-            btn.apply_style(background_style="BG.WARNING")
+            apply_style(btn._btn, "BG.WARNING")
         elif item.modifier == "Highlight":
-            btn.apply_style(background_style="BG.HIGHLIGHT")
+            apply_style(btn._btn, "BG.HIGHLIGHT")
 
         if not visible:
             apply_style(btn, "APPEARANCE.INVISIBLE")

@@ -123,7 +123,9 @@ class GenericMenu(TitledScreen):
             row.ico = make_icon(row, item.icon)
             apply_style(row.ico, "WIDGET.MENU_ICON")
         row.lbl = make_label(row, item.text)
-        apply_style(row.lbl, ["WIDGET.MENU_BUTTON_FG", "LAYOUT.GROWS"])
+        # FG role of MENU_BUTTON (consistent with the button-row label styling)
+        apply_style(row.lbl, "WIDGET.MENU_BUTTON", role="FG")
+        apply_style(row.lbl, "LAYOUT.GROWS")
         if item.help_key:
             row.h_btn = self._add_help_btn(row, item.text, item.help_key)
         
@@ -151,18 +153,18 @@ class GenericMenu(TitledScreen):
 
         btn = Btn(self.body,
                   callback=btn_click_cb,
-                  background_style="WIDGET.MENU_BUTTON")
-                
+                  style="WIDGET.MENU_BUTTON")
+
         if AUTO_GROW_MENU_BUTTONS:
             btn.set_flex_grow(int(size*10))
             set_size(btn._btn, height=lv.pct(100))
 
         if item.modifier == "Danger":
-            btn.apply_style(background_style="BG.DANGER")
+            apply_style(btn._btn, "BG.DANGER")
         elif item.modifier == "Warning":
-            btn.apply_style(background_style="BG.WARNING")
+            apply_style(btn._btn, "BG.WARNING")
         elif item.modifier == "Highlight":
-            btn.apply_style(background_style="BG.HIGHLIGHT")
+            apply_style(btn._btn, "BG.HIGHLIGHT")
 
         # Build children in visual left-to-right order
         if item.icon:
@@ -170,7 +172,8 @@ class GenericMenu(TitledScreen):
             apply_style(btn.ico, "WIDGET.MENU_ICON")
 
         btn.lbl = make_label(btn._btn, item.text)
-        apply_style(btn.lbl, "WIDGET.MENU_LABEL")
+        apply_style(btn.lbl, "WIDGET.MENU_BUTTON", role="LABEL")
+        apply_style(btn.lbl, "LAYOUT.GROWS")
 
         # Right-side container: [suffixes...] [help?]
         btn.right_cont = SpecterGuiElement(btn._btn)
@@ -194,7 +197,7 @@ class GenericMenu(TitledScreen):
         #Submenu indicator (caret) to indicate this button leads to a submenu
         #always added, only visible if is_submenu is True [to make menu appearence homogeneous]
         btn.sub_men_ind = make_icon(btn._btn, BTC_ICONS.CARET_RIGHT)
-        apply_style(btn.sub_men_ind, "WIDGET.SUBMENU_INDICATOR")
+        apply_style(btn.sub_men_ind, "WIDGET.MENU_BUTTON", role="INDICATOR")
         if not item.is_submenu:
             apply_style(btn.sub_men_ind, "APPEARANCE.INVISIBLE")
 
@@ -204,11 +207,11 @@ class GenericMenu(TitledScreen):
 
         help_text = item_text + "\n\n" + self.t(help_key)
 
-        h_btn = Btn(parent, 
+        h_btn = Btn(parent,
                     icon=BTC_ICONS.QUESTION_CIRCLE,
                     callback=lambda: button_modal(text=help_text),
                     consume_click=True,
-                    background_style="APPEARANCE.TRANSPARENT",
-                    foreground_style="WIDGET.HELP_ICON",
+                    style="APPEARANCE.TRANSPARENT",
                 )
+        apply_style(h_btn._ico, "WIDGET.HELP_ICON")
         return h_btn

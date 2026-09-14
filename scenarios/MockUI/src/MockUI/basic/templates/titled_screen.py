@@ -106,9 +106,7 @@ class TitledScreen(SpecterGuiElement):
         self.delete_btn = Btn(self.title_bar,
                               icon=BTC_ICONS.TRASH,
                               callback=on_click,
-                              background_style="WIDGET.DELETE_BUTTON",
-                              foreground_style="WIDGET.DELETE_BUTTON_FG"
-                              )
+                              style="WIDGET.DELETE_BUTTON")
         self.delete_btn.add_flag(lv.obj.FLAG.FLOATING)
         apply_style(self.delete_btn, "CONTAINER.DELETE_BUTTON")
         return self.delete_btn

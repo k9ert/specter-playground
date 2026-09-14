@@ -15,10 +15,9 @@ def build_delete_slot(row, on_delete):
         row:       The card row ``lv.obj``.
         on_delete: Zero-argument callable.
     """
-    btn = Btn(row, 
-              icon=BTC_ICONS.TRASH, 
-              background_style="APPEARANCE.TRANSPARENT",
-              foreground_style="WIDGET.BUTTON_FG",
+    btn = Btn(row,
+              icon=BTC_ICONS.TRASH,
+              style="APPEARANCE.TRANSPARENT",
               callback=on_delete,
               consume_click=True)
     return btn

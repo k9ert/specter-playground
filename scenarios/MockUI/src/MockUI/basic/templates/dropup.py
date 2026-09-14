@@ -154,8 +154,7 @@ class DropUp(SpecterGuiMixin):
             icon=BTC_ICONS.PLUS,
             text=self._add_button_label(),
             callback=self._add_cb,
-            background_style="WIDGET.DROP_UP_ADDBTN",
-            foreground_style="WIDGET.DROP_UP_ADDBTN_FG",
+            style="WIDGET.DROP_UP_ADDBTN",
         )
         self._panel.update_layout()
         w, h = get_size(self._panel)

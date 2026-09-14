@@ -48,16 +48,12 @@
     "WIDGET.MENU_SECTION_HEADER": {},
     "WIDGET.MENU_BUTTON":       {},
     "WIDGET.MENU_ICON":         {},
-    "WIDGET.MENU_BUTTON_LABEL": {},
     "WIDGET.MENU_SWITCH":       {},
-    "WIDGET.SUBMENU_INDICATOR": {},
     "WIDGET.DROP_UP_ADDBTN":    {},
     "WIDGET.KEYBOARD":          {},
     "WIDGET.BATTERY":           {},
     "WIDGET.PIN_BUTTON":        {},
-    "WIDGET.PIN_BUTTON_FG":     {},
     "WIDGET.DELETE_BUTTON":     {},
-    "WIDGET.DELETE_BUTTON_FG":  {},
     "LAYOUT.BARE":        { "border_width": 0, "radius": 10, "pad_all": 0, "bg_opa": "TRANSP" },
     "LAYOUT.TRANSPARENT": { "bg_opa": "TRANSP" },
     "LAYOUT.INVISIBLE":   { "opa": 0 },
@@ -92,9 +88,11 @@
     "CONTEXT.WALLET":     { },
     "CONTEXT.MAIN":       { },
     "CONTEXT.SETTINGS":   { },
-    "SLIDER.TRACK":       { "bg_opa": "_30" },
-    "SLIDER.INDICATOR":   { "bg_opa": "_70" },
-    "SLIDER.KNOB":        { "bg_color": "@ink", "bg_opa": "COVER", "pad_all": 0 },
+    "WIDGET.SLIDER":      { "roles": {
+                              "TRACK":     { "bg_opa": "_30" },
+                              "INDICATOR": { "bg_opa": "_70" },
+                              "KNOB":      { "bg_color": "@ink", "bg_opa": "COVER", "pad_all": 0 }
+                            } },
     "MODIFIER.MUTED":     { "opa": 100 },
     "MODIFIER.CLICKED":   { "bg_color": "#110096", "bg_opa": "COVER" }
   }

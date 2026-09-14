@@ -19,7 +19,7 @@ def make_textarea(parent, accepted_chars=ACCEPTED_CHARS):
     """Intended for editable names in the title bar."""
     ta = lv.textarea(parent)
     apply_style(ta, ["WIDGET.TEXT_EDIT"])
-    apply_style(ta, "WIDGET.TEXT_EDIT_CURSOR", lv.PART.CURSOR | lv.STATE.FOCUSED)
+    apply_style(ta, "WIDGET.TEXT_EDIT", lv.PART.CURSOR | lv.STATE.FOCUSED, role="CURSOR")
     apply_click_feedback(ta)
     ta.set_one_line(True)
     ta.set_accepted_chars(accepted_chars)
@@ -45,8 +45,7 @@ def make_password_textarea(parent, accepted_chars=ACCEPTED_CHARS):
 
     pw_ta_container.toggle_btn = Btn(pw_ta_container,
                      icon=BTC_ICONS.HIDDEN,
-                     background_style="APPEARANCE.TRANSPARENT",
-                     foreground_style="WIDGET.BUTTON_FG",
+                     style="APPEARANCE.TRANSPARENT",
                      callback=lambda: set_pw_mode(not pw_ta_container.ta.get_password_mode())
                      )
 
@@ -57,9 +56,9 @@ def make_password_textarea(parent, accepted_chars=ACCEPTED_CHARS):
 
 def make_switch(parent, init_value=False, setter_cb=None):
     switch = lv.switch(parent)
-    apply_style(switch, "SWITCH.TRACK", lv.PART.MAIN)
-    apply_style(switch, "SWITCH.KNOB", lv.PART.KNOB)
-    apply_style(switch, "SWITCH.INDICATOR", lv.PART.INDICATOR)
+    apply_style(switch, "WIDGET.SWITCH", lv.PART.MAIN, role="TRACK")
+    apply_style(switch, "WIDGET.SWITCH", lv.PART.KNOB, role="KNOB")
+    apply_style(switch, "WIDGET.SWITCH", lv.PART.INDICATOR, role="INDICATOR")
     apply_style(switch, "BG.SUCCESS", lv.PART.INDICATOR | lv.STATE.CHECKED)
     apply_click_feedback(switch, lv.PART.KNOB)
 
@@ -128,9 +127,9 @@ def confirmation_slider(parent,
     slider.set_range(min_value, max_value)
     slider.set_mode(lv.slider.MODE.SYMMETRICAL)
     
-    apply_style(slider, "SLIDER.INDICATOR", lv.PART.INDICATOR)
-    apply_style(slider, "SLIDER.TRACK", lv.PART.MAIN)
-    apply_style(slider, "SLIDER.KNOB", lv.PART.KNOB)
+    apply_style(slider, "WIDGET.SLIDER", lv.PART.INDICATOR, role="INDICATOR")
+    apply_style(slider, "WIDGET.SLIDER", lv.PART.MAIN, role="TRACK")
+    apply_style(slider, "WIDGET.SLIDER", lv.PART.KNOB, role="KNOB")
     apply_click_feedback(slider, lv.PART.KNOB)
     
     # Start at 0
