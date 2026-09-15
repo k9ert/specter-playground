@@ -28,8 +28,14 @@ class TreeNode:
         """Bidirectionally link *child* below this node.
 
         Re-linking the same child to the same parent is a no-op; linking a
-        child that already has a different parent raises ``ValueError``.
+        child that already has a different parent or would make a cycle raises
+        ``ValueError``.
         """
+        node = self
+        while node is not None:
+            if child is node:
+                raise ValueError("tree link would create a cycle")
+            node = node.parent
         if child.parent is self:
             return
         if child.parent is not None:

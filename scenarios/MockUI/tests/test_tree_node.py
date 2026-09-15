@@ -51,6 +51,17 @@ def test_add_child_rejects_a_second_parent():
     assert second_parent.children == []
 
 
+def test_add_child_rejects_self_and_ancestor_cycles():
+    root = TreeNode("root")
+    child = TreeNode("child")
+    root.add_child(child)
+
+    with pytest.raises(ValueError, match="cycle"):
+        root.add_child(root)
+    with pytest.raises(ValueError, match="cycle"):
+        child.add_child(root)
+
+
 def test_build_forest_from_parent_callback_preserves_preorder():
     items = ["root", "child", "grandchild", "second root"]
     parents = {"root": None, "child": "root", "grandchild": "child",

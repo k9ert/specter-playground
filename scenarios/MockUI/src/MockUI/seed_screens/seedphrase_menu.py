@@ -57,4 +57,4 @@ class SeedPhraseMenu(GenericMenu):
         # editable seed name and fingerprint display.  Here we only add the
         # delete button so the user can remove this seed from the device.
         self.add_title_delete_btn(make_delete_active_handler(
-            self, t, confirm_delete_seed, "active_seed", "remove_seed"))
+            self, t, confirm_delete_seed, "active_seed", "delete_seed"))

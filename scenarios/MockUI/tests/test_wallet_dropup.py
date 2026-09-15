@@ -59,12 +59,19 @@ def test_delete_wallet_clears_active_selection_and_expansion_state(
 
 
 def test_wallet_tree_parent_uses_the_longest_derivation_prefix(specter_state):
-    account = Wallet("Account", derivation_path="m/84'/0'/0'")
-    change = Wallet("Change", derivation_path="m/84'/0'/0'/1'")
-    nested = Wallet("Nested", derivation_path="m/84'/0'/0'/1'/2'")
-    unrelated = Wallet("Unrelated", derivation_path="m/49'/0'/0'")
+    signers = ["c01da001", "b07b0001"]
+    account = Wallet("Account", derivation_path="m/84'/0'/0'",
+                     required_fingerprints=signers)
+    change = Wallet("Change", derivation_path="m/84'/0'/0'/1'",
+                    required_fingerprints=list(reversed(signers)))
+    nested = Wallet("Nested", derivation_path="m/84'/0'/0'/1'/2'",
+                    required_fingerprints=signers)
+    unrelated = Wallet("Unrelated", derivation_path="m/49'/0'/0'",
+                       required_fingerprints=signers)
+    extra_signer = Wallet("Extra signer", derivation_path="m/84'/0'/0'/1'/3'",
+                          required_fingerprints=signers + ["deadbeef"])
 
-    for wallet in (account, change, nested, unrelated):
+    for wallet in (account, change, nested, unrelated, extra_signer):
         specter_state.register_wallet(wallet)
     dropup = _WalletDropUp(specter_state)
 
@@ -72,3 +79,4 @@ def test_wallet_tree_parent_uses_the_longest_derivation_prefix(specter_state):
     assert dropup._get_item_parent(change) is account
     assert dropup._get_item_parent(nested) is change
     assert dropup._get_item_parent(unrelated) is None
+    assert dropup._get_item_parent(extra_signer) is None

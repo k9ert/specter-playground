@@ -43,17 +43,22 @@ class Wallet:
     def derivation_parent(self, all_wallets):
         """Mock parent discovery via derivation sub-paths.
 
-        Returns the wallet whose derivation path is the longest strict prefix
-        of this wallet's path (segment-wise), or ``None``.  Later replaced by
-        real descriptor analysis.
+        A candidate must have the same signer fingerprints, irrespective of
+        their descriptor order. Of those candidates, return the wallet whose
+        derivation path is the longest strict prefix of this wallet's path
+        (segment-wise), or ``None``. Later replaced by real descriptor
+        analysis.
         """
         if not self.derivation_path:
             return None
         mine = self.derivation_path.split("/")
+        mine_signers = sorted(self.required_fingerprints)
         best = None
         best_len = 0
         for other in all_wallets:
             if other is self or not other.derivation_path:
+                continue
+            if sorted(other.required_fingerprints) != mine_signers:
                 continue
             theirs = other.derivation_path.split("/")
             if (len(theirs) < len(mine)

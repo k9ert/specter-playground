@@ -30,6 +30,17 @@ def test_descriptor_nonce_distinguishes_otherwise_identical_wallets():
     assert first != second
 
 
+def test_wallet_derivation_path_matches_the_descriptor_key_origin():
+    path = CreateCustomWalletMenu._derivation_path(True, "testnet", 7)
+    descriptor = CreateCustomWalletMenu._build_descriptor(
+        ["deadbeef", "cafebabe"], 2, True, False, "testnet", 7,
+        "1234abcd")
+
+    assert path == "m/48'/1'/7'/2'"
+    assert "[deadbeef/48h/1h/7h/2h]" in descriptor
+    assert "[cafebabe/48h/1h/7h/2h]" in descriptor
+
+
 def test_custom_classification_does_not_depend_on_descriptor_text():
     standard = Wallet("Standard", descriptor="fancy script")
     custom = Wallet("Custom", descriptor="wsh(and_v(v:pk(key),after(840000)))",

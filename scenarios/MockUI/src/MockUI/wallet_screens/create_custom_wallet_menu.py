@@ -155,22 +155,27 @@ class CreateCustomWalletMenu(TitledScreen):
     # ── helpers ──────────────────────────────────────────────────────
 
     @staticmethod
+    def _derivation_path(is_multi, net, account):
+        """Return the normalized wallet path shared by descriptor keys."""
+        purpose = 48 if is_multi else 84
+        coin_type = 0 if net == "mainnet" else 1
+        path = "m/%d'/%d'/%d'" % (purpose, coin_type, account)
+        return path + "/2'" if is_multi else path
+
+    @staticmethod
     def _build_descriptor(fingerprints, threshold, is_multi, is_custom,
                           net, account, nonce):
         """Build a readable, descriptor-shaped mock policy."""
-        coin_type = 0 if net == "mainnet" else 1
+        derivation = CreateCustomWalletMenu._derivation_path(
+            is_multi, net, account)[2:].replace("'", "h")
 
-        def key_expression(fingerprint, purpose, key_index,
-                           include_script_type=False):
-            path = "[%s/%dh/%dh/%dh" % (
-                fingerprint, purpose, coin_type, account)
-            if include_script_type:
-                path += "/2h"
-            return "%s]xpub...%s%d/{0,1}/*" % (path, nonce, key_index)
+        def key_expression(fingerprint, key_index):
+            return "[%s/%s]xpub...%s%d/{0,1}/*" % (
+                fingerprint, derivation, nonce, key_index)
 
         if is_multi:
             key_expressions = [
-                key_expression(fingerprint, 48, key_index, True)
+                key_expression(fingerprint, key_index)
                 for key_index, fingerprint in enumerate(fingerprints)
             ]
             if is_custom:
@@ -180,7 +185,7 @@ class CreateCustomWalletMenu(TitledScreen):
             return "wsh(sortedmulti(%d,%s))" % (
                 threshold, ",".join(key_expressions))
 
-        key = key_expression(fingerprints[0], 84, 0)
+        key = key_expression(fingerprints[0], 0)
         if is_custom:
             return "wsh(and_v(v:pk(%s),after(840000)))" % key
         return "wpkh(%s)" % key
@@ -242,6 +247,8 @@ class CreateCustomWalletMenu(TitledScreen):
 
         desc = self._make_unique_descriptor(
             fps, threshold, is_multi, is_custom, net)
+        derivation_path = self._derivation_path(
+            is_multi, net, self.account_val)
 
         wallet = Wallet(
             label=name,
@@ -252,6 +259,7 @@ class CreateCustomWalletMenu(TitledScreen):
             required_fingerprints=fps,
             threshold=threshold,
             account=self.account_val,
+            derivation_path=derivation_path,
         )
         self.device_state.register_wallet(wallet)
         self.ui_state.set_active_wallet(wallet)
