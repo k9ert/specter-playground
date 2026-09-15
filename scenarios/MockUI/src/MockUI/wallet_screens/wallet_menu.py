@@ -41,4 +41,4 @@ class WalletMenu(GenericMenu):
         if not is_default:
             # Custom wallet: trash button in title bar, right-aligned
             self.add_title_delete_btn(make_delete_active_handler(
-                self, t, confirm_delete_wallet, "active_wallet", "remove_wallet"))
+                self, t, confirm_delete_wallet, "active_wallet", "delete_wallet"))

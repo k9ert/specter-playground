@@ -53,25 +53,35 @@ specter_state.lock()
 ui_state = UIState()
 ui_state.reset_tour_completed()
 
-# ── Test data: one seed with passphrase + one wallet ─────────────────────────
-_test_seed = Seed(
-    label="My Key",
-    fingerprint="a1b2c3d4",
-    passphrase="correct horse",
-)
-_test_seed.passphrase_active = True
-_test_seed.is_backed_up = False
-#specter_state.add_seed(_test_seed)
+# ── Test data: a small interconnected seed/wallet fixture ────────────────────
+TEST_DATA = True
+if TEST_DATA:
+    # Seeds: mock BIP85 discovery links labels sharing a 3-char prefix when the
+    # child label sorts after the parent's (see Seed.known_bip85_derivations).
+    _seed_cold = Seed(label="Cold A", fingerprint="c01da001", is_backed_up=True)
+    specter_state.add_seed(_seed_cold)
+    specter_state.add_seed(Seed(label="Cold A2", fingerprint="c01da002", is_backed_up=True))
+    specter_state.add_seed(Seed(label="Cold A2b", fingerprint="c01da02b", is_backed_up=True))
 
-_test_wallet = Wallet(
-    label="Hot Wallet",
-    required_fingerprints=["a1b2c3d4"],
-    threshold=1,
-)
-#specter_state.register_wallet(_test_wallet)
-#specter_state.set_active_wallet(_test_wallet)
+    _seed_hot = Seed(label="Hot B", fingerprint="b07b0001",
+                    passphrase="correct horse")
+    _seed_hot.passphrase_active = True
+    specter_state.add_seed(_seed_hot)
 
-gc.collect()
+    # Wallets: mock parent discovery links derivation sub-paths
+    # (see Wallet.derivation_parent).
+    specter_state.register_wallet(Wallet(
+        label="Savings", descriptor="savings", derivation_path="m/84'/0'/0'",
+        required_fingerprints=["c01da001"], threshold=1, has_been_synched=True))
+    specter_state.register_wallet(Wallet(
+        label="Savings Change", descriptor="savings-change",
+        derivation_path="m/84'/0'/0'/1'",
+        required_fingerprints=["c01da001"], threshold=1))
+    specter_state.register_wallet(Wallet(
+        label="Trading", descriptor="trading", derivation_path="m/49'/0'/0'",
+        required_fingerprints=["b07b0001"], threshold=1))
+
+    gc.collect()
 
 scr = SpecterGui(specter_state, ui_state)
 

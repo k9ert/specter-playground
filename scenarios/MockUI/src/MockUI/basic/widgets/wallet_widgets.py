@@ -2,14 +2,13 @@
 """
 
 import lvgl as lv
+from .info_card import InfoCard
 from .icon_widgets import make_icon
-from .inputs import make_textarea
-from .labels import make_label, optimize_font_size
-from .card_helpers import build_delete_slot
+from .labels import make_label
 from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style, remove_style, get_style
 from ..templates.specter_gui_base import SpecterGuiElement
-from ..utils import apply_click_feedback, set_size, set_align, set_scroll
+from ..utils import set_size, set_align
 
 # Wallet-card slot names (ordered as they appear left-to-right in default layout)
 WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete")
@@ -105,7 +104,7 @@ def wallet_type_icon(parent, wallet, device_state):
 
     return ico
 
-class WalletCard(SpecterGuiElement):
+class WalletCard(InfoCard):
     """Wallet card row widget — layout + optional callbacks for one wallet.
 
     Slot names control presence and left-to-right order of child widgets:
@@ -131,9 +130,7 @@ class WalletCard(SpecterGuiElement):
                  on_name_click=None,
                  on_delete=None):
 
-        super().__init__(parent)
-        apply_style(self, "CONTAINER.INFO_CARD")
-        set_scroll(self, horizontal=False, vertical=False)
+        super().__init__(parent, on_card_click)
 
         # ── Input validation ──────────────────────────────────────────────────
         for s in slots:
@@ -156,11 +153,6 @@ class WalletCard(SpecterGuiElement):
         show_net       = "net" in slots and wallet_net_text(wallet) not in (None, "main")
 
         # ── Build row ─────────────────────────────────────────────────────────
-        self.text_edit = None
-        if on_card_click is not None:
-            apply_click_feedback(self)
-            self.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
-
         for slot in slots:
             if slot == "leading_icon":
                 self.leading_ico = make_icon(self, leading_icon)
@@ -170,21 +162,9 @@ class WalletCard(SpecterGuiElement):
                 self.wallet_type_ico = wallet_type_icon(self, wallet, device_state)
 
             elif slot == "name":
-                if on_name_click is not None and not wallet.is_default_wallet():
-                    self.name_widget = make_textarea(self)
-                    apply_style(self.name_widget, "TEXT.TITLE")
-                    self.name_widget.set_text(wallet.label)
-                    self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
-                    self.text_edit = self.name_widget
-                else:
-                    self.name_widget = make_label(self, wallet.label, styles=[get_style("WIDGET.MENU_BUTTON", role="FG"), "TEXT.TITLE", "TEXT.LEFT"])
-                
-                apply_style(self.name_widget, "LAYOUT.GROWS")
-                # when all slots are builtcthe actual width of the name widget
-                # will be set and we can set its font optimally for the content
-                def _on_name_resized(e):
-                    optimize_font_size(self.name_widget)
-                self.name_widget.add_event_cb(_on_name_resized, lv.EVENT.SIZE_CHANGED, None)
+                name_click = (on_name_click
+                              if not wallet.is_default_wallet() else None)
+                self._add_name_slot(wallet.label, name_click)
 
             elif slot == "threshold" and show_threshold:
                 n = len(wallet.required_fingerprints)
@@ -206,4 +186,4 @@ class WalletCard(SpecterGuiElement):
                 apply_style(self.net_lbl, "WIDGET.INFO_ITEM")
 
             elif slot == "delete":
-                self.del_btn = build_delete_slot(self, on_delete)
+                self.del_btn = self._add_delete_slot(on_delete)

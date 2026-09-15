@@ -71,6 +71,8 @@ class SpecterStylePalette:
         MODAL_BODY            = 26
         SLIDER                = 28
         SWITCH                = 29
+        TREE_CONNECTOR        = 30
+        TREE_EXPANDER         = 31
         # reserved till 40
 
     class TEXT:
@@ -170,4 +172,5 @@ class SpecterStylePalette:
         MODAL_BUTTON_ROW    = 179
         FINGERPRINT_BADGE   = 180
         DELETE_BUTTON       = 181
+        TREE_ROW            = 182
         #reserved until end (255)
