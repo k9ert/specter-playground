@@ -29,15 +29,6 @@ from ..utils import (
 from .btn import Btn
 from .line import Line
 
-# Compile-time layout experiment: True lists nodes top-to-bottom (classic),
-# False anchors the first root at the bottom and expands upward (drop-up).
-TREE_TOP_DOWN = False
-
-# Expanded carets point where the children are; collapsed ones point sideways.
-_EXPANDED_ICON = BTC_ICONS.CARET_DOWN if TREE_TOP_DOWN else BTC_ICONS.CARET_UP
-_COLLAPSED_ICON = BTC_ICONS.CARET_RIGHT
-
-
 class TreeList(SpecterGuiElement):
     """Render a caller-owned ``TreeNode`` forest as collapsible rows.
 
@@ -50,8 +41,9 @@ class TreeList(SpecterGuiElement):
                  is_expanded=None,
                  on_toggle=None,
                  row_style="CONTAINER.TREE_ROW",
-                 expander_style=("WIDGET.TREE_EXPANDER", "WIDGET.TREE_EXPANDER_FG"),
-                 connector_style="WIDGET.TREE_CONNECTOR"):
+                 expander_style="WIDGET.TREE_EXPANDER",
+                 connector_style="WIDGET.TREE_CONNECTOR",
+                 top_down=True):
         super().__init__(parent)
         apply_style(self, [
             "APPEARANCE.TRANSPARENT",
@@ -70,9 +62,10 @@ class TreeList(SpecterGuiElement):
         self._expander_style = expander_style
         self._connector_style = connector_style
         self._on_toggle = on_toggle
+        self._top_down = top_down
         self._has_hierarchy = any(root.children for root in roots)
         if self._has_hierarchy:
-            self._expander_width = get_style_num(expander_style[0], lv.STYLE.WIDTH)
+            self._expander_width = get_style_num(expander_style, lv.STYLE.WIDTH)
             self._indent = get_style_num(connector_style, lv.STYLE.PAD_LEFT)
         else:
             self._expander_width = self._indent = 0
@@ -105,9 +98,7 @@ class TreeList(SpecterGuiElement):
         self._rows = []
         self._lines = []
 
-        nodes = self._visible_nodes()
-        ordered_nodes = nodes if TREE_TOP_DOWN else reversed(nodes)
-        for node in ordered_nodes:
+        for node in self._ordered_nodes():
             self._rows.append(self._build_row(node))
 
         self.update_layout()
@@ -135,16 +126,16 @@ class TreeList(SpecterGuiElement):
         if self._has_hierarchy:
             if node.has_children():
                 callback = None
-                if self._on_toggle is not None:
-                    callback = lambda: self._on_toggle(node)
+                on_toggle = self._on_toggle
+                if on_toggle is not None:
+                    callback = lambda: on_toggle(node)
+
                 row.expander = Btn(
                     row,
-                    icon=(_EXPANDED_ICON if self._is_expanded is None
-                          or self._is_expanded(node) else _COLLAPSED_ICON),
+                    icon=self._expander_icon(node),
                     callback=callback,
                     consume_click=True,
-                    background_style=self._expander_style[0],
-                    foreground_style=self._expander_style[1],
+                    style=self._expander_style,
                 )
             else:
                 # Zero-height invisible placeholder sized to the caret's
@@ -156,9 +147,27 @@ class TreeList(SpecterGuiElement):
         row.item_widget = self._build_item(row, node.item)
         return row
 
+    def _ordered_nodes(self):
+        """Return visible nodes in this list's display direction."""
+        nodes = self._visible_nodes()
+        return nodes if self._top_down else reversed(nodes)
+
+    def _expander_icon(self, node):
+        """Return the caret that points toward a parent's visible children."""
+        if self._is_expanded is None or self._is_expanded(node):
+            return BTC_ICONS.CARET_DOWN if self._top_down else BTC_ICONS.CARET_UP
+        return BTC_ICONS.CARET_RIGHT
+
     def _draw_connectors(self, layer):
-        self._lines = []
+        self._lines = [
+            Line(layer, x1, y1, x2, y2, self._connector_style)
+            for x1, y1, x2, y2 in self._connector_segments()
+        ]
+
+    def _connector_segments(self):
+        """Return connector endpoints from the current visible row geometry."""
         rows_by_node = {row.node: row for row in self._rows}
+        segments = []
 
         # Vertical stems: from the parent's card edge to its furthest child.
         for row in self._rows:
@@ -172,17 +181,15 @@ class TreeList(SpecterGuiElement):
             _, row_y = get_pos(row)
             _, item_y = get_pos(row.item_widget)
 
-            if TREE_TOP_DOWN:
+            if self._top_down:
                 _, item_h = get_size(row.item_widget)
                 branch_y = row_y + item_y + item_h
             else:
                 branch_y = row_y + item_y
 
-            self._lines.append(
-                Line(layer,
-                     branch_x, branch_y,
-                     branch_x, self._card_center_y(end_row),
-                     self._connector_style))
+            segments.append(
+                (branch_x, branch_y,
+                 branch_x, self._card_center_y(end_row)))
 
         # Horizontal elbows: from the parent's rail to the child's element
         # boundary. The row style's pad_column provides the visible gap.
@@ -200,11 +207,11 @@ class TreeList(SpecterGuiElement):
 
             center_y = self._card_center_y(row)
 
-            self._lines.append(
-                Line(layer,
-                     self._expander_center_x(parent_row), center_y,
-                     right_x, center_y,
-                     self._connector_style))
+            segments.append(
+                (self._expander_center_x(parent_row), center_y,
+                 right_x, center_y))
+
+        return segments
 
     def _expander_center_x(self, row):
         row_x, _ = get_pos(row)

@@ -87,18 +87,21 @@ def build_forest(items, get_parent=None, get_children=None, make_key=None):
         nodes_by_key[key] = TreeNode(item, key=key)
 
     roots = []
+    declared_parent_keys = {}
 
     # Parent pass: links come from get_parent declarations.
     if get_parent is not None:
         for item in items:
             node = nodes_by_key[_key(item)]
             parent_item = get_parent(item)
+            declared_parent_keys[node.key] = None
             if parent_item is None:
                 continue
             parent_node = nodes_by_key.get(_key(parent_item))
             if parent_node is None:
                 raise ValueError("parent %r of %r is not in the item list"
                                  % (parent_item, item))
+            declared_parent_keys[node.key] = parent_node.key
             parent_node.add_child(node)
 
     # Children pass: links come from get_children declarations.
@@ -110,6 +113,13 @@ def build_forest(items, get_parent=None, get_children=None, make_key=None):
                 if child_node is None:
                     raise ValueError("child %r of %r is not in the item list"
                                      % (child_item, item))
+                if get_parent is not None:
+                    declared_parent_key = declared_parent_keys[child_node.key]
+                    if declared_parent_key != node.key:
+                        raise ValueError(
+                            "contradictory links: %r declares parent %r, "
+                            "but %r lists it as a child"
+                            % (child_item, get_parent(child_item), item))
                 node.add_child(child_node)
 
     # Mixed consistency: every parent-declared link must also appear in the

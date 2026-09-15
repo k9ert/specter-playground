@@ -172,6 +172,7 @@ class DropUp(SpecterGuiMixin):
             self._build_item_card,
             self._is_item_expanded,
             on_toggle=self._on_item_toggle,
+            top_down=False,
         )
         self._panel.rows.append(self._item_list)
 

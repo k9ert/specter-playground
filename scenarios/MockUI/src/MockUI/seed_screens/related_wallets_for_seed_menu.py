@@ -55,6 +55,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
             head_lbl = make_label(self.body, self.t("COMMON_SINGLESIG"))
             apply_style(head_lbl, "WIDGET.MENU_SECTION_HEADER")
 
+        wallet_cards = []
         for [i, wallet] in enumerate(wallets):
             if i > 0 and type[i] != type[i-1] and type[i] != WalletType.SINGLE_SIG:  # section header detection based on sorted order
                 if type[i] == WalletType.MULTISIG:
@@ -80,8 +81,11 @@ class RelatedWalletsForSeedMenu(TitledScreen):
             )
             apply_style(card, "CONTAINER.DROP_UP_ROW")
             set_propagate_events(card, True)
+            wallet_cards.append(card)
 
         self._configure_scroll()
+        for card in wallet_cards:
+            card.optimize_name_font()
 
     def refresh(self):
         self._fill()

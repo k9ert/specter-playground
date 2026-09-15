@@ -12,7 +12,11 @@ from ..utils import apply_click_feedback, set_scroll
 
 
 class InfoCard(SpecterGuiElement):
-    """Shared behavior for selectable information cards."""
+    """Shared behavior for selectable information cards.
+
+    Owners should call :meth:`optimize_name_font` once after the layout pass that
+    resolves a non-editable name widget's bounds.
+    """
 
     def __init__(self, parent, on_card_click=None):
         super().__init__(parent)
@@ -54,6 +58,10 @@ class InfoCard(SpecterGuiElement):
             consume_click=True)
 
     def optimize_name_font(self):
-        """Pick the best font for the name at its settled width (once)."""
+        """Lock the settled name box and fit its text once.
+
+        This is an owner-facing hook. Call only after the card's owner has
+        completed the layout pass that resolves the name widget's bounds.
+        """
         if self.text_edit is None:
             optimize_font_size(self.name_widget)

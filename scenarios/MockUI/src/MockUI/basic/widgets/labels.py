@@ -7,7 +7,14 @@ from ..theming import apply_style, get_font
 # ── Font selection helpers ────────────────────────────────────────────────────
 
 def optimize_font_size(label):
+    """Fit the label's text into its current resolved bounding box.
+
+    Call this only after the owner has completed its layout pass. Locking the
+    resolved box makes the selected font and display text unable to resize the
+    surrounding flex row.
+    """
     w, h = get_size(label)
+    set_size(label, w, h)
     font_key, display_text = best_fonttype_for_size(label.get_text(), w, h)
     font, err = get_font(font_key)
     label.set_text(display_text)

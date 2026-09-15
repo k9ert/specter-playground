@@ -1,0 +1,381 @@
+import pytest
+
+from MockUI.basic.templates.dropup import DropUp, DropUpState
+from MockUI.basic.ui_state import Context
+from MockUI.basic.utils.tree_node import TreeNode
+
+
+class _Panel:
+    def __init__(self, calls, width, height):
+        self._calls = calls
+        self._width = width
+        self._height = height
+        self.position = None
+
+    def update_layout(self):
+        self._calls.append("layout")
+
+    def get_width(self):
+        return self._width
+
+    def get_height(self):
+        return self._height
+
+    def set_x(self, x):
+        self.position = (x, self.position[1] if self.position else None)
+
+    def set_y(self, y):
+        self.position = (self.position[0] if self.position else None, y)
+
+
+class _DeletingPanel:
+    def __init__(self):
+        self.deleted = False
+
+    def delete(self):
+        self.deleted = True
+
+
+class _Card:
+    def __init__(self, calls):
+        self._calls = calls
+
+    def optimize_name_font(self):
+        self._calls.append("optimize")
+
+
+class _ItemList:
+    def __init__(self, cards):
+        self.visible_items = cards
+
+
+class _RefreshingItemList:
+    def __init__(self):
+        self.refresh_count = 0
+
+    def refresh(self):
+        self.refresh_count += 1
+
+
+class _Gui:
+    def __init__(self, ui_state):
+        self.ui_state = ui_state
+        self.refresh_count = 0
+
+    def refresh_ui(self):
+        self.refresh_count += 1
+
+
+class _TestDropUp(DropUp):
+    EXPANSION_CONTEXT = Context.SEED
+
+    def __init__(self, items=(), gui=None):
+        super().__init__()
+        self.items = list(items)
+        self._test_gui = gui
+        self.deleted_items = []
+        self.close_count = 0
+        self.navigation_calls = []
+        self.add_count = 0
+        self.fill_count = 0
+        self.resize_count = 0
+
+    def _get_selectable_items(self):
+        return self.items
+
+    def _delete_from_gui(self, item):
+        self.deleted_items.append(item)
+        self.items.remove(item)
+
+    def _navigate_add(self):
+        self.add_count += 1
+
+    def _add_button_label(self):
+        return "Add"
+
+    def _build_card(self, parent, item):
+        raise NotImplementedError
+
+    def _fill_panel(self):
+        self.fill_count += 1
+
+    def _resize_panel(self):
+        self.resize_count += 1
+
+    def close(self):
+        self.close_count += 1
+
+    @property
+    def gui(self):
+        return self._test_gui
+
+    @property
+    def on_navigate(self):
+        return self._record_navigation
+
+    def _record_navigation(self, target, **kwargs):
+        self.navigation_calls.append((target, kwargs))
+
+
+class _LifecycleDropUp(DropUp):
+    def __init__(self, gui):
+        super().__init__()
+        self._test_gui = gui
+
+    @property
+    def gui(self):
+        return self._test_gui
+
+
+def test_resize_panel_relayouts_after_name_optimization():
+    calls = []
+    panel = _Panel(calls, width=480, height=120)
+    backdrop = _Panel(calls, width=480, height=700)
+    card = _Card(calls)
+
+    dropup = DropUp()
+    dropup._panel = panel
+    dropup._item_list = _ItemList([card])
+    dropup._backdrop = backdrop
+
+    dropup._resize_panel()
+
+    assert calls == ["layout", "optimize"]
+    assert panel.position == (0, 580)
+
+
+def test_resize_panel_clamps_to_the_top_when_content_is_taller():
+    calls = []
+    panel = _Panel(calls, width=480, height=800)
+    backdrop = _Panel(calls, width=480, height=700)
+
+    dropup = DropUp()
+    dropup._panel = panel
+    dropup._item_list = _ItemList([])
+    dropup._backdrop = backdrop
+
+    dropup._resize_panel()
+
+    assert calls == ["layout"]
+    assert panel.position == (0, 0)
+
+
+@pytest.mark.parametrize(
+    "has_panel, animating, closing, expected_state",
+    [
+        (False, False, False, DropUpState.CLOSED),
+        (True, False, False, DropUpState.OPEN),
+        (True, True, False, DropUpState.OPENING),
+        (True, True, True, DropUpState.CLOSING),
+    ],
+)
+def test_dropup_state_tracks_panel_and_animation_flags(
+        has_panel, animating, closing, expected_state):
+    dropup = DropUp()
+    dropup._panel = object() if has_panel else None
+    dropup._animating = animating
+    dropup._closing = closing
+
+    assert dropup.get_state() == expected_state
+
+
+@pytest.mark.parametrize(
+    "animating, closing, expected_refreshes",
+    [
+        (False, False, 1),
+        (True, False, 0),
+        (True, True, 0),
+    ],
+)
+def test_refresh_rebuilds_only_an_open_dropup(
+        animating, closing, expected_refreshes):
+    dropup = _TestDropUp()
+
+    dropup.refresh()
+    assert dropup.fill_count == 0
+
+    dropup._panel = object()
+    dropup._animating = animating
+    dropup._closing = closing
+    dropup.refresh()
+    assert dropup.fill_count == expected_refreshes
+
+
+@pytest.mark.parametrize(
+    "animating, closing, expected_state",
+    [
+        (False, False, DropUpState.OPEN),
+        (True, False, DropUpState.OPENING),
+        (True, True, DropUpState.CLOSING),
+    ],
+)
+def test_open_returns_existing_state_without_rebuilding(
+        animating, closing, expected_state):
+    dropup = _TestDropUp()
+    dropup._panel = object()
+    dropup._animating = animating
+    dropup._closing = closing
+
+    assert dropup.open(object()) == expected_state
+    assert dropup.fill_count == 0
+
+
+@pytest.mark.parametrize(
+    "has_panel, animating, closing, expected_state",
+    [
+        (False, False, False, DropUpState.CLOSED),
+        (True, True, False, DropUpState.OPENING),
+        (True, True, True, DropUpState.CLOSING),
+    ],
+)
+def test_close_is_ignored_outside_the_open_state(
+        has_panel, animating, closing, expected_state):
+    dropup = DropUp()
+    dropup._panel = object() if has_panel else None
+    dropup._animating = animating
+    dropup._closing = closing
+
+    assert dropup.close() == expected_state
+
+
+def test_close_without_animations_deletes_panel_and_runs_callback(ui_state):
+    ui_state.are_animations_enabled = False
+    gui = _Gui(ui_state)
+    dropup = _LifecycleDropUp(gui)
+    panel = _DeletingPanel()
+    closed = []
+    dropup._panel = panel
+    dropup._backdrop = object()
+    dropup._on_closed = lambda: closed.append(True)
+
+    assert dropup.close() == DropUpState.CLOSED
+    assert panel.deleted is True
+    assert dropup._panel is None
+    assert dropup._backdrop is None
+    assert closed == [True]
+
+
+def test_cancel_animation_leaves_the_open_panel_ready_for_refresh():
+    dropup = DropUp()
+    dropup._panel = object()
+    dropup._animating = True
+    dropup._closing = True
+    dropup._anim = object()
+
+    dropup.cancel_animation()
+
+    assert dropup.get_state() == DropUpState.OPEN
+    assert dropup._anim is None
+
+
+def test_toggle_updates_expansion_state_and_refreshes_the_list(ui_state):
+    gui = _Gui(ui_state)
+    dropup = _TestDropUp(gui=gui)
+    dropup._item_list = _RefreshingItemList()
+    node = TreeNode("seed", key="fingerprint")
+
+    dropup._on_item_toggle(node)
+
+    assert ui_state.is_item_expanded[(Context.SEED, "fingerprint")] is True
+    assert dropup._item_list.refresh_count == 1
+    assert dropup.resize_count == 1
+
+    dropup._on_item_toggle(node)
+
+    assert ui_state.is_item_expanded[(Context.SEED, "fingerprint")] is False
+    assert dropup._item_list.refresh_count == 2
+    assert dropup.resize_count == 2
+
+
+def test_item_expansion_state_defaults_to_false_and_reads_saved_values(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    node = TreeNode("seed", key="fingerprint")
+    key = (Context.SEED, "fingerprint")
+
+    assert dropup._is_item_expanded(node) is False
+
+    ui_state.is_item_expanded[key] = True
+    assert dropup._is_item_expanded(node) is True
+
+    ui_state.is_item_expanded[key] = False
+    assert dropup._is_item_expanded(node) is False
+
+
+def test_delete_item_closes_and_navigates_only_after_the_last_item():
+    dropup = _TestDropUp(items=["first", "last"])
+
+    dropup._delete_item("first")
+
+    assert dropup.deleted_items == ["first"]
+    assert dropup.close_count == 0
+    assert dropup.navigation_calls == []
+
+    dropup._delete_item("last")
+
+    assert dropup.deleted_items == ["first", "last"]
+    assert dropup.close_count == 1
+    assert dropup.navigation_calls == [("main", {})]
+
+
+def test_add_callback_closes_then_navigates_to_add_flow():
+    dropup = _TestDropUp()
+
+    dropup._add_cb()
+
+    assert dropup.close_count == 1
+    assert dropup.add_count == 1
+
+
+def test_row_click_reselects_and_refreshes_within_its_active_context(ui_state):
+    original_seed = object()
+    selected_seed = object()
+    ui_state.active_context = Context.SEED
+    ui_state.active_seed = original_seed
+    gui = _Gui(ui_state)
+    dropup = _TestDropUp(gui=gui)
+
+    callback = dropup._make_on_row_click_cb(
+        selected_seed,
+        Context.SEED,
+        "active_seed",
+        "set_active_seed",
+        "manage_seedphrase",
+        "target_seed",
+    )
+    callback(None)
+
+    assert dropup.close_count == 1
+    assert ui_state.active_seed is selected_seed
+    assert gui.refresh_count == 1
+    assert dropup.navigation_calls == []
+
+
+@pytest.mark.parametrize(
+    "active_context, active_seed",
+    [
+        (Context.WALLET, object()),
+        (Context.SEED, None),
+    ],
+)
+def test_row_click_navigates_when_selection_context_is_unavailable(
+        ui_state, active_context, active_seed):
+    selected_seed = object()
+    ui_state.active_context = active_context
+    ui_state.active_seed = active_seed
+    gui = _Gui(ui_state)
+    dropup = _TestDropUp(gui=gui)
+
+    callback = dropup._make_on_row_click_cb(
+        selected_seed,
+        Context.SEED,
+        "active_seed",
+        "set_active_seed",
+        "manage_seedphrase",
+        "target_seed",
+    )
+    callback(None)
+
+    assert dropup.close_count == 1
+    assert gui.refresh_count == 0
+    assert dropup.navigation_calls == [
+        ("manage_seedphrase", {"target_seed": selected_seed})]

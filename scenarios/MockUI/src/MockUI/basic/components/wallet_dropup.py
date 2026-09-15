@@ -22,9 +22,7 @@ class WalletDropUp(DropUp):
         return wallet.derivation_parent(self.device_state.registered_wallets)
 
     def _get_item_key(self, wallet):
-        # NOTE: labels can collide; the stable key will become the descriptor
-        # once real descriptors are available.
-        return wallet.label
+        return str(wallet.descriptor)
 
     def _add_button_label(self):
         return self.t("MENU_ADD_WALLET")

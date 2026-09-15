@@ -21,7 +21,7 @@ __all__ = [
     "shuffle",
     "resolve_obj",
     # tree_node
-    "TreeNode",
+    "TreeNode", "build_forest", "flatten_forest",
     # keyboard_manager
     "KeyboardManager", "Layout",
     # animations

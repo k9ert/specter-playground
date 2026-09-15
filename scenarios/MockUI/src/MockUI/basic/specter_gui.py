@@ -186,7 +186,8 @@ class SpecterGui(RebuildableObj):
         self.device_state.remove_wallet(wallet)
         if self.ui_state.active_wallet is wallet:
             self.ui_state.active_wallet = None
-        self.ui_state.is_item_expanded.pop((Context.WALLET, wallet.label), None)
+        self.ui_state.is_item_expanded.pop(
+            (Context.WALLET, str(wallet.descriptor)), None)
         self.refresh_ui()
 
     def navigate_to(self, target_menu_id=None, target_seed="unset", target_wallet="unset"):
