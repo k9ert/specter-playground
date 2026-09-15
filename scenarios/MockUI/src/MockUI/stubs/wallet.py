@@ -17,14 +17,17 @@ class Wallet:
         required_fingerprints: list of key fingerprints needed for signing
         threshold: multisig m-of-n (m value); None for singlesig
         has_been_synched: whether this wallet has been synced with a companion app
+        is_custom: whether this is a non-standard custom policy
     """
 
     def __init__(self, label, descriptor=None, isMultiSig=False, net="mainnet",
                  required_fingerprints=None, threshold=None,
-                 has_been_synched=False, account=0, derivation_path=None):
+                 has_been_synched=False, account=0, derivation_path=None,
+                 is_custom=False):
         self.label = label
         self.descriptor = descriptor
         self.isMultiSig = isMultiSig
+        self.is_custom = bool(is_custom)
         self.net = net
         self.threshold = threshold
         self.required_fingerprints = required_fingerprints or []
@@ -61,8 +64,8 @@ class Wallet:
         return best
 
     def is_standard(self):
-        """Check if this is the default "Standard" wallet (which has no descriptor)."""
-        return self.descriptor != "fancy script"
+        """Return whether this wallet uses a standard descriptor policy."""
+        return not self.is_custom
 
     def is_default_wallet(self):
         """Check if this wallet is the default "Standard" wallet."""

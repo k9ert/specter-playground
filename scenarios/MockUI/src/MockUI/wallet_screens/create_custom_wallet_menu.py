@@ -154,6 +154,51 @@ class CreateCustomWalletMenu(TitledScreen):
 
     # ── helpers ──────────────────────────────────────────────────────
 
+    @staticmethod
+    def _build_descriptor(fingerprints, threshold, is_multi, is_custom,
+                          net, account, nonce):
+        """Build a readable, descriptor-shaped mock policy."""
+        coin_type = 0 if net == "mainnet" else 1
+
+        def key_expression(fingerprint, purpose, key_index,
+                           include_script_type=False):
+            path = "[%s/%dh/%dh/%dh" % (
+                fingerprint, purpose, coin_type, account)
+            if include_script_type:
+                path += "/2h"
+            return "%s]xpub...%s%d/{0,1}/*" % (path, nonce, key_index)
+
+        if is_multi:
+            key_expressions = [
+                key_expression(fingerprint, 48, key_index, True)
+                for key_index, fingerprint in enumerate(fingerprints)
+            ]
+            if is_custom:
+                policies = ["pk(%s)" % key for key in key_expressions]
+                return "wsh(and_v(v:thresh(%d,%s),after(840000)))" % (
+                    threshold, ",".join(policies))
+            return "wsh(sortedmulti(%d,%s))" % (
+                threshold, ",".join(key_expressions))
+
+        key = key_expression(fingerprints[0], 84, 0)
+        if is_custom:
+            return "wsh(and_v(v:pk(%s),after(840000)))" % key
+        return "wpkh(%s)" % key
+
+    def _make_unique_descriptor(self, fingerprints, threshold, is_multi,
+                                is_custom, net):
+        """Build a descriptor distinct from every currently registered wallet."""
+        while True:
+            nonce = "%08x" % urandom.getrandbits(32)
+            descriptor = self._build_descriptor(
+                fingerprints, threshold, is_multi, is_custom,
+                net, self.account_val, nonce)
+            for wallet in self.device_state.registered_wallets:
+                if str(wallet.descriptor) == descriptor:
+                    break
+            else:
+                return descriptor
+
     def _on_multisig_toggle(self, e):
         if self.body.ms_sw.has_state(lv.STATE.CHECKED):
             self.body.thresh_row.remove_flag(lv.obj.FLAG.HIDDEN)
@@ -195,19 +240,14 @@ class CreateCustomWalletMenu(TitledScreen):
             fp = raw.split(",")[0].strip() if raw else "0xabcd"
             fps.append(fp)
 
-        # Build a dummy descriptor string
-        if is_custom:
-            desc = "fancy script"
-        elif is_multi:
-            desc = "wsh(sortedmulti(%d,%s))" % (threshold, ",".join(fps))
-        else:
-            fp0 = fps[0] if fps else "00000000"
-            desc = "wpkh([%s/84h/0h/0h]xpub...)" % fp0
+        desc = self._make_unique_descriptor(
+            fps, threshold, is_multi, is_custom, net)
 
         wallet = Wallet(
             label=name,
             descriptor=desc,
             isMultiSig=is_multi,
+            is_custom=is_custom,
             net=net,
             required_fingerprints=fps,
             threshold=threshold,
