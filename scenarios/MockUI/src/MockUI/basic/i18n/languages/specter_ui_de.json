@@ -150,6 +150,14 @@
       "text": "Eine neue 24-Wort-Seed wird generiert. Du kannst sie nach der Erstellung sichern.",
       "ref_en": "A new 24-word seed will be generated. You can back it up after creation."
     },
+    "FINGERPRINT_INFO_TITLE": {
+      "text": "Schlüssel-Fingerprint",
+      "ref_en": "Key fingerprint"
+    },
+    "FINGERPRINT_INFO_TEXT": {
+      "text": "Dieser Fingerprint identifiziert den geladenen Schlüssel:\n\n%s",
+      "ref_en": "This fingerprint identifies the loaded key:\n\n%s"
+    },
     "ADD_SEED_GENERATE_SECTION": {
       "text": "Erzeuge",
       "ref_en": "Generate"

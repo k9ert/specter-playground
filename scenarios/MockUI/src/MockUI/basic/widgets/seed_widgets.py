@@ -13,13 +13,16 @@ from ..utils import apply_click_feedback, set_scroll
 
 SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
 
-def fingerprint_badge(parent, seed, digits=8):
+def fingerprint_badge(parent, seed, digits=8, on_click=None):
     """Append a FINGERPRINT icon and the first *digits* hex chars of *seed*'s
     fingerprint to *parent*.
 
     Strips any leading ``0x`` prefix before truncating.
 
-    Returns the fingerprint ``lv.label``.
+    If *on_click* is provided, the complete badge becomes a touch target and
+    the callback is invoked when it is tapped.
+
+    Returns the fingerprint badge container.
     """
     badge = SpecterGuiElement(parent)
     set_scroll(badge, horizontal=False, vertical=False)
@@ -36,6 +39,16 @@ def fingerprint_badge(parent, seed, digits=8):
     fp = "\n".join(fp[i:i + 4] for i in range(0, digits, 4)).lower()
     badge._lbl = body_label(badge, fp,
                             ["WIDGET.INFO_ITEM", "LAYOUT.GROWS"])
+
+    if on_click is not None:
+        badge.add_flag(lv.obj.FLAG.CLICKABLE)
+        apply_click_feedback(badge)
+
+        def _fp_cb(e):
+            e.stop_bubbling = 1
+            on_click()
+
+        badge.add_event_cb(_fp_cb, lv.EVENT.CLICKED, None)
 
     return badge
 
@@ -91,7 +104,8 @@ class SeedCard(SpecterGuiElement):
                  on_card_click=None,
                  on_name_click=None,
                  on_delete=None,
-                 on_backup_warning=None):
+                 on_backup_warning=None,
+                 on_fingerprint_click=None):
         super().__init__(parent)
         apply_style(self, "CONTAINER.INFO_CARD")
         set_scroll(self, horizontal=False, vertical=False)
@@ -162,7 +176,8 @@ class SeedCard(SpecterGuiElement):
                     self.passphrase_widget = passphrase_toggle(self, seed)
 
             elif slot == "fingerprint":
-                self.fp_badge = fingerprint_badge(self, seed)
+                self.fp_badge = fingerprint_badge(
+                    self, seed, on_click=on_fingerprint_click)
 
             elif slot == "delete":
                 self.del_btn = build_delete_slot(self, on_delete)

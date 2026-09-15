@@ -30,6 +30,7 @@ class SeedDropUp(DropUp):
                                             "manage_seedphrase",
                                             "target_seed"),
             on_backup_warning=lambda: self._on_backup_warning(seed),
+            on_fingerprint_click=lambda: self._on_fingerprint(seed),
             on_delete=lambda: self._on_delete_seed(seed),
         )
         apply_style(card, "CONTEXT.SEED")
@@ -45,6 +46,22 @@ class SeedDropUp(DropUp):
                 MenuItem(icon=None, text=self.t("MODAL_BACKUP_CONFIRMED_BTN"), target=_mark_backed_up),
                 MenuItem(text=self.t("COMMON_OK")),
             ],
+        )
+
+    def _on_fingerprint(self, seed):
+        """Show the complete fingerprint when its badge is tapped."""
+        fingerprint = seed.get_fingerprint()
+        if fingerprint[:2].lower() == "0x":
+            fingerprint = fingerprint[2:]
+        fingerprint = fingerprint.lower()
+        readable_fingerprint = "\n".join(
+            fingerprint[i:i + 4] for i in range(0, len(fingerprint), 4)
+        )
+
+        button_modal(
+            title=self.t("FINGERPRINT_INFO_TITLE"),
+            text=self.t("FINGERPRINT_INFO_TEXT") % readable_fingerprint,
+            buttons=[MenuItem(text=self.t("MODAL_CLOSE_BTN"))],
         )
 
     def _do_delete_seed(self, seed):

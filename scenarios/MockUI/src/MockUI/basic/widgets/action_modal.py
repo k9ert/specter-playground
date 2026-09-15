@@ -6,7 +6,7 @@ from .icon_widgets import make_icon
 from .menu_item import MenuItem
 from .inputs import confirmation_slider
 from ..theming import apply_style
-from ..utils import set_align
+from ..utils import set_align, set_size
 
 
 def _action_modal(text, title=None, parent=None):
@@ -141,6 +141,30 @@ def slider_confirm_modal(text,
         on_min=lambda: _on_user_decision(on_reject),
         min_style=reject_style
     )
+
+    # Keep the track visually slim, but give the slider a generous touch area.
+    # Otherwise SIZE_CONTENT can collapse the destructive-action dialog to an
+    # almost untappable strip on the small display.
+    set_size(modal_window._slider, width=lv.pct(100), height=56)
+
+    def _on_reject_click():
+        _on_user_decision(on_reject)
+
+    # A conventional escape route keeps the user from being trapped in a
+    # modal when dragging the confirmation control is difficult.
+    modal_window.cancel_row = SpecterGuiElement(modal_window)
+    apply_style(modal_window.cancel_row, "CONTAINER.MODAL_BUTTON_ROW")
+    modal_window.cancel_btn = Btn(
+        modal_window.cancel_row,
+        text=overlay.gui.i18n.t("COMMON_CANCEL"),
+        callback=_on_reject_click,
+        consume_click=True,
+    )
+
+    # Resolve flex dimensions before the first touch is processed.
+    modal_window.update_layout()
+    overlay.update_layout()
+
     if confirm_icon is not None:
         modal_window.confirm_icon = make_icon(modal_window._slider, confirm_icon)
         apply_style(modal_window.confirm_icon, "WIDGET.INFO_ITEM")
@@ -152,3 +176,5 @@ def slider_confirm_modal(text,
         apply_style(modal_window.reject_icon, "WIDGET.INFO_ITEM")
         apply_style(modal_window.reject_icon, "APPEARANCE.TRANSPARENT")
         set_align(modal_window.reject_icon, lv.ALIGN.LEFT_MID)
+
+    return overlay
