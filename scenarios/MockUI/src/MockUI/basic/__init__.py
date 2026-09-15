@@ -18,7 +18,9 @@ from .widgets import (
     ACCEPTED_CHARS,
     WalletCard,
 )
-from .theming import apply_style, remove_style, ColorMode, to_lv_color, to_hex_color_str
+from .theming import (apply_style, remove_style,
+                      SpecterStylePalette, StyleRole,
+                      ColorMode, to_lv_color, to_hex_color_str)
 from .specter_gui import SpecterGui
 
 __all__ = [
@@ -46,7 +48,9 @@ __all__ = [
     #keyboard manager used outside basic/
     "Layout",
     # theming API used outside basic/
-    "apply_style", "remove_style", "to_lv_color", "to_hex_color_str", "ColorMode",
+    "apply_style", "remove_style",
+    "SpecterStylePalette", "StyleRole",
+    "to_lv_color", "to_hex_color_str", "ColorMode",
     # Specter GUI base
     "SpecterGuiElement", "t",
 ]

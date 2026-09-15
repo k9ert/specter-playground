@@ -402,7 +402,9 @@ class SettingsFileCompiler:
             print(f"Error: Could not write binary file '{output_path}': {e}")
             return None
 
-        extra_keys = [k for k in entries if k.upper() not in {ek.upper() for ek in key_to_index}]
+        known_upper = {ek.upper() for ek in key_to_index}
+        extra_keys = [k for k in entries
+                      if isinstance(k, str) and k.upper() not in known_upper]
         if extra_keys:
             self.handle_extra_keys_from_json(output_path, extra_keys)
 

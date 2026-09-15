@@ -74,8 +74,7 @@ class NavigationBar(SpecterGuiElement):
             self.buttons[name] = Btn(self, 
                                      icon=icon, 
                                      callback=cb,
-                                     background_style="WIDGET.NAVBAR_BUTTON",
-                                     foreground_style="WIDGET.NAVBAR_BUTTON_FG")
+                                     style="WIDGET.NAVBAR_BUTTON")
             apply_style(self.buttons[name], "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
 
         self.refresh()  # initial state

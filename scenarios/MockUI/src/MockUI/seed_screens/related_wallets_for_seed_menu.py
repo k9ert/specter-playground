@@ -70,7 +70,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
                         self.on_navigate("manage_wallet", target_wallet=w)
                 return _cb
 
-            btn = Btn(self.body, background_style="WIDGET.MENU_BUTTON")
+            btn = Btn(self.body, style="WIDGET.MENU_BUTTON")
             card = WalletCard(
                 btn._btn,
                 wallet,

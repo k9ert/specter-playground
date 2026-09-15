@@ -8,7 +8,7 @@ from .labels import make_label, body_label, optimize_font_size
 from .card_helpers import build_delete_slot
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..symbol_lib import BTC_ICONS
-from ..theming import apply_style
+from ..theming import apply_style, get_style
 from ..utils import apply_click_feedback, set_scroll
 
 SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
@@ -137,7 +137,7 @@ class SeedCard(SpecterGuiElement):
                     self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
                     self.text_edit = self.name_widget
                 else:
-                    self.name_widget = make_label(self, seed.label, styles=["WIDGET.MENU_BUTTON_FG", "TEXT.TITLE", "TEXT.LEFT"])
+                    self.name_widget = make_label(self, seed.label, styles=[get_style("WIDGET.MENU_BUTTON", role="FG"), "TEXT.TITLE", "TEXT.LEFT"])
                 
                 apply_style(self.name_widget, "LAYOUT.GROWS")
                 # when all slots are built the actual width of the name widget

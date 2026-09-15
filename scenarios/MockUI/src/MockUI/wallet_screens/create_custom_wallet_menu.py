@@ -15,6 +15,7 @@ from ..basic import (
     Btn,
     t
 )
+from ..basic.theming import get_style
 from ..stubs import Wallet
 
 class CreateCustomWalletMenu(TitledScreen):
@@ -30,6 +31,9 @@ class CreateCustomWalletMenu(TitledScreen):
         super().__init__(t("ADD_WALLET_CREATE_CUSTOM"), parent)
 
         apply_style(self.body, ["CONTAINER.MENU_CONTAINER", "LAYOUT.FLEX_COL", "LAYOUT.FULL_SIZE"])
+
+        # Style for the row labels, resolved once at construction time
+        menu_lbl_style = get_style("WIDGET.MENU_BUTTON", role="LABEL")
 
 
         # ── Wallet name ──────────────────────────────────────────────
@@ -47,7 +51,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.ms_row = SpecterGuiElement(self.body)
         apply_style(self.body.ms_row, "CONTAINER.MENU_ROW")
         self.body.ms_lbl = make_label(self.body.ms_row, t("COMMON_MULTISIG"), 
-                                      ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                      [menu_lbl_style, "TEXT.TITLE"])
 
         self.body.ms_sw = make_switch(self.body.ms_row, False, setter_cb=lambda e: self._on_multisig_toggle(e))
 
@@ -55,7 +59,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.thresh_row = SpecterGuiElement(self.body)
         apply_style(self.body.thresh_row, "CONTAINER.MENU_ROW")
         self.body.thresh_row_lbl = make_label(self.body.thresh_row, t("ADD_WALLET_THRESHOLD"),
-                                              ["WIDGET.MENU_LABEL", "TEXT.DEFAULT"])
+                                              [menu_lbl_style, "TEXT.DEFAULT"])
         self.body.thresh_ta = make_textarea(self.body.thresh_row)
         apply_style(self.body.thresh_ta, ["TEXT.TITLE"])
         self.body.thresh_ta.set_text("2")
@@ -68,7 +72,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.fp_row = SpecterGuiElement(self.body)
         apply_style(self.body.fp_row, "CONTAINER.MENU_ROW")
         self.body.fp_row_lbl = make_label(self.body.fp_row, t("ADD_WALLET_SIGNERS"),
-                                          ["WIDGET.MENU_LABEL", "TEXT.DEFAULT"])
+                                          [menu_lbl_style, "TEXT.DEFAULT"])
         self.body.fp_ta = make_textarea(self.body.fp_row)
         apply_style(self.body.fp_ta, ["TEXT.DEFAULT", "LAYOUT.GROWS"])
         sig_text = ""
@@ -100,7 +104,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.net_row = SpecterGuiElement(self.body)
         apply_style(self.body.net_row, "CONTAINER.MENU_ROW")
         self.body.net_row_lbl = make_label(self.body.net_row, "Testnet", 
-                                           ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                           [menu_lbl_style, "TEXT.TITLE"])
 
         self.body.net_sw = make_switch(self.body.net_row, False, setter_cb=None)
 
@@ -108,7 +112,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.custom_row = SpecterGuiElement(self.body)
         apply_style(self.body.custom_row, "CONTAINER.MENU_ROW")
         self.body.custom_row_lbl = make_label(self.body.custom_row, t("ADD_WALLET_CUSTOM"),
-                                              ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                              [menu_lbl_style, "TEXT.TITLE"])
 
         self.body.custom_sw = make_switch(self.body.custom_row, False, setter_cb=None)
 
@@ -116,7 +120,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.acc_row = SpecterGuiElement(self.body)
         apply_style(self.body.acc_row, "CONTAINER.MENU_ROW")
         self.body.acc_row._lbl = make_label(self.body.acc_row, t("WALLET_MENU_SELECT_ACCOUNT"),
-                                            ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                            [menu_lbl_style, "TEXT.TITLE"])
 
         self.account_val = 0
         self.body.acc_row.spin_row = SpecterGuiElement(self.body.acc_row)
@@ -126,8 +130,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.acc_row.spin_row.dec_btn = Btn(self.body.acc_row.spin_row,
                                                   icon=BTC_ICONS.MINUS,
                                                   callback=self._decrement_account,
-                                                  background_style="WIDGET.BUTTON",
-                                                  foreground_style="WIDGET.BUTTON_FG",
+                                                  style="WIDGET.BUTTON",
                                                  )
         self.body.acc_row.spin_row.acc_lbl = make_label(self.body.acc_row.spin_row, str(self.account_val),
                                                         ["FG.DEFAULT", "TEXT.TITLE", "TEXT.CENTER"])
@@ -136,8 +139,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.acc_row.spin_row.inc_btn = Btn(self.body.acc_row.spin_row,
                                                  icon=BTC_ICONS.PLUS,
                                                  callback=self._increment_account,
-                                                 background_style="WIDGET.BUTTON",
-                                                 foreground_style="WIDGET.BUTTON_FG",
+                                                 style="WIDGET.BUTTON",
                                                 )
 
         # ── Create button ────────────────────────────────────────────
@@ -147,8 +149,7 @@ class CreateCustomWalletMenu(TitledScreen):
                               self.body.btn_row,
                               text=t("COMMON_CREATE"),
                               callback=self._on_create,
-                              background_style="WIDGET.BUTTON",
-                              foreground_style="WIDGET.BUTTON_FG"
+                              style="WIDGET.BUTTON",
                              )
 
     # ── helpers ──────────────────────────────────────────────────────

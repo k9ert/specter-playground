@@ -100,24 +100,21 @@ class PassphraseMenu(GenericMenu):
                               icon=BTC_ICONS.CHECK,
                               text=t("COMMON_OK"),
                               callback=self._on_accept,
-                              background_style= "WIDGET.BUTTON",
-                              foreground_style= "WIDGET.BUTTON_FG"
+                              style="WIDGET.BUTTON",
                              )
         # Clear button
         self.clear_btn = Btn(self.button_row,
                              icon=BTC_ICONS.TRASH,
                              text=t("PASSPHRASE_MENU_CLEAR"),
                              callback=self._on_clear,
-                             background_style= "WIDGET.BUTTON",
-                             foreground_style= "WIDGET.BUTTON_FG"
+                             style="WIDGET.BUTTON",
                             )
         # Cancel button
         self.cancel_btn = Btn(self.button_row,
                               icon=BTC_ICONS.CROSS,
                               text=t("COMMON_CANCEL"),
                               callback=self._on_cancel,
-                              background_style= "WIDGET.BUTTON",
-                              foreground_style= "WIDGET.BUTTON_FG"
+                              style="WIDGET.BUTTON",
                              )
 
     def _on_clear(self):

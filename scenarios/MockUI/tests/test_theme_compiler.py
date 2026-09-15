@@ -6,9 +6,14 @@ from pathlib import Path
 import pytest
 
 from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SpecterStylePalette
+from MockUI.basic.theming.theme_schema import StyleRole
 from MockUI.basic.theming.color_palette_compiler import ColorPaletteCompiler, SpecterColorPalette
 from MockUI.basic.theming.font_palette_compiler import FontPaletteCompiler, SpecterFontPalette
-from MockUI.basic.theming.style_palette_compiler import StylePaletteCompiler
+from MockUI.basic.theming.style_palette_compiler import (
+    StylePaletteCompiler,
+    _read_entry_header,
+    _read_style_body,
+)
 from MockUI.basic.templates.settings_file_compiler import collect_int_constants
 
 # Module-level compiler instance
@@ -228,3 +233,134 @@ class TestReadSettingFromBinary:
             str(colors_path), str(fonts_path), str(styles_path),
             9999, ColorMode.DARK)
         assert style is None
+
+
+# =====================================================================
+# TestStyleRoles — role containers: resolution, fallback, framing
+# =====================================================================
+class TestStyleRoles:
+    """Role-based sub-styles inside a composite widget's entry.
+
+    lv.style_t objects are opaque no-op sentinels under the test mock, so
+    content is compared at the decoded-op level (what actually gets applied).
+    """
+
+    MB = SpecterStylePalette.WIDGET.MENU_BUTTON
+
+    def _read(self, specter_binaries, role_code):
+        colors_path, fonts_path, styles_path = specter_binaries
+        return _tc.read_setting_from_binary(
+            str(colors_path), str(fonts_path), str(styles_path),
+            self.MB, ColorMode.DARK, role_code=role_code)
+
+    def _ops(self, specter_binaries, role_code):
+        """Decoded op list for a role of MENU_BUTTON, via the runtime read path."""
+        _, _, styles_path = specter_binaries
+        with open(str(styles_path), "rb") as f:
+            ops, err = StylePaletteCompiler()._read_ops_from_handle(f, self.MB, role_code)
+        assert err is None, err
+        return ops
+
+    def _raw_main_body_ops(self, specter_binaries):
+        """The MAIN body read straight from the binary, bypassing the role API."""
+        _, _, styles_path = specter_binaries
+        with open(str(styles_path), "rb") as f:
+            # Locate the MENU_BUTTON entry start via the style index, then read
+            # the container's MAIN role body without going through _read_ops_from_handle.
+            import struct
+            from MockUI.basic.templates.settings_file_compiler import (
+                MAGIC_SIZE, VERSION_SIZE, KEY_COUNT_SIZE, HEADER_SIZE, OFFSET_SIZE)
+            f.seek(MAGIC_SIZE + VERSION_SIZE)
+            key_count = struct.unpack("<I", f.read(KEY_COUNT_SIZE))[0]
+            assert self.MB < key_count
+            f.seek(HEADER_SIZE + self.MB * OFFSET_SIZE)
+            entry_off = struct.unpack("<I", f.read(OFFSET_SIZE))[0]
+            header = _read_entry_header(f, entry_off)
+            assert header is not None
+            is_container, _, role_table = header
+            assert is_container, "MENU_BUTTON must be a role container in specter"
+            return _read_style_body(f, role_table[StyleRole.MAIN])
+
+    def test_main_role_is_base_style(self, specter_binaries):
+        """role_code=None resolves the exact ops of the container's MAIN body."""
+        assert self._ops(specter_binaries, None) == self._raw_main_body_ops(specter_binaries)
+
+    def test_explicit_main_role_matches_none(self, specter_binaries):
+        """role_code=StyleRole.MAIN resolves the exact same ops as role_code=None."""
+        assert self._ops(specter_binaries, None) == self._ops(specter_binaries, StyleRole.MAIN)
+
+    def test_defined_roles_resolve(self, specter_binaries):
+        """Every MENU_BUTTON role the specter theme defines must materialise."""
+        for role in (StyleRole.FG, StyleRole.ICON, StyleRole.LABEL,
+                     StyleRole.INDICATOR, StyleRole.RHS):
+            style, err = self._read(specter_binaries, role)
+            assert style is not None, f"role {role} failed: {err}"
+
+    def test_role_style_differs_from_main(self, specter_binaries):
+        """A role sub-style carries different content (ops) from the MAIN body."""
+        assert self._ops(specter_binaries, StyleRole.LABEL) != self._ops(specter_binaries, None)
+
+    def test_missing_role_returns_none(self, specter_binaries):
+        """A role code the theme does not define resolves to (None, err)."""
+        # CURSOR is not a MENU_BUTTON role in the specter theme.
+        style, err = self._read(specter_binaries, StyleRole.CURSOR)
+        assert style is None
+        assert err is not None
+
+    def test_leaf_style_rejects_non_main_role(self, specter_binaries):
+        """A leaf style (no roles block) yields no style for a non-MAIN role."""
+        colors_path, fonts_path, styles_path = specter_binaries
+        leaf_idx = SpecterStylePalette.BG.DEFAULT  # plain leaf, no roles
+        style, err = _tc.read_setting_from_binary(
+            str(colors_path), str(fonts_path), str(styles_path),
+            leaf_idx, ColorMode.DARK, role_code=StyleRole.FG)
+        assert style is None
+
+
+# =====================================================================
+# TestRoleContainerEncoding — write side: convert_setting_to_binary framing
+# =====================================================================
+class TestRoleContainerEncoding:
+    """convert_setting_to_binary() must emit the container framing for roles."""
+
+    def _compile_entry(self, entry):
+        return StylePaletteCompiler().convert_setting_to_binary(entry)
+
+    def test_leaf_entry_has_clear_high_bit(self):
+        """A style without roles -> first byte high bit clear, value = op_count."""
+        buf = self._compile_entry({"bg_color": "@CANVAS"})
+        assert buf[0] & 0x80 == 0, "leaf entry must not set the container flag"
+
+    def test_roles_entry_has_container_flag(self):
+        """A style with roles -> first byte = 0x80 | role_count."""
+        entry = {"bg_color": "@CANVAS",
+                 "roles": {"FG": {"text_color": "@INK"}}}
+        buf = self._compile_entry(entry)
+        assert buf[0] & 0x80, "roles entry must set the container flag"
+        # role_count = MAIN + FG = 2
+        assert (buf[0] & 0x7F) == 2
+
+    def test_roles_entry_table_layout(self):
+        """Container table holds role codes (MAIN first) with inline bodies."""
+        entry = {"bg_color": "@CANVAS",
+                 "roles": {"LABEL": {"text_color": "@INK"},
+                           "FG": {"text_color": "@INK"}}}
+        buf = self._compile_entry(entry)
+        role_count = buf[0] & 0x7F
+        assert role_count == 3  # MAIN + FG + LABEL
+        # Table entries are (role_code u8, offset u16le), MAIN (0) first,
+        # then ascending role code (FG=1, LABEL=3).
+        codes = [buf[1 + i*3] for i in range(role_count)]
+        assert codes == [StyleRole.MAIN, StyleRole.FG, StyleRole.LABEL]
+
+    def test_unknown_role_is_skipped_with_warning(self, capsys):
+        """An unrecognised role name is dropped; the rest still encodes."""
+        entry = {"bg_color": "@CANVAS",
+                 "roles": {"FG": {"text_color": "@INK"},
+                           "NOPE": {"text_color": "@INK"}}}
+        buf = self._compile_entry(entry)
+        # Only MAIN + FG made it in; NOPE was skipped.
+        assert (buf[0] & 0x7F) == 2
+        assert "unknown role" in capsys.readouterr().out.lower()
+
+
