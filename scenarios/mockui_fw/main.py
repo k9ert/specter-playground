@@ -56,8 +56,8 @@ ui_state.reset_tour_completed()
 # ── Test data: a small interconnected seed/wallet fixture ────────────────────
 TEST_DATA = True
 if TEST_DATA:
-    # Seeds: mock BIP85 discovery links labels sharing a 3-char prefix when the
-    # child label sorts after the parent's (see Seed.known_bip85_derivations).
+    # Seeds: mock BIP85 discovery links active fingerprints sharing a 3-char
+    # prefix when the child sorts after the parent (see Seed.known_bip85_derivations).
     _seed_cold = Seed(label="Cold A", fingerprint="c01da001", is_backed_up=True)
     specter_state.add_seed(_seed_cold)
     specter_state.add_seed(Seed(label="Cold A2", fingerprint="c01da002", is_backed_up=True))
@@ -65,8 +65,10 @@ if TEST_DATA:
 
     _seed_hot = Seed(label="Hot B", fingerprint="b07b0001",
                     passphrase="correct horse")
-    _seed_hot.passphrase_active = True
+    _seed_hot.passphrase_active = False
     specter_state.add_seed(_seed_hot)
+    specter_state.add_seed(Seed(label="Hot B2", fingerprint="b07b0002", is_backed_up=True))
+    specter_state.add_seed(Seed(label="Hot B2b", fingerprint="b07b000b", is_backed_up=True))
 
     # Wallets: mock parent discovery links derivation sub-paths
     # (see Wallet.derivation_parent).
@@ -78,7 +80,19 @@ if TEST_DATA:
         derivation_path="m/84'/0'/0'/1'",
         required_fingerprints=["c01da001"], threshold=1))
     specter_state.register_wallet(Wallet(
+        label="Savings Receive", descriptor="savings-receive",
+        derivation_path="m/84'/0'/0'/0'",
+        required_fingerprints=["c01da001"], threshold=1))
+    specter_state.register_wallet(Wallet(
+        label="Savings Change 2", descriptor="savings-change-2",
+        derivation_path="m/84'/0'/0'/1'/2'",
+        required_fingerprints=["c01da001"], threshold=1))
+    specter_state.register_wallet(Wallet(
         label="Trading", descriptor="trading", derivation_path="m/49'/0'/0'",
+        required_fingerprints=["b07b0001"], threshold=1))
+    specter_state.register_wallet(Wallet(
+        label="Trading Change", descriptor="trading-change",
+        derivation_path="m/49'/0'/0'/1'",
         required_fingerprints=["b07b0001"], threshold=1))
 
     gc.collect()
