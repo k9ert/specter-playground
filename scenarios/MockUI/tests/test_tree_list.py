@@ -229,3 +229,31 @@ def test_connector_segments_follow_card_edges_and_leaf_boundaries(
     tree._draw_connectors(object())
 
     assert len(tree._lines) == len(expected_segments)
+
+
+def test_bottom_up_connector_reaches_visually_furthest_direct_child():
+    root = TreeNode("root")
+    first_child = TreeNode("first child")
+    last_child = TreeNode("last child")
+    root.add_child(first_child)
+    root.add_child(last_child)
+
+    root_row = _GeometryObject(x=0, y=100, left_padding=5)
+    root_row.node = root
+    root_row.item_widget = _GeometryObject(x=20, y=10, width=100, height=20)
+    first_child_row = _GeometryObject(x=10, y=50, left_padding=7)
+    first_child_row.node = first_child
+    first_child_row.item_widget = _GeometryObject(
+        x=30, y=10, width=100, height=20)
+    last_child_row = _GeometryObject(x=10, y=0, left_padding=7)
+    last_child_row.node = last_child
+    last_child_row.item_widget = _GeometryObject(
+        x=30, y=10, width=100, height=20)
+
+    tree = TreeList.__new__(TreeList)
+    tree._rows = [last_child_row, first_child_row, root_row]
+    tree._is_expanded = lambda node: True
+    tree._top_down = False
+    tree._expander_width = 20
+
+    assert tree._connector_segments()[0] == (15, 110, 15, 20)

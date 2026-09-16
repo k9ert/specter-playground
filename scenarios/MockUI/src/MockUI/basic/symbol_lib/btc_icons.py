@@ -175,6 +175,7 @@ from .icons.smartcard import SMARTCARD
 # from .icons.transfer import TRANSFER
 from .icons.trash import TRASH
 from .icons.tree_structure import TREE_STRUCTURE
+from .icons.tree_structure_flipped import TREE_STRUCTURE_FLIPPED
 # from .icons.two_keys import TWO_KEYS
 # from .icons.unlock import UNLOCK
 # from .icons.unmixed import UNMIXED
@@ -363,6 +364,7 @@ class BTC_ICONS:
 #     TRANSFER = TRANSFER
     TRASH = TRASH
     TREE_STRUCTURE = TREE_STRUCTURE
+    TREE_STRUCTURE_FLIPPED = TREE_STRUCTURE_FLIPPED
 #     TWO_KEYS = TWO_KEYS
 #     UNLOCK = UNLOCK
 #     UNMIXED = UNMIXED

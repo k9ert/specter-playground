@@ -16,7 +16,7 @@ import lvgl as lv
 from .icon_widgets import apply_icon, make_icon
 from .labels import make_label
 from ..templates.specter_gui_base import SpecterGuiElement
-from ..theming import apply_style
+from ..theming import apply_style, get_style, style_has_property
 from ..utils.ui_utils import apply_click_feedback, set_size
 
 
@@ -59,22 +59,27 @@ class Btn(SpecterGuiElement):
         else:
             self._lbl = None
 
+        wrapper_style = get_style(style, role="WRAPPER") if style is not None else None
         if style is not None:
             apply_style(self._btn, style)
             if self._ico is not None:
                 apply_style(self._ico, style, role="FG")
             if self._lbl is not None:
                 apply_style(self._lbl, style, role="FG")
+            if wrapper_style is not None:
+                apply_style(self, wrapper_style)
         apply_click_feedback(self._btn)
 
         resolved_w = self._btn.get_style_width(lv.PART.MAIN)
         resolved_h = self._btn.get_style_height(lv.PART.MAIN)
+        wrapper_has_width = style_has_property(wrapper_style, lv.STYLE.WIDTH)
+        wrapper_has_height = style_has_property(wrapper_style, lv.STYLE.HEIGHT)
 
         if w is None:
-            if resolved_w != lv.SIZE_CONTENT:
+            if not wrapper_has_width and resolved_w != lv.SIZE_CONTENT:
                 set_size(self, width=resolved_w)
                 set_size(self._btn, width=lv.pct(100))
-            else:
+            elif not wrapper_has_width:
                 set_size(self, width=lv.SIZE_CONTENT)
         elif w == lv.SIZE_CONTENT:
             set_size(self, width=lv.SIZE_CONTENT)
@@ -84,10 +89,10 @@ class Btn(SpecterGuiElement):
             set_size(self._btn, width=lv.pct(100))
 
         if h is None:
-            if resolved_h != lv.SIZE_CONTENT:
+            if not wrapper_has_height and resolved_h != lv.SIZE_CONTENT:
                 set_size(self, height=resolved_h)
                 set_size(self._btn, height=lv.pct(100))
-            else:
+            elif not wrapper_has_height:
                 set_size(self, height=lv.SIZE_CONTENT)
         elif h == lv.SIZE_CONTENT:
             set_size(self, height=lv.SIZE_CONTENT)
@@ -95,9 +100,6 @@ class Btn(SpecterGuiElement):
         else:
             set_size(self, height=h)
             set_size(self._btn, height=lv.pct(100))
-
-        if style is not None:
-            apply_style(self, style, role="WRAPPER")
 
         if callback is not None:
             def _on_clicked(event):
@@ -110,3 +112,7 @@ class Btn(SpecterGuiElement):
     def update_icon(self, icon):
         if self._ico is not None:
             apply_icon(self._ico, icon)
+
+    def set_disabled(self, disabled):
+        self.set_state(lv.STATE.DISABLED, disabled)
+        self._btn.set_state(lv.STATE.DISABLED, disabled)

@@ -157,12 +157,12 @@ class NavigationBar(SpecterGuiElement):
             # If device is locked, nav bar shows no buttons and looks like a screen backdrop
             self.set_state(lv.STATE.DISABLED, True)
             for btn in self.buttons.values():
-                btn.set_state(lv.STATE.DISABLED, True)
+                btn.set_disabled(True)
         else:
             self.set_state(lv.STATE.DISABLED, False)
 
             # Back button: visible unless we are at the root / home menu
-            self.buttons["Back"].set_state(lv.STATE.DISABLED, self.current_menu == "main")
+            self.buttons["Back"].set_disabled(self.current_menu == "main")
 
             seed_open = self._seed_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
             wallet_open = self._wallet_dropup.get_state() in (DropUpState.OPENING, DropUpState.OPEN)
@@ -186,7 +186,7 @@ class NavigationBar(SpecterGuiElement):
             ]
             for name, icon_filled, icon_outline, is_filled, is_disabled in icon_table:
                 self.buttons[name].update_icon(icon_filled if is_filled else icon_outline)
-                self.buttons[name].set_state(lv.STATE.DISABLED, is_disabled)
+                self.buttons[name].set_disabled(is_disabled)
 
             # Rebuild drop-up card lists if open (e.g. after passphrase/wallet state change)
             if self._seed_dropup.get_state() == DropUpState.OPEN:

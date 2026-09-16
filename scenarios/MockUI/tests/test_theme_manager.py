@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from MockUI.basic.theming.theme_manager import ThemeManager, get_theme_manager
+from MockUI.basic.theming.theme_manager import (
+    ThemeManager, get_theme_manager, style_has_property,
+)
 from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SpecterStylePalette
 from MockUI.basic.theming.theme_schema import StyleRole
 
@@ -307,6 +309,40 @@ class TestGetStyleRoles:
         assert (base_idx, StyleRole.FG) in cache
         assert cache[base_idx] is base
         assert cache[(base_idx, StyleRole.FG)] is fg
+
+    def test_missing_role_is_cached(self, theme_manager, monkeypatch):
+        calls = []
+        original_get_setting = theme_manager.get_setting
+
+        def get_setting(*args, **kwargs):
+            calls.append((args, kwargs))
+            return original_get_setting(*args, **kwargs)
+
+        monkeypatch.setattr(theme_manager, "get_setting", get_setting)
+
+        assert theme_manager.get_style("WIDGET.BUTTON", role="WRAPPER") is None
+        assert theme_manager.get_style("WIDGET.BUTTON", role="WRAPPER") is None
+        assert len(calls) == 1
+
+
+class TestStylePropertyPresence:
+    """style_has_property() preserves absent versus explicit-zero semantics."""
+
+    class _Style:
+        def __init__(self, has_property):
+            self.has_property = has_property
+
+        def get_prop(self, prop, value):
+            return self.has_property
+
+    def test_none_style_has_no_properties(self):
+        assert style_has_property(None, object()) is False
+
+    def test_explicit_property_is_present_even_when_its_value_is_zero(self):
+        assert style_has_property(self._Style(1), object()) is True
+
+    def test_absent_property_is_not_present(self):
+        assert style_has_property(self._Style(0), object()) is False
 
 
 
