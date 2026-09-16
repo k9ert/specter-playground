@@ -52,9 +52,23 @@ class _ItemList:
 class _RefreshingItemList:
     def __init__(self):
         self.refresh_count = 0
+        self.direction_changes = []
+        self.visible_items = []
 
     def refresh(self):
         self.refresh_count += 1
+
+    def set_top_down(self, top_down):
+        self.direction_changes.append(top_down)
+
+
+class _ControlButton:
+    def __init__(self):
+        self._ico = object()
+        self.states = []
+
+    def set_state(self, state, enabled):
+        self.states.append((state, enabled))
 
 
 class _Gui:
@@ -101,6 +115,12 @@ class _TestDropUp(DropUp):
 
     def _resize_panel(self):
         self.resize_count += 1
+
+    def _set_tree_control_visible(self, button, visible):
+        button.visible = visible
+
+    def _set_tree_control_muted(self, button, muted):
+        button.muted = muted
 
     def close(self):
         self.close_count += 1
@@ -299,6 +319,140 @@ def test_item_expansion_state_defaults_to_false_and_reads_saved_values(ui_state)
 
     ui_state.is_item_expanded[key] = False
     assert dropup._is_item_expanded(node) is False
+
+
+def test_expand_and_collapse_all_updates_every_branch(ui_state):
+    gui = _Gui(ui_state)
+    dropup = _TestDropUp(gui=gui)
+    root = TreeNode("root", key="root")
+    child = TreeNode("child", key="child")
+    leaf = TreeNode("leaf", key="leaf")
+    root.add_child(child)
+    child.add_child(leaf)
+    dropup._tree_roots = [root]
+    dropup._item_list = _RefreshingItemList()
+
+    dropup._set_all_item_expanded(True)
+
+    assert ui_state.is_item_expanded == {
+        (Context.SEED, "root"): True,
+        (Context.SEED, "child"): True,
+    }
+    assert dropup._item_list.refresh_count == 1
+    assert dropup.resize_count == 1
+
+    dropup._set_all_item_expanded(False)
+
+    assert ui_state.is_item_expanded == {
+        (Context.SEED, "root"): False,
+        (Context.SEED, "child"): False,
+    }
+    assert dropup._item_list.refresh_count == 2
+    assert dropup.resize_count == 2
+
+
+def test_tree_controls_keep_slots_and_reflect_available_actions(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    root = TreeNode("root", key="root")
+    child = TreeNode("child", key="child")
+    root.add_child(child)
+    dropup._tree_roots = [root]
+    dropup._expand_all_button = _ControlButton()
+    dropup._collapse_all_button = _ControlButton()
+    dropup._sort_button = _ControlButton()
+    dropup._item_list = _RefreshingItemList()
+    dropup._item_list.visible_items = [root]
+
+    dropup._refresh_tree_controls()
+
+    assert dropup._expand_all_button.visible is True
+    assert dropup._expand_all_button.muted is False
+    assert dropup._collapse_all_button.visible is True
+    assert dropup._collapse_all_button.muted is True
+    assert dropup._sort_button.visible is False
+
+    ui_state.is_item_expanded[(Context.SEED, "root")] = True
+    dropup._refresh_tree_controls()
+
+    assert dropup._expand_all_button.muted is True
+    assert dropup._collapse_all_button.muted is False
+
+
+def test_tree_control_refresh_updates_available_controls_independently(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    root = TreeNode("root", key="root")
+    child = TreeNode("child", key="child")
+    root.add_child(child)
+    dropup._tree_roots = [root]
+    dropup._expand_all_button = _ControlButton()
+
+    dropup._refresh_tree_controls()
+
+    assert dropup._expand_all_button.visible is True
+    assert dropup._expand_all_button.muted is False
+
+
+def test_sort_control_appears_when_expansion_shows_multiple_rows(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    root = TreeNode("root", key="root")
+    child = TreeNode("child", key="child")
+    root.add_child(child)
+    dropup._tree_roots = [root]
+    dropup._expand_all_button = _ControlButton()
+    dropup._collapse_all_button = _ControlButton()
+    dropup._sort_button = _ControlButton()
+    dropup._item_list = _RefreshingItemList()
+
+    dropup._item_list.visible_items = [root]
+    dropup._refresh_tree_controls()
+    assert dropup._sort_button.visible is False
+
+    dropup._item_list.visible_items = [root, child]
+    dropup._refresh_tree_controls()
+    assert dropup._sort_button.visible is True
+
+
+def test_tree_controls_hide_tree_actions_for_a_flat_list(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    dropup._tree_roots = [TreeNode("first"), TreeNode("second")]
+    dropup._expand_all_button = _ControlButton()
+    dropup._collapse_all_button = _ControlButton()
+    dropup._sort_button = _ControlButton()
+    dropup._item_list = _RefreshingItemList()
+    dropup._item_list.visible_items = dropup._tree_roots
+
+    dropup._refresh_tree_controls()
+
+    assert dropup._expand_all_button.visible is False
+    assert dropup._collapse_all_button.visible is False
+    assert dropup._sort_button.visible is True
+
+
+def test_hidden_tree_control_uses_the_disabled_state():
+    dropup = DropUp()
+    button = _ControlButton()
+
+    dropup._set_tree_control_visible(button, False)
+
+    assert len(button.states) == 1
+    assert button.states[0][1] is True
+
+
+def test_tree_direction_defaults_to_bottom_up_and_is_context_specific(ui_state):
+    gui = _Gui(ui_state)
+    dropup = _TestDropUp(gui=gui)
+    dropup._item_list = _RefreshingItemList()
+
+    assert dropup._is_tree_top_down() is False
+    assert ui_state.is_tree_top_down.get(Context.WALLET, False) is False
+
+    dropup._toggle_tree_direction()
+    dropup._toggle_tree_direction()
+
+    assert ui_state.is_tree_top_down[Context.SEED] is False
+    assert ui_state.is_tree_top_down.get(Context.WALLET, False) is False
+    assert dropup._item_list.direction_changes == [True, False]
+    assert dropup.resize_count == 2
 
 
 def test_delete_item_closes_and_navigates_only_after_the_last_item():

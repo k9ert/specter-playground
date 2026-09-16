@@ -21,11 +21,6 @@ class _FLAG:
     FLOATING  = 12
 
 
-class _STATE:
-    FOCUSED = 20
-    PRESSED = 21
-
-
 class _PART:
     MAIN  = 29
     ITEMS = 30
@@ -38,7 +33,6 @@ class _MODE:
 
 
 lv.obj.FLAG  = _FLAG
-lv.STATE     = _STATE
 lv.PART      = _PART
 
 # Symbol chars needed when building keyboard layout maps

@@ -47,6 +47,7 @@ class StyleRole:
     KNOB      = 11
     CURSOR    = 12
     ITEMS     = 13
+    WRAPPER   = 14
 
 
 class SpecterStylePalette:
@@ -173,4 +174,5 @@ class SpecterStylePalette:
         FINGERPRINT_BADGE   = 180
         DELETE_BUTTON       = 181
         TREE_ROW            = 182
+        ADD_BUTTON_ROW      = 183
         #reserved until end (255)

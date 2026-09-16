@@ -32,6 +32,7 @@
     "CONTAINER.CONTEXT_BAR":      { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@FG.DEFAULT"], "pad_column": 5 },
     "CONTAINER.DROPUP":           { "style": ["@APPEARANCE.VISIBLE", "@FG.LIGHT", "@BG.DARK", "@TEXT.TITLE"], "radius": 30 },
     "CONTAINER.DROP_UP_ROW":      { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.TITLE"], "pad_left": 10, "pad_right": 10, "pad_column": 5, "pad_top": 5, "pad_bottom": 5 },
+    "CONTAINER.ADD_BUTTON_ROW":   { "style": ["@CONTAINER.DROP_UP_ROW", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_ROW"], "pad_left": 5, "pad_right": 5, "pad_column": 0 },
     "CONTAINER.TREE_ROW":         { "style": ["@CONTAINER.DROP_UP_ROW", "@LAYOUT.FLEX_ROW"], "width": "pct(100)", "pad_column": 6 },
     "CONTAINER.INTERFACE_STATUS": {},
     "CONTAINER.MODAL_WINDOW":     { "style": ["@APPEARANCE.VISIBLE", "@BG.DEFAULT", "@FG.DEFAULT"], "border_width": 1, "radius": 0, "border_color": "@INK"  },    
@@ -59,8 +60,8 @@
                                       "INDICATOR": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.WARNING"] }
                                     } },
     "WIDGET.MENU_SWITCH":         { "style": ["@APPEARANCE.VISIBLE", "@BG.DEFAULT", "@FG.DEFAULT", "@TEXT.DEFAULT"], "pad_gap": 5, "pad_left": 10 },
-    "WIDGET.DROP_UP_ADDBTN":      { "style": ["@APPEARANCE.VISIBLE", "@BG.DEFAULT"], "width":"400", "border_width": 3, "border_color": "@INK",
-                                    "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.HIGHLIGHT", "@TEXT.TITLE"] } } },
+    "WIDGET.DROP_UP_ADDBTN":      { "style": ["@APPEARANCE.VISIBLE", "@BG.DEFAULT"], "width":"pct(100)", "border_width": 3, "border_color": "@INK",
+                    "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.HIGHLIGHT", "@TEXT.TITLE"] }, "WRAPPER": { "width": 0, "flex_grow": 1 } } },
     "WIDGET.KEYBOARD":            { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT", "@BG.DARK", "@TEXT.TITLE"], "width": "pct(100)", "height": "pct(10)", "border_width": 1, "border_color": "@INK", "radius": 10},
     "WIDGET.PIN_BUTTON":          { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BORDERLESS", "@FG.DEFAULT", "@TEXT.TITLE"] },
     "WIDGET.PIN_DISPLAY":         { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.TITLE", "@TEXT.CENTER"]},

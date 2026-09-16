@@ -288,6 +288,10 @@ class TestGetStyleRoles:
         b = theme_manager.get_style("WIDGET.MENU_BUTTON", role="FG")
         assert a is not None and b is not None
 
+    def test_add_button_wrapper_role_is_available(self, theme_manager):
+        style = theme_manager.get_style("WIDGET.DROP_UP_ADDBTN", role="WRAPPER")
+        assert style is not None
+
     def test_unknown_role_returns_none_with_warning(self, theme_manager, capsys):
         style = theme_manager.get_style("WIDGET.MENU_BUTTON", role="NOPE")
         assert style is None

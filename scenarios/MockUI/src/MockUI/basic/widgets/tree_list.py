@@ -15,6 +15,8 @@ Theming:
     per-depth indent in pixels.
 """
 
+import gc
+
 import lvgl as lv
 
 from ..templates.specter_gui_base import SpecterGuiElement
@@ -97,6 +99,7 @@ class TreeList(SpecterGuiElement):
         delete_all_children_of(self)
         self._rows = []
         self._lines = []
+        gc.collect()
 
         for node in self._ordered_nodes():
             self._rows.append(self._build_row(node))
@@ -151,6 +154,13 @@ class TreeList(SpecterGuiElement):
         """Return visible nodes in this list's display direction."""
         nodes = self._visible_nodes()
         return nodes if self._top_down else reversed(nodes)
+
+    def set_top_down(self, top_down):
+        """Change display direction and redraw the rows and connectors."""
+        if self._top_down == top_down:
+            return
+        self._top_down = top_down
+        self.refresh()
 
     def _expander_icon(self, node):
         """Return the caret that points toward a parent's visible children."""
