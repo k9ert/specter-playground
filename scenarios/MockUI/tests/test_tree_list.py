@@ -89,6 +89,18 @@ def test_tree_direction_is_per_instance(top_down, expected_order):
     assert [node.item for node in tree._ordered_nodes()] == expected_order
 
 
+def test_set_top_down_refreshes_only_when_the_direction_changes():
+    tree, _, _ = _tree(top_down=False)
+    refreshes = []
+    tree.refresh = lambda: refreshes.append(True)
+
+    tree.set_top_down(False)
+    tree.set_top_down(True)
+
+    assert tree._top_down is True
+    assert refreshes == [True]
+
+
 @pytest.mark.parametrize(
     "top_down, expanded_icon",
     [

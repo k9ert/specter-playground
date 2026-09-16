@@ -83,7 +83,7 @@ from .icons.export import EXPORT
 from .icons.file import FILE
 from .icons.fingerprint import FINGERPRINT
 from .icons.flip_horizontal import FLIP_HORIZONTAL
-# from .icons.flip_vertical import FLIP_VERTICAL
+from .icons.flip_vertical import FLIP_VERTICAL
 from .icons.gear import GEAR
 from .icons.gear_outline import GEAR_OUTLINE
 # from .icons.gift import GIFT
@@ -174,7 +174,7 @@ from .icons.smartcard import SMARTCARD
 # from .icons.transactions import TRANSACTIONS
 # from .icons.transfer import TRANSFER
 from .icons.trash import TRASH
-# from .icons.tree_structure import TREE_STRUCTURE
+from .icons.tree_structure import TREE_STRUCTURE
 # from .icons.two_keys import TWO_KEYS
 # from .icons.unlock import UNLOCK
 # from .icons.unmixed import UNMIXED
@@ -271,7 +271,7 @@ class BTC_ICONS:
     FILE = FILE
     FINGERPRINT = FINGERPRINT
     FLIP_HORIZONTAL = FLIP_HORIZONTAL
-#     FLIP_VERTICAL = FLIP_VERTICAL
+    FLIP_VERTICAL = FLIP_VERTICAL
     GEAR = GEAR
     GEAR_OUTLINE = GEAR_OUTLINE
 #     GIFT = GIFT
@@ -362,7 +362,7 @@ class BTC_ICONS:
 #     TRANSACTIONS = TRANSACTIONS
 #     TRANSFER = TRANSFER
     TRASH = TRASH
-#     TREE_STRUCTURE = TREE_STRUCTURE
+    TREE_STRUCTURE = TREE_STRUCTURE
 #     TWO_KEYS = TWO_KEYS
 #     UNLOCK = UNLOCK
 #     UNMIXED = UNMIXED

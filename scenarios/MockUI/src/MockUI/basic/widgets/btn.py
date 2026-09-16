@@ -96,6 +96,9 @@ class Btn(SpecterGuiElement):
             set_size(self, height=h)
             set_size(self._btn, height=lv.pct(100))
 
+        if style is not None:
+            apply_style(self, style, role="WRAPPER")
+
         if callback is not None:
             def _on_clicked(event):
                 if consume_click:

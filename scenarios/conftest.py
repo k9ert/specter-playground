@@ -57,6 +57,16 @@ if "lvgl" not in sys.modules:
     class LvMockEvent:
         CLICKED = 1
 
+    class LvMockState:
+        DISABLED = 1
+        PRESSED = 2
+        FOCUSED = 4
+        CHECKED = 8
+        USER_1 = 16
+        USER_2 = 32
+        USER_3 = 64
+        USER_4 = 128
+
     lvgl_mock = ModuleType("lvgl")
     # Make the mock auto-return a callable sentinel for any unknown attribute (e.g. fonts, pct, etc.)
     lvgl_mock.__getattr__ = lambda name: _LvSentinel()
@@ -71,6 +81,7 @@ if "lvgl" not in sys.modules:
     lvgl_mock.image = LvMockObj
     lvgl_mock.line = LvMockObj
     lvgl_mock.EVENT = LvMockEvent
+    lvgl_mock.STATE = LvMockState
     lvgl_mock.OPA = type("OPA", (), {"TRANSP": 0, "COVER": 255})()
     lvgl_mock.ALIGN = type("ALIGN", (), {"CENTER": 0, "TOP_LEFT": 1, "TOP_RIGHT": 2, "BOTTOM_LEFT": 3, "BOTTOM_RIGHT": 4})()
     lvgl_mock.SYMBOL = type("SYMBOL", (), {"BATTERY_FULL": "F", "BATTERY_3": "3", "BATTERY_2": "2", "BATTERY_1": "1", "BATTERY_EMPTY": "E", "CHARGE": "C"})()

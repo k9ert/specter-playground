@@ -55,6 +55,9 @@ class UIState:
         # Whether each tree item is expanded, keyed (Context, item_key) -> bool.
         # Pure view state: the item lists live in DeviceState.
         self.is_item_expanded = {}
+        # Whether each selector tree displays roots before descendants.
+        # Missing entries default to the established bottom-up presentation.
+        self.is_tree_top_down = {}
         # The view class (widget type) to instantiate for the current menu.
         # None means fall back to the generic ActionScreen.
         self.view_class = None

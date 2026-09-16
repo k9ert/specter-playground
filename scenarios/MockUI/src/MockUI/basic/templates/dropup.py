@@ -15,13 +15,13 @@ from micropython import const
 from .specter_gui_base import SpecterGuiMixin, SpecterGuiElement
 from ..widgets import Btn, InfoCard, TreeList
 from ..utils import (
-    build_forest,
+    build_forest, flatten_forest,
     slide_y, delete_all_children_of,
     set_size, set_pos, set_scroll, set_propagate_events,
     get_size, get_pos,
 )
 from ..symbol_lib import BTC_ICONS
-from ..theming import apply_style
+from ..theming import apply_style, remove_style
 
 
 class DropUpState:
@@ -71,6 +71,10 @@ class DropUp(SpecterGuiMixin):
         self._closing = False    # True while close animation is running
         self._anim = None
         self._item_list = None
+        self._tree_roots = []
+        self._expand_all_button = None
+        self._collapse_all_button = None
+        self._sort_button = None
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -163,24 +167,39 @@ class DropUp(SpecterGuiMixin):
         delete_all_children_of(self._panel)
 
         self._panel.rows = []
+        self._tree_roots = build_forest(
+            self._get_selectable_items(),
+            get_parent=self._get_item_parent,
+            get_children=self._get_item_children,
+            make_key=self._get_item_key,
+        )
         self._item_list = TreeList(
             self._panel,
-            build_forest(self._get_selectable_items(),
-                         get_parent=self._get_item_parent,
-                         get_children=self._get_item_children,
-                         make_key=self._get_item_key),
+            self._tree_roots,
             self._build_item_card,
             self._is_item_expanded,
             on_toggle=self._on_item_toggle,
-            top_down=False,
+            top_down=self._is_tree_top_down(),
         )
         self._panel.rows.append(self._item_list)
 
         # Add button row
         row = SpecterGuiElement(self._panel)
-        apply_style(row, "CONTAINER.DROP_UP_ROW")
+        apply_style(row, "CONTAINER.ADD_BUTTON_ROW")
         self._panel.rows.append(row)
 
+        self._expand_all_button = Btn(
+            row,
+            icon=BTC_ICONS.TREE_STRUCTURE,
+            callback=lambda: self._set_all_item_expanded(True),
+            style="WIDGET.ICON_BUTTON",
+        )
+        self._collapse_all_button = Btn(
+            row,
+            icon=BTC_ICONS.MENU,
+            callback=lambda: self._set_all_item_expanded(False),
+            style="WIDGET.ICON_BUTTON",
+        )
         self._add_button = Btn(
             row,
             icon=BTC_ICONS.PLUS,
@@ -188,6 +207,25 @@ class DropUp(SpecterGuiMixin):
             callback=self._add_cb,
             style="WIDGET.DROP_UP_ADDBTN",
         )
+        self._sort_spacer = Btn(
+            row,
+            icon=BTC_ICONS.FLIP_VERTICAL,
+            style="WIDGET.ICON_BUTTON",
+        )
+        apply_style(self._sort_spacer, "APPEARANCE.INVISIBLE")
+        self._sort_button = Btn(
+            row,
+            icon=BTC_ICONS.FLIP_VERTICAL,
+            callback=self._toggle_tree_direction,
+            style="WIDGET.ICON_BUTTON",
+        )
+        for button in (self._expand_all_button,
+                       self._collapse_all_button,
+                       self._sort_button,
+                       self._sort_spacer):
+            apply_style(button, "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
+        self._sort_spacer.set_state(lv.STATE.DISABLED, True)
+        self._refresh_tree_controls()
         self._resize_panel()
 
     def _build_item_card(self, parent, item):
@@ -213,13 +251,70 @@ class DropUp(SpecterGuiMixin):
         key = (self.EXPANSION_CONTEXT, node.key)
         return self.ui_state.is_item_expanded.get(key, False)
 
+    def _is_tree_top_down(self):
+        return self.ui_state.is_tree_top_down.get(self.EXPANSION_CONTEXT, False)
+
+    def _set_tree_control_visible(self, button, visible):
+        button.set_state(lv.STATE.DISABLED, not visible)
+
+    def _set_tree_control_muted(self, button, muted):
+        if muted:
+            apply_style(button._ico, "MODIFIER.MUTED")
+        else:
+            remove_style(button._ico, "MODIFIER.MUTED")
+
+    def _refresh_tree_controls(self):
+        """Update fixed control slots from the current forest and view state."""
+        branch_nodes = [node for node in flatten_forest(self._tree_roots)
+                        if node.has_children()]
+        has_hierarchy = bool(branch_nodes)
+        if self._expand_all_button is not None:
+            self._set_tree_control_visible(self._expand_all_button, has_hierarchy)
+            self._set_tree_control_muted(
+                self._expand_all_button,
+                has_hierarchy and all(self._is_item_expanded(node)
+                                      for node in branch_nodes),
+            )
+        if self._collapse_all_button is not None:
+            self._set_tree_control_visible(self._collapse_all_button, has_hierarchy)
+            self._set_tree_control_muted(
+                self._collapse_all_button,
+                has_hierarchy and not any(self._is_item_expanded(node)
+                                          for node in branch_nodes),
+            )
+        if self._sort_button is not None:
+            visible_count = (0 if self._item_list is None
+                             else len(self._item_list.visible_items))
+            self._set_tree_control_visible(self._sort_button, visible_count > 1)
+
     def _on_item_toggle(self, node):
         """Toggle caller-owned state, then refresh and resize the tree."""
         key = (self.EXPANSION_CONTEXT, node.key)
         self.ui_state.is_item_expanded[key] = not self._is_item_expanded(node)
         
         self._item_list.refresh()
+        self._refresh_tree_controls()
         self._resize_panel()
+
+    def _set_all_item_expanded(self, expanded):
+        """Expand or collapse every branch in this selector's current forest."""
+        for node in flatten_forest(self._tree_roots):
+            if node.has_children():
+                self.ui_state.is_item_expanded[
+                    (self.EXPANSION_CONTEXT, node.key)] = expanded
+        if self._item_list is not None:
+            self._item_list.refresh()
+            self._refresh_tree_controls()
+            self._resize_panel()
+
+    def _toggle_tree_direction(self):
+        """Reverse this selector's tree direction and redraw its connectors."""
+        top_down = not self._is_tree_top_down()
+        self.ui_state.is_tree_top_down[self.EXPANSION_CONTEXT] = top_down
+        if self._item_list is not None:
+            self._item_list.set_top_down(top_down)
+            self._refresh_tree_controls()
+            self._resize_panel()
 
     def _add_cb(self):
         self.close()
