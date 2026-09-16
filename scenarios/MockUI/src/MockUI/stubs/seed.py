@@ -51,24 +51,28 @@ class Seed:
         """Mock BIP85 child discovery: return seeds directly derived from this one.
 
         Mock rule (stable and easy to control in fixtures): another seed is a
-        candidate when its label shares this seed's first 3 characters and
-        sorts lexicographically after it; a candidate belongs to the closest
-        such ancestor, so this returns direct children only.  Later replaced
-        by real BIP85 derivation records.
+        candidate when its active fingerprint shares this seed's first 3
+        characters and sorts lexicographically after it. A candidate belongs
+        to the closest such ancestor, so this returns direct children only.
+        This keeps the mock hierarchy independent of labels while allowing an
+        active passphrase to change the derivation identity. Later replaced by
+        real BIP85 derivation records.
         """
-        prefix = self.label[:3]
+        fingerprint = self.get_fingerprint()
+        prefix = fingerprint[:3]
         children = []
         for seed in all_seeds:
+            candidate_fingerprint = seed.get_fingerprint()
             if (seed is self
-                    or seed.label[:3] != prefix
-                    or seed.label <= self.label):
+                    or candidate_fingerprint[:3] != prefix
+                    or candidate_fingerprint <= fingerprint):
                 continue
-            # A closer intermediate parent (label between ours and the
+            # A closer intermediate parent (fingerprint between ours and the
             # candidate's) makes the candidate that ancestor's child instead.
             closer = [other for other in all_seeds
                       if other is not seed
-                      and other.label[:3] == prefix
-                      and self.label < other.label < seed.label]
+                      and other.get_fingerprint()[:3] == prefix
+                      and fingerprint < other.get_fingerprint() < candidate_fingerprint]
             if not closer:
                 children.append(seed)
         return children
