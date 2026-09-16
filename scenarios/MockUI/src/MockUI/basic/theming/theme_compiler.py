@@ -241,7 +241,7 @@ class ThemeCompiler(ThemeSectionCompiler):
 
     # ── runtime reconstruction (binaries → lv objects) ───────────────────────
 
-    def read_setting_from_binary(self, color_path, font_path, style_path, key_index, mode=ColorMode.DARK):
+    def read_setting_from_binary(self, color_path, font_path, style_path, key_index, mode=ColorMode.DARK, role_code=None):
         reconstruction_context = self.ThemeCompilerContext(
             theme_compiler=self,
             colors_path=color_path,
@@ -250,7 +250,8 @@ class ThemeCompiler(ThemeSectionCompiler):
             mode=mode
         )
 
-        (result, err) = self._style_compiler.read_setting_from_binary(style_path, key_index, context=reconstruction_context)
+        (result, err) = self._style_compiler.read_setting_from_binary(
+            style_path, key_index, context=reconstruction_context, role_code=role_code)
         return (result, err)
 
     #Alias for easier mapping/use

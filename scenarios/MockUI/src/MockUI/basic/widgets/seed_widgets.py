@@ -2,13 +2,12 @@
 """
 
 import lvgl as lv
+from .info_card import InfoCard
 from .icon_widgets import make_icon
-from .inputs import make_textarea
-from .labels import make_label, body_label, optimize_font_size
-from .card_helpers import build_delete_slot
+from .labels import body_label
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..symbol_lib import BTC_ICONS
-from ..theming import apply_style
+from ..theming import apply_style, get_style
 from ..utils import apply_click_feedback, set_scroll
 
 SEED_SLOTS = ("leading_icon", "name", "backup_warning", "passphrase", "fingerprint", "delete")
@@ -68,7 +67,7 @@ def passphrase_toggle(parent, seed):
     img.add_event_cb(_cb, lv.EVENT.CLICKED, None)
     return img
 
-class SeedCard(SpecterGuiElement):
+class SeedCard(InfoCard):
     """Seed card row widget — layout + optional callbacks for one seed.
 
     Slot names control presence and left-to-right order of child widgets:
@@ -92,9 +91,7 @@ class SeedCard(SpecterGuiElement):
                  on_name_click=None,
                  on_delete=None,
                  on_backup_warning=None):
-        super().__init__(parent)
-        apply_style(self, "CONTAINER.INFO_CARD")
-        set_scroll(self, horizontal=False, vertical=False)
+        super().__init__(parent, on_card_click)
 
         # ── Input validation ──────────────────────────────────────────────────
         for s in slots:
@@ -119,32 +116,13 @@ class SeedCard(SpecterGuiElement):
         show_passphrase     = "passphrase" in slots and seed.passphrase is not None
 
         # ── Build row ─────────────────────────────────────────────────────────
-        self.text_edit = None
-        if on_card_click is not None:
-            apply_click_feedback(self)
-            self.add_event_cb(on_card_click, lv.EVENT.CLICKED, None)
-
         for slot in slots:
             if slot == "leading_icon":
                 self.leading_ico = make_icon(self, leading_icon)
                 apply_style(self.leading_ico, ["WIDGET.INFO_ITEM"])
 
             elif slot == "name":
-                if on_name_click is not None:
-                    self.name_widget = make_textarea(self)
-                    apply_style(self.name_widget, "TEXT.TITLE")
-                    self.name_widget.set_text(seed.label)
-                    self.name_widget.add_event_cb(lambda e: on_name_click(self.name_widget), lv.EVENT.CLICKED, None)
-                    self.text_edit = self.name_widget
-                else:
-                    self.name_widget = make_label(self, seed.label, styles=["WIDGET.MENU_BUTTON_FG", "TEXT.TITLE", "TEXT.LEFT"])
-                
-                apply_style(self.name_widget, "LAYOUT.GROWS")
-                # when all slots are built the actual width of the name widget
-                # will be set and we can set its font optimally for the content
-                def _on_name_resized(e):
-                    optimize_font_size(self.name_widget)
-                self.name_widget.add_event_cb(_on_name_resized, lv.EVENT.SIZE_CHANGED, None)
+                self._add_name_slot(seed.label, on_name_click)
 
             elif slot == "backup_warning":
                 if show_backup_warning:
@@ -165,4 +143,4 @@ class SeedCard(SpecterGuiElement):
                 self.fp_badge = fingerprint_badge(self, seed)
 
             elif slot == "delete":
-                self.del_btn = build_delete_slot(self, on_delete)
+                self.del_btn = self._add_delete_slot(on_delete)

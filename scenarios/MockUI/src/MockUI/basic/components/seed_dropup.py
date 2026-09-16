@@ -1,4 +1,4 @@
-"""SeedDropUp — bottom-sheet overlay listing all loaded seeds."""
+"""SeedDropUp — bottom-sheet overlay showing the seed hierarchy."""
 
 from ..widgets import MenuItem, SeedCard, button_modal
 from ..ui_state import Context
@@ -8,10 +8,22 @@ from .confirm_modals import confirm_delete_seed
 
 
 class SeedDropUp(DropUp):
-    """Drop-up overlay listing all loaded seeds with passphrase + edit buttons."""
+    """Drop-up overlay rendering the collapsible seed hierarchy."""
 
-    def _get_items(self):
+    EXPANSION_CONTEXT = Context.SEED
+
+    def _get_selectable_items(self):
         return self.device_state.loaded_seeds
+
+    def _delete_from_gui(self, seed):
+        self.gui.delete_seed(seed)
+
+    def _get_item_children(self, seed):
+        # Mock discovery until real BIP85 derivation records exist.
+        return seed.known_bip85_derivations(self.device_state.loaded_seeds)
+
+    def _get_item_key(self, seed):
+        return seed.get_fingerprint()
 
     def _add_button_label(self):
         return self.t("MENU_ADD_SEED")
@@ -19,9 +31,9 @@ class SeedDropUp(DropUp):
     def _navigate_add(self):
         self.on_navigate("add_seed", target_seed=None)
 
-    def _build_card(self, panel, seed):
+    def _build_card(self, row, seed):
         card = SeedCard(
-            panel, seed,
+            row, seed,
             slots=("name", "backup_warning", "passphrase", "fingerprint", "delete"),
             on_card_click=self._make_on_row_click_cb(seed,
                                             Context.SEED,
@@ -30,7 +42,8 @@ class SeedDropUp(DropUp):
                                             "manage_seedphrase",
                                             "target_seed"),
             on_backup_warning=lambda: self._on_backup_warning(seed),
-            on_delete=lambda: self._on_delete_seed(seed),
+            on_delete=lambda: confirm_delete_seed(
+                self.t, seed.label, lambda: self._delete_item(seed)),
         )
         apply_style(card, "CONTEXT.SEED")
         return card
@@ -39,6 +52,7 @@ class SeedDropUp(DropUp):
         def _mark_backed_up():
             seed.is_backed_up = True
             self.gui.refresh_ui()
+            
         button_modal(
             text=self.t("MODAL_BACKUP_WARNING_TEXT"),
             buttons=[
@@ -47,15 +61,3 @@ class SeedDropUp(DropUp):
             ],
         )
 
-    def _do_delete_seed(self, seed):
-        self.device_state.remove_seed(seed)
-        if self.ui_state.active_seed is seed:
-            self.ui_state.active_seed = None
-        if not self.device_state.loaded_seeds:
-            self.close()
-            self.on_navigate("main")
-        else:
-            self.gui.refresh_ui()
-
-    def _on_delete_seed(self, seed):
-        confirm_delete_seed(self.t, seed.label, lambda: self._do_delete_seed(seed))

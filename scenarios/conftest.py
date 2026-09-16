@@ -41,6 +41,14 @@ if "lvgl" not in sys.modules:
             return 0
         def __index__(self):
             return 0
+        def __or__(self, other):
+            return 0
+        def __ror__(self, other):
+            return 0
+        def __and__(self, other):
+            return 0
+        def __rand__(self, other):
+            return 0
 
     class LvMockObj(_LvSentinel):
         """Mock LVGL base object."""
@@ -61,6 +69,7 @@ if "lvgl" not in sys.modules:
     lvgl_mock.keyboard = LvMockObj
     lvgl_mock.switch = LvMockObj
     lvgl_mock.image = LvMockObj
+    lvgl_mock.line = LvMockObj
     lvgl_mock.EVENT = LvMockEvent
     lvgl_mock.OPA = type("OPA", (), {"TRANSP": 0, "COVER": 255})()
     lvgl_mock.ALIGN = type("ALIGN", (), {"CENTER": 0, "TOP_LEFT": 1, "TOP_RIGHT": 2, "BOTTOM_LEFT": 3, "BOTTOM_RIGHT": 4})()

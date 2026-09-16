@@ -41,3 +41,15 @@ jobs:
           path: |
             bin/specter-diy.bin
             bin/specter-diy.hex
+
+      # The build above already generated the gitignored artifacts the tests
+      # import (translation_keys.py, compiled themes); reuse that nix env.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run MockUI tests
+        run: python -m pytest

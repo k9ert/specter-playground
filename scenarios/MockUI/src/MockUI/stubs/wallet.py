@@ -17,14 +17,17 @@ class Wallet:
         required_fingerprints: list of key fingerprints needed for signing
         threshold: multisig m-of-n (m value); None for singlesig
         has_been_synched: whether this wallet has been synced with a companion app
+        is_custom: whether this is a non-standard custom policy
     """
 
     def __init__(self, label, descriptor=None, isMultiSig=False, net="mainnet",
                  required_fingerprints=None, threshold=None,
-                 has_been_synched=False, account=0):
+                 has_been_synched=False, account=0, derivation_path=None,
+                 is_custom=False):
         self.label = label
         self.descriptor = descriptor
         self.isMultiSig = isMultiSig
+        self.is_custom = bool(is_custom)
         self.net = net
         self.threshold = threshold
         self.required_fingerprints = required_fingerprints or []
@@ -34,10 +37,40 @@ class Wallet:
         # explicitly exported via Connect Companion App flow.
         self.has_been_synched = has_been_synched
         self.account = account
+        # BIP32-style path string (e.g. "m/84'/0'/0'"); mock only for now.
+        self.derivation_path = derivation_path
+
+    def derivation_parent(self, all_wallets):
+        """Mock parent discovery via derivation sub-paths.
+
+        A candidate must have the same signer fingerprints, irrespective of
+        their descriptor order. Of those candidates, return the wallet whose
+        derivation path is the longest strict prefix of this wallet's path
+        (segment-wise), or ``None``. Later replaced by real descriptor
+        analysis.
+        """
+        if not self.derivation_path:
+            return None
+        mine = self.derivation_path.split("/")
+        mine_signers = sorted(self.required_fingerprints)
+        best = None
+        best_len = 0
+        for other in all_wallets:
+            if other is self or not other.derivation_path:
+                continue
+            if sorted(other.required_fingerprints) != mine_signers:
+                continue
+            theirs = other.derivation_path.split("/")
+            if (len(theirs) < len(mine)
+                    and len(theirs) > best_len
+                    and mine[:len(theirs)] == theirs):
+                best = other
+                best_len = len(theirs)
+        return best
 
     def is_standard(self):
-        """Check if this is the default "Standard" wallet (which has no descriptor)."""
-        return self.descriptor != "fancy script"
+        """Return whether this wallet uses a standard descriptor policy."""
+        return not self.is_custom
 
     def is_default_wallet(self):
         """Check if this wallet is the default "Standard" wallet."""

@@ -15,6 +15,7 @@ from ..basic import (
     Btn,
     t
 )
+from ..basic.theming import get_style
 from ..stubs import Wallet
 
 class CreateCustomWalletMenu(TitledScreen):
@@ -30,6 +31,9 @@ class CreateCustomWalletMenu(TitledScreen):
         super().__init__(t("ADD_WALLET_CREATE_CUSTOM"), parent)
 
         apply_style(self.body, ["CONTAINER.MENU_CONTAINER", "LAYOUT.FLEX_COL", "LAYOUT.FULL_SIZE"])
+
+        # Style for the row labels, resolved once at construction time
+        menu_lbl_style = get_style("WIDGET.MENU_BUTTON", role="LABEL")
 
 
         # ── Wallet name ──────────────────────────────────────────────
@@ -47,7 +51,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.ms_row = SpecterGuiElement(self.body)
         apply_style(self.body.ms_row, "CONTAINER.MENU_ROW")
         self.body.ms_lbl = make_label(self.body.ms_row, t("COMMON_MULTISIG"), 
-                                      ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                      [menu_lbl_style, "TEXT.TITLE"])
 
         self.body.ms_sw = make_switch(self.body.ms_row, False, setter_cb=lambda e: self._on_multisig_toggle(e))
 
@@ -55,7 +59,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.thresh_row = SpecterGuiElement(self.body)
         apply_style(self.body.thresh_row, "CONTAINER.MENU_ROW")
         self.body.thresh_row_lbl = make_label(self.body.thresh_row, t("ADD_WALLET_THRESHOLD"),
-                                              ["WIDGET.MENU_LABEL", "TEXT.DEFAULT"])
+                                              [menu_lbl_style, "TEXT.DEFAULT"])
         self.body.thresh_ta = make_textarea(self.body.thresh_row)
         apply_style(self.body.thresh_ta, ["TEXT.TITLE"])
         self.body.thresh_ta.set_text("2")
@@ -68,7 +72,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.fp_row = SpecterGuiElement(self.body)
         apply_style(self.body.fp_row, "CONTAINER.MENU_ROW")
         self.body.fp_row_lbl = make_label(self.body.fp_row, t("ADD_WALLET_SIGNERS"),
-                                          ["WIDGET.MENU_LABEL", "TEXT.DEFAULT"])
+                                          [menu_lbl_style, "TEXT.DEFAULT"])
         self.body.fp_ta = make_textarea(self.body.fp_row)
         apply_style(self.body.fp_ta, ["TEXT.DEFAULT", "LAYOUT.GROWS"])
         sig_text = ""
@@ -100,7 +104,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.net_row = SpecterGuiElement(self.body)
         apply_style(self.body.net_row, "CONTAINER.MENU_ROW")
         self.body.net_row_lbl = make_label(self.body.net_row, "Testnet", 
-                                           ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                           [menu_lbl_style, "TEXT.TITLE"])
 
         self.body.net_sw = make_switch(self.body.net_row, False, setter_cb=None)
 
@@ -108,7 +112,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.custom_row = SpecterGuiElement(self.body)
         apply_style(self.body.custom_row, "CONTAINER.MENU_ROW")
         self.body.custom_row_lbl = make_label(self.body.custom_row, t("ADD_WALLET_CUSTOM"),
-                                              ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                              [menu_lbl_style, "TEXT.TITLE"])
 
         self.body.custom_sw = make_switch(self.body.custom_row, False, setter_cb=None)
 
@@ -116,7 +120,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.acc_row = SpecterGuiElement(self.body)
         apply_style(self.body.acc_row, "CONTAINER.MENU_ROW")
         self.body.acc_row._lbl = make_label(self.body.acc_row, t("WALLET_MENU_SELECT_ACCOUNT"),
-                                            ["WIDGET.MENU_LABEL", "TEXT.TITLE"])
+                                            [menu_lbl_style, "TEXT.TITLE"])
 
         self.account_val = 0
         self.body.acc_row.spin_row = SpecterGuiElement(self.body.acc_row)
@@ -126,8 +130,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.acc_row.spin_row.dec_btn = Btn(self.body.acc_row.spin_row,
                                                   icon=BTC_ICONS.MINUS,
                                                   callback=self._decrement_account,
-                                                  background_style="WIDGET.BUTTON",
-                                                  foreground_style="WIDGET.BUTTON_FG",
+                                                  style="WIDGET.BUTTON",
                                                  )
         self.body.acc_row.spin_row.acc_lbl = make_label(self.body.acc_row.spin_row, str(self.account_val),
                                                         ["FG.DEFAULT", "TEXT.TITLE", "TEXT.CENTER"])
@@ -136,8 +139,7 @@ class CreateCustomWalletMenu(TitledScreen):
         self.body.acc_row.spin_row.inc_btn = Btn(self.body.acc_row.spin_row,
                                                  icon=BTC_ICONS.PLUS,
                                                  callback=self._increment_account,
-                                                 background_style="WIDGET.BUTTON",
-                                                 foreground_style="WIDGET.BUTTON_FG",
+                                                 style="WIDGET.BUTTON",
                                                 )
 
         # ── Create button ────────────────────────────────────────────
@@ -147,11 +149,60 @@ class CreateCustomWalletMenu(TitledScreen):
                               self.body.btn_row,
                               text=t("COMMON_CREATE"),
                               callback=self._on_create,
-                              background_style="WIDGET.BUTTON",
-                              foreground_style="WIDGET.BUTTON_FG"
+                              style="WIDGET.BUTTON",
                              )
 
     # ── helpers ──────────────────────────────────────────────────────
+
+    @staticmethod
+    def _derivation_path(is_multi, net, account):
+        """Return the normalized wallet path shared by descriptor keys."""
+        purpose = 48 if is_multi else 84
+        coin_type = 0 if net == "mainnet" else 1
+        path = "m/%d'/%d'/%d'" % (purpose, coin_type, account)
+        return path + "/2'" if is_multi else path
+
+    @staticmethod
+    def _build_descriptor(fingerprints, threshold, is_multi, is_custom,
+                          net, account, nonce):
+        """Build a readable, descriptor-shaped mock policy."""
+        derivation = CreateCustomWalletMenu._derivation_path(
+            is_multi, net, account)[2:].replace("'", "h")
+
+        def key_expression(fingerprint, key_index):
+            return "[%s/%s]xpub...%s%d/{0,1}/*" % (
+                fingerprint, derivation, nonce, key_index)
+
+        if is_multi:
+            key_expressions = [
+                key_expression(fingerprint, key_index)
+                for key_index, fingerprint in enumerate(fingerprints)
+            ]
+            if is_custom:
+                policies = ["pk(%s)" % key for key in key_expressions]
+                return "wsh(and_v(v:thresh(%d,%s),after(840000)))" % (
+                    threshold, ",".join(policies))
+            return "wsh(sortedmulti(%d,%s))" % (
+                threshold, ",".join(key_expressions))
+
+        key = key_expression(fingerprints[0], 0)
+        if is_custom:
+            return "wsh(and_v(v:pk(%s),after(840000)))" % key
+        return "wpkh(%s)" % key
+
+    def _make_unique_descriptor(self, fingerprints, threshold, is_multi,
+                                is_custom, net):
+        """Build a descriptor distinct from every currently registered wallet."""
+        while True:
+            nonce = "%08x" % urandom.getrandbits(32)
+            descriptor = self._build_descriptor(
+                fingerprints, threshold, is_multi, is_custom,
+                net, self.account_val, nonce)
+            for wallet in self.device_state.registered_wallets:
+                if str(wallet.descriptor) == descriptor:
+                    break
+            else:
+                return descriptor
 
     def _on_multisig_toggle(self, e):
         if self.body.ms_sw.has_state(lv.STATE.CHECKED):
@@ -194,23 +245,21 @@ class CreateCustomWalletMenu(TitledScreen):
             fp = raw.split(",")[0].strip() if raw else "0xabcd"
             fps.append(fp)
 
-        # Build a dummy descriptor string
-        if is_custom:
-            desc = "fancy script"
-        elif is_multi:
-            desc = "wsh(sortedmulti(%d,%s))" % (threshold, ",".join(fps))
-        else:
-            fp0 = fps[0] if fps else "00000000"
-            desc = "wpkh([%s/84h/0h/0h]xpub...)" % fp0
+        desc = self._make_unique_descriptor(
+            fps, threshold, is_multi, is_custom, net)
+        derivation_path = self._derivation_path(
+            is_multi, net, self.account_val)
 
         wallet = Wallet(
             label=name,
             descriptor=desc,
             isMultiSig=is_multi,
+            is_custom=is_custom,
             net=net,
             required_fingerprints=fps,
             threshold=threshold,
             account=self.account_val,
+            derivation_path=derivation_path,
         )
         self.device_state.register_wallet(wallet)
         self.ui_state.set_active_wallet(wallet)

@@ -7,6 +7,7 @@ import pytest
 
 from MockUI.basic.theming.theme_manager import ThemeManager, get_theme_manager
 from MockUI.basic.theming.theme_compiler import ThemeCompiler, ColorMode, SpecterStylePalette
+from MockUI.basic.theming.theme_schema import StyleRole
 
 _tc = ThemeCompiler()
 
@@ -264,6 +265,45 @@ class TestGetSetting:
         theme_manager.set_mode(ColorMode.LIGHT)
         style = theme_manager.get_setting(SpecterStylePalette.BG.DEFAULT)
         assert style is not None
+
+
+# =====================================================================
+# TestGetStyleRoles — get_style() with string keys and roles
+# =====================================================================
+class TestGetStyleRoles:
+    """get_style(key, role=...) — the public string/int role access path."""
+
+    def test_string_key_and_string_role(self, theme_manager):
+        """Both the style key and the role may be given as strings."""
+        style = theme_manager.get_style("WIDGET.MENU_BUTTON", role="LABEL")
+        assert style is not None
+
+    def test_int_key_and_int_role(self, theme_manager):
+        style = theme_manager.get_style(
+            SpecterStylePalette.WIDGET.MENU_BUTTON, role=StyleRole.FG)
+        assert style is not None
+
+    def test_string_role_case_insensitive(self, theme_manager):
+        a = theme_manager.get_style("WIDGET.MENU_BUTTON", role="fg")
+        b = theme_manager.get_style("WIDGET.MENU_BUTTON", role="FG")
+        assert a is not None and b is not None
+
+    def test_unknown_role_returns_none_with_warning(self, theme_manager, capsys):
+        style = theme_manager.get_style("WIDGET.MENU_BUTTON", role="NOPE")
+        assert style is None
+        assert "unknown role" in capsys.readouterr().out.lower()
+
+    def test_role_cached_separately_from_base(self, theme_manager):
+        """A role lookup is cached under a distinct key from the base style."""
+        base = theme_manager.get_style("WIDGET.MENU_BUTTON")
+        fg = theme_manager.get_style("WIDGET.MENU_BUTTON", role="FG")
+        cache = theme_manager._style_cache
+        base_idx = SpecterStylePalette.WIDGET.MENU_BUTTON
+        assert base_idx in cache
+        assert (base_idx, StyleRole.FG) in cache
+        assert cache[base_idx] is base
+        assert cache[(base_idx, StyleRole.FG)] is fg
+
 
 
 # =====================================================================

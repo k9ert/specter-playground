@@ -1,6 +1,7 @@
 from .ui_consts import *
 from .ui_utils import *
 from .generic_utils import resolve_obj
+from .tree_node import TreeNode, build_forest, flatten_forest
 from .keyboard_manager import KeyboardManager, Layout
 from .animations import GUIAnimations, slide_x, slide_y
 
@@ -15,9 +16,14 @@ __all__ = [
     "set_layout", "set_flex_flow",
     "set_size", "get_size", "set_pos", "get_pos", "get_anim_duration", "set_align",
     "set_scroll", "set_propagate_events", "apply_click_feedback", "set_scale",
+    "make_floating_overlay",
     "text_width", "best_fonttype_for_size",
     "shuffle",
     "resolve_obj",
+    # tree_node
+    "TreeNode", "build_forest", "flatten_forest",
+    # keyboard_manager
     "KeyboardManager", "Layout",
+    # animations
     "GUIAnimations", "slide_x", "slide_y",
 ]   

@@ -54,8 +54,7 @@ class GenerateSeedMenu(TitledScreen):
         self.create_btn = Btn(self.body,
                               text=t("COMMON_CREATE"),
                               callback=self._on_create,
-                              background_style="WIDGET.BUTTON",
-                              foreground_style="WIDGET.BUTTON_FG"
+                              style="WIDGET.BUTTON",
                               )
 
     def _on_create(self):

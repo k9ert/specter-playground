@@ -8,10 +8,21 @@ from .confirm_modals import confirm_delete_wallet
 
 
 class WalletDropUp(DropUp):
-    """Drop-up overlay listing all registered wallets with type + edit buttons."""
+    """Drop-up overlay listing registered wallets as a hierarchy."""
 
-    def _get_items(self):
+    EXPANSION_CONTEXT = Context.WALLET
+
+    def _get_selectable_items(self):
         return self.device_state.registered_wallets
+
+    def _delete_from_gui(self, wallet):
+        self.gui.delete_wallet(wallet)
+
+    def _get_item_parent(self, wallet):
+        return wallet.derivation_parent(self.device_state.registered_wallets)
+
+    def _get_item_key(self, wallet):
+        return str(wallet.descriptor)
 
     def _add_button_label(self):
         return self.t("MENU_ADD_WALLET")
@@ -36,7 +47,6 @@ class WalletDropUp(DropUp):
         if not_default:
             active_slots.append("delete")
 
-        on_delete = (lambda: self._on_delete_wallet(wallet)) if not_default else None
         card = WalletCard(
             parent, wallet, state,
             slots=active_slots,
@@ -46,18 +56,11 @@ class WalletDropUp(DropUp):
                                             "set_active_wallet", 
                                             "manage_wallet", 
                                             "target_wallet"),
-            on_delete=on_delete,
+            on_delete=(
+                (lambda: confirm_delete_wallet(
+                    self.t, wallet.label,
+                    lambda: self._delete_item(wallet)))
+                if not_default else None),
         )
         apply_style(card, "CONTEXT.WALLET")
         return card
-
-    def _do_delete_wallet(self, wallet):
-        # No empty-list path: the default wallet cannot be deleted,
-        # so registered_wallets always has at least the default entry.
-        self.device_state.remove_wallet(wallet)
-        if self.ui_state.active_wallet is wallet:
-            self.ui_state.active_wallet = None
-        self.gui.refresh_ui()
-
-    def _on_delete_wallet(self, wallet):
-        confirm_delete_wallet(self.t, wallet.label, lambda: self._do_delete_wallet(wallet))

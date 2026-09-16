@@ -50,24 +50,21 @@ class LockedMenu(TitledScreen):
                     b = Btn(
                         row_cont,
                         icon=BTC_ICONS.CLEAR_CHARACTER,
-                        background_style="WIDGET.PIN_BUTTON",
-                        foreground_style="WIDGET.PIN_BUTTON_FG",
+                        style="WIDGET.PIN_BUTTON",
                         callback=self._on_del,
                     )
                 elif k == "OK":
                     b = Btn(
                         row_cont,
                         icon=BTC_ICONS.CHECK,
-                        background_style="WIDGET.PIN_BUTTON",
-                        foreground_style="WIDGET.PIN_BUTTON_FG",
+                        style="WIDGET.PIN_BUTTON",
                         callback=self._on_ok,
                     )
                 else:
                     b = Btn(
                         row_cont,
                         text=k,
-                        background_style="WIDGET.PIN_BUTTON",
-                        foreground_style="WIDGET.PIN_BUTTON_FG",
+                        style="WIDGET.PIN_BUTTON",
                         callback=lambda d=k: self._on_digit(d),
                     )
 
