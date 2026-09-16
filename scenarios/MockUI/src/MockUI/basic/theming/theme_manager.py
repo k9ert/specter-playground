@@ -147,7 +147,7 @@ class ThemeManager(SettingFileManager):
         if cache is not None and cache_key in cache:
             return cache[cache_key]
         style = self.get_setting(style_key, role_code=role_code)
-        if cache is not None and style is not None:
+        if cache is not None:
             cache[cache_key] = style
         return style
 
@@ -305,6 +305,13 @@ def get_style(style_key, role=None):
 
 def get_style_num(style_key, prop):
     return get_theme_manager().get_style_num(style_key, prop)
+
+def style_has_property(style, prop):
+    """Return whether a resolved LVGL style explicitly defines *prop*."""
+    if style is None:
+        return False
+    value = lv.style_value_t()
+    return bool(style.get_prop(prop, value))
 
 def get_color(palette_idx):
     return get_theme_manager().get_color(palette_idx)

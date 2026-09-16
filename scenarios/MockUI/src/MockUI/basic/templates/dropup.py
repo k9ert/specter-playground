@@ -224,7 +224,7 @@ class DropUp(SpecterGuiMixin):
                        self._sort_button,
                        self._sort_spacer):
             apply_style(button, "APPEARANCE.INVISIBLE", lv.STATE.DISABLED)
-        self._sort_spacer.set_state(lv.STATE.DISABLED, True)
+        self._sort_spacer.set_disabled(True)
         self._refresh_tree_controls()
         self._resize_panel()
 
@@ -255,7 +255,7 @@ class DropUp(SpecterGuiMixin):
         return self.ui_state.is_tree_top_down.get(self.EXPANSION_CONTEXT, False)
 
     def _set_tree_control_visible(self, button, visible):
-        button.set_state(lv.STATE.DISABLED, not visible)
+        button.set_disabled(not visible)
 
     def _set_tree_control_muted(self, button, muted):
         if muted:
@@ -269,6 +269,9 @@ class DropUp(SpecterGuiMixin):
                         if node.has_children()]
         has_hierarchy = bool(branch_nodes)
         if self._expand_all_button is not None:
+            self._expand_all_button.update_icon(
+                BTC_ICONS.TREE_STRUCTURE if self._is_tree_top_down()
+                else BTC_ICONS.TREE_STRUCTURE_FLIPPED)
             self._set_tree_control_visible(self._expand_all_button, has_hierarchy)
             self._set_tree_control_muted(
                 self._expand_all_button,

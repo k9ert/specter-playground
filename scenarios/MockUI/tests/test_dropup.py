@@ -1,7 +1,12 @@
 import pytest
+import lvgl as lv
 
 from MockUI.basic.templates.dropup import DropUp, DropUpState
 from MockUI.basic.ui_state import Context
+from MockUI.basic.widgets.btn import Btn
+from MockUI.basic.symbol_lib import BTC_ICONS
+from MockUI.basic.symbol_lib.icons.tree_structure import TREE_STRUCTURE
+from MockUI.basic.symbol_lib.icons.tree_structure_flipped import TREE_STRUCTURE_FLIPPED
 from MockUI.basic.utils.tree_node import TreeNode
 
 
@@ -66,9 +71,17 @@ class _ControlButton:
     def __init__(self):
         self._ico = object()
         self.states = []
+        self.disabled_states = []
+        self.icons = []
 
     def set_state(self, state, enabled):
         self.states.append((state, enabled))
+
+    def set_disabled(self, disabled):
+        self.disabled_states.append(disabled)
+
+    def update_icon(self, icon):
+        self.icons.append(icon)
 
 
 class _Gui:
@@ -434,8 +447,42 @@ def test_hidden_tree_control_uses_the_disabled_state():
 
     dropup._set_tree_control_visible(button, False)
 
-    assert len(button.states) == 1
-    assert button.states[0][1] is True
+    assert button.disabled_states == [True]
+
+
+def test_btn_set_disabled_updates_wrapper_and_inner_button():
+    wrapper = _ControlButton()
+    wrapper._btn = _ControlButton()
+
+    Btn.set_disabled(wrapper, True)
+
+    assert wrapper.states == [(lv.STATE.DISABLED, True)]
+    assert wrapper._btn.states == [(lv.STATE.DISABLED, True)]
+
+
+def test_expand_all_icon_tracks_tree_direction(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    root = TreeNode("root", key="root")
+    root.add_child(TreeNode("child", key="child"))
+    dropup._tree_roots = [root]
+    dropup._expand_all_button = _ControlButton()
+
+    dropup._refresh_tree_controls()
+
+    assert dropup._expand_all_button.icons[-1] is BTC_ICONS.TREE_STRUCTURE_FLIPPED
+
+    ui_state.is_tree_top_down[Context.SEED] = True
+    dropup._refresh_tree_controls()
+
+    assert dropup._expand_all_button.icons[-1] is BTC_ICONS.TREE_STRUCTURE
+
+
+def test_tree_structure_flipped_icon_reverses_source_rows():
+    width = TREE_STRUCTURE.width
+    source_rows = [TREE_STRUCTURE.pattern[offset:offset + width]
+                   for offset in range(0, len(TREE_STRUCTURE.pattern), width)]
+
+    assert TREE_STRUCTURE_FLIPPED.pattern == b"".join(reversed(source_rows))
 
 
 def test_tree_direction_defaults_to_bottom_up_and_is_context_specific(ui_state):
