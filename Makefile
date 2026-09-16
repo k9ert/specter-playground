@@ -71,14 +71,12 @@ build-i18n: sync-i18n
 	fi
 
 # Theme compilation: JSON → 3 binaries (colors_<name>.bin, fonts_<name>.bin, styles_<name>.bin)
-# The default themes (specter and specterclean) are ALWAYS compiled; extra themes
-# are opt-in via ADD_THEME.
+# The default theme (specter) is ALWAYS compiled; extra themes are opt-in via ADD_THEME.
 build-themes:
 	@echo Building theme files...
 	@rm -rf build/flash_image/themes
 	@mkdir -p build/flash_image/themes
 	cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_specter.json ../../../../../../build/flash_image/themes/
-	cd scenarios/MockUI/src/MockUI/basic/theming && python3 theme_compiler.py compile themes/specter_ui_theme_specterclean.json ../../../../../../build/flash_image/themes/
 	@if [ -n "$(ADD_THEME)" ]; then \
 		for theme in $(shell echo $(ADD_THEME) | tr ',' ' '); do \
 			if [ -f scenarios/MockUI/src/MockUI/basic/theming/themes/specter_ui_theme_$$theme.json ]; then \
