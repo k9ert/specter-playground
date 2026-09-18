@@ -66,7 +66,7 @@
     "WIDGET.PIN_BUTTON":          { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BORDERLESS", "@FG.DEFAULT", "@TEXT.TITLE"] },
     "WIDGET.PIN_DISPLAY":         { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.TITLE", "@TEXT.CENTER"]},
     "WIDGET.DELETE_BUTTON":       {},
-    "WIDGET.TREE_CONNECTOR":      { "style": ["@APPEARANCE.TRANSPARENT"], "line_color": "@INK", "line_width": 1, "pad_left": 38 },
+    "WIDGET.TREE_CONNECTOR":      { "style": ["@APPEARANCE.TRANSPARENT"], "line_color": "@INK", "line_width": 1, "pad_left": 38, "pad_right": 12 },
     "WIDGET.TREE_EXPANDER":       { "style": ["@WIDGET.NAVBAR_BUTTON"], "width": 42, "height": 42,
                                     "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT"] } } },
     "TEXT.DEFAULT":               { "text_font": "@TEXT" },

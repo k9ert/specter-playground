@@ -69,6 +69,7 @@ class TreeList(SpecterGuiElement):
         if self._has_hierarchy:
             self._expander_width = get_style_num(expander_style, lv.STYLE.WIDTH)
             self._indent = get_style_num(connector_style, lv.STYLE.PAD_LEFT)
+            self._leaf_gap = get_style_num(connector_style, lv.STYLE.PAD_RIGHT)
         else:
             self._expander_width = self._indent = 0
 
@@ -214,6 +215,7 @@ class TreeList(SpecterGuiElement):
             if not row.node.has_children():
                 item_x, _ = get_pos(row.item_widget)
                 right_x += item_x
+                right_x -= self._leaf_gap
 
             center_y = self._card_center_y(row)
 
