@@ -77,7 +77,7 @@
     "WIDGET.MODAL_BODY":          { "style": ["@TEXT.BODY", "@TEXT.DEFAULT", "@TEXT.CENTER", "@LAYOUT.PARENT_WIDTH"] },
     "WIDGET.SLIDER":              { "style": ["@APPEARANCE.VISIBLE"],
                                     "roles": {
-                                      "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.DARK", "@LAYOUT.PARENT_WIDTH"], "height": 8, "pad_all": 0, "radius": 32767 },
+                                      "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.DARK", "@LAYOUT.PARENT_WIDTH"], "height": 75, "pad_all": 0, "radius": 32767 },
                                       "INDICATOR": { "style": ["@APPEARANCE.VISIBLE", "@BG.WARNING"], "pad_all": 0, "radius": 32767 },
                                       "KNOB":      { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "pad_all": -3, "radius": 32767 }
                                     } },
