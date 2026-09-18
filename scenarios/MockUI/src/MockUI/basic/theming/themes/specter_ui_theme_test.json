@@ -54,7 +54,7 @@
     "WIDGET.KEYBOARD":          {},
     "WIDGET.PIN_BUTTON":        {},
     "WIDGET.DELETE_BUTTON":     {},
-    "WIDGET.TREE_CONNECTOR":    { "style": ["@APPEARANCE.TRANSPARENT"], "line_color": "@ink", "line_width": 1, "pad_left": 38 },
+    "WIDGET.TREE_CONNECTOR":    { "style": ["@APPEARANCE.TRANSPARENT"], "line_color": "@ink", "line_width": 1, "pad_left": 38, "pad_right": 12 },
     "WIDGET.TREE_EXPANDER":     { "style": ["@WIDGET.NAVBAR_BUTTON"], "width": 42, "height": 42,
                                   "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT"] } } },
     "LAYOUT.BARE":        { "border_width": 0, "radius": 10, "pad_all": 0, "bg_opa": "TRANSP" },

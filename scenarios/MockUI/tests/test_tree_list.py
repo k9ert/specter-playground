@@ -216,12 +216,13 @@ def test_connector_segments_follow_card_edges_and_leaf_boundaries(
     tree._is_expanded = lambda node: True
     tree._top_down = top_down
     tree._expander_width = 20
+    tree._leaf_gap = 12
 
     expected_segments = [
         (15, expected_root_stem_start, 15, 70),
         (27, 85 if top_down else 55, 27, 114),
         (15, 70, 17, 70),
-        (27, 114, 69, 114),
+        (27, 114, 57, 114),
     ]
     assert tree._connector_segments() == expected_segments
 
@@ -255,5 +256,6 @@ def test_bottom_up_connector_reaches_visually_furthest_direct_child():
     tree._is_expanded = lambda node: True
     tree._top_down = False
     tree._expander_width = 20
+    tree._leaf_gap = 12
 
     assert tree._connector_segments()[0] == (15, 110, 15, 20)
