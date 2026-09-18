@@ -23,7 +23,7 @@
   },
   "styles": {
     "CONTAINER.SCREEN":           { "style": ["@APPEARANCE.VISIBLE", "@LAYOUT.BARE", "@BG.DARK", "@LAYOUT.FLEX_COL"], "flex_main_place": "START" },
-    "CONTAINER.NAVBAR":           { "style": ["@APPEARANCE.VISIBLE", "@LAYOUT.BARE", "@BG.DEFAULT", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_ROW"], "radius": 16, "clip_corner": "True", "height": "pct(10)", "pad_left": 8, "pad_right": 8, "flex_main_place": "SPACE_AROUND", "flex_cross_place": "CENTER", "flex_track_place": "CENTER" },
+    "CONTAINER.NAVBAR":           { "style": ["@APPEARANCE.VISIBLE", "@LAYOUT.BARE", "@BG.DEFAULT", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_ROW", "@BORDER.TOP"], "border_width": 1, "border_color": "shade(@NEUTRAL, -3)", "radius": 0, "clip_corner": "True", "height": "pct(10)", "pad_left": 8, "pad_right": 8, "flex_main_place": "SPACE_AROUND", "flex_cross_place": "CENTER", "flex_track_place": "CENTER" },
     "CONTAINER.DROPUP":           { "style": ["@APPEARANCE.VISIBLE", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_COL", "@LAYOUT.START", "@FG.DEFAULT", "@BG.DEFAULT", "@TEXT.TITLE"], "radius": 16, "border_width": 1, "border_color": "@TERTIARY", "pad_all": 16, "height": "SIZE_CONTENT" },
     "CONTAINER.DROP_UP_ROW":      { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@LAYOUT.PARENT_WIDTH", "@LAYOUT.FLEX_ROW", "@FG.DEFAULT", "@TEXT.TITLE", "@LAYOUT.ALL_CENTERED", "@TEXT.LEFT"], "height": "SIZE_CONTENT", "pad_left": 10, "pad_right": 10, "pad_column": 5, "pad_top": 2, "pad_bottom": 10 },
     "CONTAINER.ADD_BUTTON_ROW":   { "style": ["@CONTAINER.DROP_UP_ROW"], "pad_left": 5, "pad_right": 5, "pad_column": 0 },
@@ -49,7 +49,7 @@
     "WIDGET.OVERLAY":             { "style": ["@LAYOUT.BARE", "@BG.DARK", "@APPEARANCE.SEE_THROUGH"] },
     "WIDGET.NAVBAR_BUTTON":       { "style": ["@APPEARANCE.TRANSPARENT"],
                                     "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT"] } } },
-    "WIDGET.BUTTON":              { "style": ["@APPEARANCE.VISIBLE", "@BG.HIGHLIGHT", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"], "border_width": 0, "radius": 2, "height": 52, "pad_left": 16, "pad_right": 16, "pad_top": 10, "pad_bottom": 10,
+    "WIDGET.BUTTON":              { "style": ["@APPEARANCE.VISIBLE", "@BG.HIGHLIGHT", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"], "border_width": 1, "border_color": "@INK", "radius": 2, "height": 52, "pad_left": 16, "pad_right": 16, "pad_top": 10, "pad_bottom": 10,
                                     "roles": { "FG": { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.DEFAULT"] } } },
     "WIDGET.TEXT_EDIT":           { "style": ["@APPEARANCE.VISIBLE", "@TEXT.CENTER", "@FG.DEFAULT", "@BG.DEFAULT"], "border_width": 1, "border_color": "@TERTIARY", "radius": 12, "pad_top": 12, "pad_bottom": 12,
                                     "roles": { "CURSOR": { "bg_opa": "TRANSP", "border_side": "LEFT", "border_width": 2, "border_color": "@INK", "anim_duration": 400 } } },
@@ -77,13 +77,13 @@
     "WIDGET.MODAL_BODY":          { "style": ["@TEXT.BODY", "@TEXT.DEFAULT", "@TEXT.CENTER", "@LAYOUT.PARENT_WIDTH"] },
     "WIDGET.SLIDER":              { "style": ["@APPEARANCE.VISIBLE"],
                                     "roles": {
-                                      "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.DARK", "@LAYOUT.PARENT_WIDTH"], "height": 8, "pad_all": 0, "radius": 32767 },
+                                      "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.DARK", "@LAYOUT.PARENT_WIDTH"], "height": 75, "pad_all": 0, "radius": 32767 },
                                       "INDICATOR": { "style": ["@APPEARANCE.VISIBLE", "@BG.WARNING"], "pad_all": 0, "radius": 32767 },
                                       "KNOB":      { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "pad_all": -3, "radius": 32767 }
                                     } },
     "WIDGET.SWITCH":              { "style": ["@APPEARANCE.VISIBLE"],
                                     "roles": {
-                                      "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.HIGHLIGHT"], "pad_all": 0, "radius": 32767, "width": 64, "height": 36 },
+                                      "TRACK":     { "style": ["@APPEARANCE.VISIBLE", "@BG.HIGHLIGHT"], "pad_all": 0, "radius": 32767, "width": 80, "height": 45 },
                                       "INDICATOR": { "style": ["@APPEARANCE.VISIBLE", "@BG.HIGHLIGHT"], "pad_all": 0, "radius": 32767 },
                                       "KNOB":      { "style": ["@APPEARANCE.VISIBLE", "@FG.DEFAULT"], "pad_all": -3, "radius": 32767 }
                                     } },
@@ -133,8 +133,8 @@
     "CONTEXT.WALLET":             {},
     "CONTEXT.MAIN":               {},
     "CONTEXT.SETTINGS":           {},
-    "MODIFIER.MUTED":             { "text_color": "shade(@NEUTRAL, -5)", "image_recolor": "shade(@NEUTRAL, -5)" },
-    "MODIFIER.MUTED_BG":          { "bg_color": "shade(@NEUTRAL, -5)" },
+    "MODIFIER.MUTED":             { "text_color": "shade(@NEUTRAL, -3)", "image_recolor": "shade(@NEUTRAL, -3)" },
+    "MODIFIER.MUTED_BG":          { "bg_color": "shade(@NEUTRAL, -3)" },
     "MODIFIER.CLICKED":           { "bg_color": "@PRIMARY", "bg_opa": "COVER" },
     "ANIM.HORIZONTAL":            { "anim_duration": 150 },
     "ANIM.VERTICAL":              { "anim_duration": 300 }
