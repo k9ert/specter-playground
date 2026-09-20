@@ -8,8 +8,9 @@ from ..utils import (
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..theming import apply_style
 from ..symbol_lib import BTC_ICONS
-from ..widgets import SeedCard, WalletCard, wallet_net_text
+from ..widgets import SeedCard, WalletCard
 from ..ui_state import Context
+from ...stubs.wallet import wallet_network_text
 
 
 class ContextBar(SpecterGuiElement):
@@ -64,7 +65,7 @@ class ContextBar(SpecterGuiElement):
                 return
 
             has_account = wallet.account != 0
-            net_text = wallet_net_text(wallet)
+            net_text = wallet_network_text(wallet.net)
             show_net = net_text not in (None, "main")
 
             active_slots = ["leading_icon", "name", "type_icon"]

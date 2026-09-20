@@ -98,12 +98,19 @@ class DeviceState:
     def add_seed(self, seed):
         """Load a seed into memory. Returns the default wallet (created if needed)."""
         self.loaded_seeds.append(seed)
-        return self._ensure_default_wallet()
+        return self.get_default_wallet()
 
     def remove_seed(self, seed):
         """Remove a seed from loaded seeds."""
         if seed in self.loaded_seeds:
             self.loaded_seeds.remove(seed)
+
+    def get_sorted_loaded_seeds(self):
+        """Return loaded seeds in the canonical selector order."""
+        return sorted(
+            self.loaded_seeds,
+            key=lambda seed: (seed.get_fingerprint(), str(seed.label).lower()),
+        )
 
     def wallets_for_seed(self, seed):
         """Return wallets that match this seed (including the shared Default Wallet)."""
@@ -111,7 +118,7 @@ class DeviceState:
             return None
         fp = seed.get_fingerprint()
         return [wallet for wallet in self.registered_wallets
-                if wallet.is_default_wallet() or fp in wallet.required_fingerprints]
+                if wallet.is_default_wallet() or fp in wallet.get_signers()]
 
     def seed_matches_wallet(self, seed, wallet):
         """Check if a seed's fingerprint is in the wallet's required signers."""
@@ -120,6 +127,21 @@ class DeviceState:
         return wallet in self.wallets_for_seed(seed)
 
     # ── Wallet helpers ───────────────────────────────────────────────
+    def get_default_wallet(self):
+        """Return the shared Default Wallet, creating it when absent."""
+        for wallet in self.registered_wallets:
+            if wallet.is_default_wallet():
+                return wallet
+        wallet = Wallet(
+            label="Default",
+            descriptor="default",
+            isMultiSig=False,
+            net="mainnet",
+            required_fingerprints=[],
+        )
+        self.registered_wallets.append(wallet)
+        return wallet
+
     def register_wallet(self, wallet, imported=False):
         """Register a wallet descriptor. Returns the wallet.
 
@@ -139,23 +161,6 @@ class DeviceState:
         if wallet in self.registered_wallets:
             self.registered_wallets.remove(wallet)
 
-    def _ensure_default_wallet(self):
-        """Ensure the shared Default Wallet exists.
-        There is only ONE Default Wallet that fits any loaded key."""
-        for wallet in self.registered_wallets:
-            if wallet.is_default_wallet():
-                return wallet
-        # Create the singleton Default Wallet
-        wallet = Wallet(
-            label="Default",
-            descriptor="default",
-            isMultiSig=False,
-            net="mainnet",
-            required_fingerprints=[],
-        )
-        self.registered_wallets.append(wallet)
-        return wallet
-
     def seeds_for_wallet(self, wallet):
         """Return seeds that match this wallet (including the shared Default Wallet)."""
         if wallet is None:
@@ -164,7 +169,7 @@ class DeviceState:
             # Default wallet matches any seed
             return self.loaded_seeds
         
-        fps = set(wallet.required_fingerprints)
+        fps = set(wallet.get_signers())
         return [seed for seed in self.loaded_seeds
                 if seed.get_fingerprint() in fps] 
 
@@ -178,8 +183,9 @@ class DeviceState:
 
         if wallet.is_standard():
             loaded_fps = set(seed.get_fingerprint() for seed in self.loaded_seeds)
-            matched = len(loaded_fps & set(wallet.required_fingerprints))
-            return (matched, len(wallet.required_fingerprints))
+            signers = wallet.get_signers()
+            matched = len(loaded_fps & set(signers))
+            return (matched, len(signers))
         else:
             # For non-standard wallets, we can't analyze the descriptor, so just return dummy values
             return (1, 1) if self.loaded_seeds else (0, 1)

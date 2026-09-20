@@ -13,7 +13,7 @@ class SeedDropUp(DropUp):
     EXPANSION_CONTEXT = Context.SEED
 
     def _get_selectable_items(self):
-        return self.device_state.loaded_seeds
+        return self.device_state.get_sorted_loaded_seeds()
 
     def _delete_from_gui(self, seed):
         self.gui.delete_seed(seed)

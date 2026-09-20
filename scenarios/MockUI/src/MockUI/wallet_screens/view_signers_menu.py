@@ -20,7 +20,7 @@ class ViewSignersMenu(GenericMenu):
         if self.ui_state.active_wallet.is_default_wallet():
             fp_list = loaded_fp4w
         else:
-            fp_list = self.ui_state.active_wallet.required_fingerprints
+            fp_list = self.ui_state.active_wallet.get_signers()
 
         menu_items = []
         for fp in fp_list:

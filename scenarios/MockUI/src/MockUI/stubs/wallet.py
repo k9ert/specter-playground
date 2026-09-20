@@ -40,6 +40,10 @@ class Wallet:
         # BIP32-style path string (e.g. "m/84'/0'/0'"); mock only for now.
         self.derivation_path = derivation_path
 
+    def get_signers(self):
+        """Return signer fingerprints as a stable, immutable collection."""
+        return tuple(sorted(self.required_fingerprints))
+
     def derivation_parent(self, all_wallets):
         """Mock parent discovery via derivation sub-paths.
 
@@ -52,13 +56,13 @@ class Wallet:
         if not self.derivation_path:
             return None
         mine = self.derivation_path.split("/")
-        mine_signers = sorted(self.required_fingerprints)
+        mine_signers = self.get_signers()
         best = None
         best_len = 0
         for other in all_wallets:
             if other is self or not other.derivation_path:
                 continue
-            if sorted(other.required_fingerprints) != mine_signers:
+            if other.get_signers() != mine_signers:
                 continue
             theirs = other.derivation_path.split("/")
             if (len(theirs) < len(mine)
@@ -83,17 +87,54 @@ class WalletType:
     MULTISIG = const(2)
     CUSTOM = const(3)
 
-
 def _wallet_type_rank(wallet):
     """Return (type_rank, n, m, account) for sort ordering."""
-    if not wallet.is_standard():
-        type_rank = WalletType.CUSTOM  # custom / miniscript
-    elif wallet.isMultiSig:
+    if wallet.isMultiSig:
         type_rank = WalletType.MULTISIG  # multisig
     elif wallet.is_default_wallet():
         type_rank = WalletType.SINGLE_SIG_DEFAULT  # single-sig default wallet
-    else:
+    elif wallet.is_standard():
         type_rank = WalletType.SINGLE_SIG  # non default singleSig
-    n = len(wallet.required_fingerprints) if wallet.isMultiSig else 0
+    else:
+        type_rank = WalletType.CUSTOM  # custom / miniscript
+    n = len(wallet.get_signers()) if wallet.isMultiSig else 0
     m = wallet.threshold if wallet.isMultiSig else 0
     return (type_rank, n, m, getattr(wallet, "account", 0))
+
+_NETWORK_INFO = {
+    "mainnet": (0, "main"),
+    "testnet": (1, "test"),
+    "signet":  (2, "sig"),
+    "regtest": (3, "reg"),
+}
+
+def wallet_network_rank(network):
+    """Return the stable display-order rank for a network name."""
+    return _NETWORK_INFO.get(network, (len(_NETWORK_INFO), None))[0]
+
+def wallet_network_text(network):
+    """Return the short display text for a network name."""
+    return _NETWORK_INFO.get(network, (None, None))[1]
+
+
+def _wallet_policy_rank(wallet):
+    if wallet.is_default_wallet():
+        return 0
+    elif wallet.is_standard():
+        return 1
+    else:
+        return 2
+
+def wallet_sort_key(wallet):
+    """Return the canonical ordering key for wallet presentation."""
+    signers = wallet.get_signers()
+
+    return (
+        len(signers),
+        signers,
+        wallet.threshold if wallet.isMultiSig else 1,
+        _wallet_policy_rank(wallet),
+        getattr(wallet, "account", 0),
+        wallet_network_rank(wallet.net),
+        str(wallet.label).lower(),
+    )

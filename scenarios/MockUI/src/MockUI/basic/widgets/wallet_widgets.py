@@ -9,6 +9,7 @@ from ..symbol_lib import BTC_ICONS
 from ..theming import apply_style, remove_style, get_style
 from ..templates.specter_gui_base import SpecterGuiElement
 from ..utils import set_size, set_align
+from ...stubs.wallet import wallet_network_text
 
 # Wallet-card slot names (ordered as they appear left-to-right in default layout)
 WALLET_SLOTS = ("leading_icon", "type_icon", "name", "threshold", "account", "net", "delete")
@@ -21,13 +22,6 @@ def wallet_signing_status_modifier(wallet, device_state):
     """
     matched, required = device_state.signing_match_count(wallet)
     return None if (required > 0 and matched >= required) else get_style("MODIFIER.MUTED")
-
-_NET_MAP = {"mainnet": "main", "testnet": "test", "signet": "sig", "regtest": "reg"}
-
-def wallet_net_text(wallet):
-    """Return the short network label for *wallet* (e.g. ``'test'``).
-    """
-    return _NET_MAP.get(wallet.net)
 
 def wallet_account_text(wallet):
     """Return the account label string for *wallet* (e.g. ``'#2'``).
@@ -89,7 +83,7 @@ def wallet_type_icon(parent, wallet, device_state):
     mod = None
 
     if not wallet.is_standard():
-        ico_type = BTC_ICONS.CONSOLE
+        ico_type = BTC_ICONS.LINUX_TERMINAL
     else:
         ico_type = BTC_ICONS.KEY
 
@@ -114,8 +108,8 @@ class WalletCard(InfoCard):
         ``"name"``          — wallet label; editable textarea if *on_name_click* provided
                               (never editable for the default wallet)
         ``"threshold"``     — M/N multisig label; only when wallet.isMultiSig
-        ``"account"``       — account number label; only when wallet.account != 0
-        ``"net"``           — network label; only when wallet is not mainnet
+        ``"account"``       — account number label; can include account 0
+        ``"net"``           — network label; can include mainnet
         ``"delete"``        — TRASH button; only when *on_delete* is provided
 
     Attributes:
@@ -128,7 +122,9 @@ class WalletCard(InfoCard):
                  leading_icon=None,
                  on_card_click=None,
                  on_name_click=None,
-                 on_delete=None):
+                 on_delete=None,
+                 show_zero_account=False,
+                 show_mainnet_net=False):
 
         super().__init__(parent, on_card_click)
 
@@ -149,8 +145,14 @@ class WalletCard(InfoCard):
 
         # ── Derived flags ─────────────────────────────────────────────────────
         show_threshold = "threshold" in slots and wallet.isMultiSig and wallet.threshold is not None
-        show_account   = "account" in slots and getattr(wallet, "account", 0) != 0
-        show_net       = "net" in slots and wallet_net_text(wallet) not in (None, "main")
+        network_text = wallet_network_text(wallet.net)
+        show_account = ("account" in slots
+                        and (getattr(wallet, "account", 0) != 0
+                             or show_zero_account))
+        show_net = ("net" in slots
+                    and network_text is not None
+                    and (network_text != "main"
+                         or show_mainnet_net))
 
         # ── Build row ─────────────────────────────────────────────────────────
         for slot in slots:
@@ -167,7 +169,7 @@ class WalletCard(InfoCard):
                 self._add_name_slot(wallet.label, name_click)
 
             elif slot == "threshold" and show_threshold:
-                n = len(wallet.required_fingerprints)
+                n = len(wallet.get_signers())
                 self.thresh_lbl = make_label(
                     self,
                     str(wallet.threshold) + "/" + str(n),
@@ -182,7 +184,7 @@ class WalletCard(InfoCard):
                 apply_style(self.acc_lbl, "WIDGET.INFO_ITEM")
 
             elif slot == "net" and show_net:
-                self.net_lbl = make_label(self, wallet_net_text(wallet))
+                self.net_lbl = make_label(self, network_text)
                 apply_style(self.net_lbl, "WIDGET.INFO_ITEM")
 
             elif slot == "delete":

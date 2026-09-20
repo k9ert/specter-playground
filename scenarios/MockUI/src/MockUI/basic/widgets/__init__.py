@@ -10,7 +10,7 @@ from .menu_item import MenuItem
 from .modal_overlay import modal_overlay
 from .seed_widgets import fingerprint_badge, passphrase_toggle, SeedCard
 from .tree_list import TreeList
-from .wallet_widgets import wallet_net_text, wallet_account_text, MultisigKeyIcon, wallet_type_icon, WalletCard
+from .wallet_widgets import wallet_account_text, MultisigKeyIcon, wallet_type_icon, WalletCard
 
 
 __all__ = [
@@ -26,5 +26,5 @@ __all__ = [
     "modal_overlay",
     "fingerprint_badge", "passphrase_toggle", "SeedCard",
     "TreeList",
-    "wallet_net_text", "wallet_account_text", "MultisigKeyIcon", "wallet_type_icon", "WalletCard"
+    "wallet_account_text", "MultisigKeyIcon", "wallet_type_icon", "WalletCard"
 ]
