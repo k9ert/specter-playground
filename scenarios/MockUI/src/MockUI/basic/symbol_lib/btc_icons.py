@@ -107,7 +107,7 @@ from .icons.keyboard import KEYBOARD
 from .icons.lightning import LIGHTNING
 # from .icons.lightning_circle import LIGHTNING_CIRCLE
 from .icons.link import LINK
-# from .icons.linux_terminal import LINUX_TERMINAL
+from .icons.linux_terminal import LINUX_TERMINAL
 from .icons.lock import LOCK
 from .icons.magic_wand import MAGIC_WAND
 from .icons.menu import MENU
@@ -296,7 +296,7 @@ class BTC_ICONS:
     LIGHTNING = LIGHTNING
 #     LIGHTNING_CIRCLE = LIGHTNING_CIRCLE
     LINK = LINK
-#     LINUX_TERMINAL = LINUX_TERMINAL
+    LINUX_TERMINAL = LINUX_TERMINAL
     LOCK = LOCK
     MAGIC_WAND = MAGIC_WAND
     MENU = MENU
