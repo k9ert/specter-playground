@@ -8,7 +8,7 @@ from ..basic import (
     apply_style,
     t,
 )
-from ..stubs.wallet import WalletType, _wallet_type_rank
+from ..stubs.wallet import WalletType, _wallet_type_rank, wallet_sort_key
 
 class RelatedWalletsForSeedMenu(TitledScreen):
     """Lists wallets associated with the active seed.
@@ -16,8 +16,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
     Uses device_state.wallets_for_seed() which includes the Default Wallet and
     all wallets whose required signers contain the seed's fingerprint.
 
-    Sorted by type (singleSig → multisig → custom), then for multisig by N
-    (number of signers), then by M (threshold), then by account number.
+    Sorted by the shared canonical wallet presentation key.
     Clicking a wallet button navigates to the wallet menu for that wallet.
 
     menu_id: "related_wallets_for_seed"
@@ -33,7 +32,7 @@ class RelatedWalletsForSeedMenu(TitledScreen):
 
         wallets = sorted(
             self.device_state.wallets_for_seed(self.ui_state.active_seed) or [],
-            key=_wallet_type_rank,
+            key=wallet_sort_key,
         )
 
         # Cross-wallet column alignment

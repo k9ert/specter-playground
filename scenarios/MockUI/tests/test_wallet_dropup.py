@@ -1,7 +1,8 @@
 from MockUI.basic.components.wallet_dropup import WalletDropUp
 from MockUI.basic.specter_gui import SpecterGui
 from MockUI.basic.ui_state import Context
-from MockUI.stubs.wallet import Wallet
+from MockUI.stubs.seed import Seed
+from MockUI.stubs.wallet import Wallet, wallet_sort_key
 
 
 class _WalletDropUp(WalletDropUp):
@@ -12,6 +13,13 @@ class _WalletDropUp(WalletDropUp):
     @property
     def device_state(self):
         return self._test_device_state
+
+    @property
+    def t(self):
+        return lambda key: {
+            "ADD_SWITCH_WALLET_MENU_OTHER_WALLETS": "Other wallets",
+            "COMMON_MULTISIG": "MultiSig",
+        }.get(key, key)
 
 
 class _Descriptor:
@@ -35,6 +43,51 @@ def test_wallet_tree_key_uses_descriptor_across_rename_and_reconstruction():
     wallet.label = "Renamed"
     assert key == dropup._get_item_key(wallet)
     assert key == dropup._get_item_key(restored_wallet)
+
+
+def test_wallet_sort_key_orders_by_signers_threshold_policy_and_account():
+    default = Wallet("Default", descriptor="default")
+    standard = Wallet("Standard", descriptor="wpkh(standard)#00000002",
+                      required_fingerprints=["a"])
+    custom = Wallet("Custom", descriptor="wsh(custom)#00000003",
+                    required_fingerprints=["a"], is_custom=True)
+    multisig_standard = Wallet(
+        "Multisig", descriptor="wsh(sortedmulti(2,a,b,c))#00000004",
+        isMultiSig=True, required_fingerprints=["c", "a", "b"], threshold=2)
+    multisig_custom = Wallet(
+        "Custom multisig", descriptor="wsh(and_v(...))#00000005",
+        isMultiSig=True, required_fingerprints=["a", "b", "c"], threshold=2,
+        is_custom=True)
+    second_account = Wallet(
+        "Multisig", descriptor="wsh(sortedmulti(2,a,b,c))#00000006",
+        isMultiSig=True, required_fingerprints=["a", "b", "c"], threshold=2,
+        account=1)
+
+    ordered = sorted(
+        [multisig_custom, custom, second_account, standard,
+         default, multisig_standard],
+        key=wallet_sort_key,
+    )
+
+    assert ordered == [
+        default,
+        standard,
+        custom,
+        multisig_standard,
+        second_account,
+        multisig_custom,
+    ]
+    assert multisig_standard.get_signers() == ("a", "b", "c")
+
+
+def test_device_state_returns_the_shared_default_wallet(specter_state):
+    default = specter_state.get_default_wallet()
+
+    assert specter_state.add_seed(Seed("First", fingerprint="11111111")) is default
+    reused_default = specter_state.add_seed(Seed("Second", fingerprint="22222222"))
+
+    assert specter_state.get_default_wallet() is default
+    assert reused_default is default
 
 
 def test_delete_wallet_clears_active_selection_and_expansion_state(
