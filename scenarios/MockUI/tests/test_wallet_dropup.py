@@ -90,6 +90,104 @@ def test_device_state_returns_the_shared_default_wallet(specter_state):
     assert reused_default is default
 
 
+def test_wallet_groups_repeat_default_per_seed_without_copying_it(specter_state):
+    first_seed = Seed("First", fingerprint="11111111")
+    second_seed = Seed("Second", fingerprint="22222222")
+    default = specter_state.add_seed(first_seed)
+    specter_state.add_seed(second_seed)
+    dropup = _WalletDropUp(specter_state)
+
+    groups = dropup._get_raw_DropUpGroups()
+
+    assert [group.heading for group in groups] == ["First", "Second"]
+    assert [group.items[0] for group in groups] == [default, default]
+
+
+def test_wallet_groups_label_a_lone_seed(specter_state):
+    seed = Seed("Only seed", fingerprint="11111111")
+    default = specter_state.add_seed(seed)
+    groups = _WalletDropUp(specter_state)._get_raw_DropUpGroups()
+
+    assert len(groups) == 1
+    assert groups[0].heading == "Only seed"
+    assert groups[0].items[0] is default
+
+
+def test_wallet_groups_sort_standard_before_custom_within_a_seed(specter_state):
+    seed = Seed("Seed", fingerprint="11111111")
+    default = specter_state.add_seed(seed)
+    custom = Wallet("Custom", descriptor="custom", is_custom=True,
+                    required_fingerprints=[seed.get_fingerprint()])
+    standard = Wallet("Standard", descriptor="standard",
+                      required_fingerprints=[seed.get_fingerprint()])
+    specter_state.register_wallet(custom)
+    specter_state.register_wallet(standard)
+
+    groups = _WalletDropUp(specter_state)._get_raw_DropUpGroups()
+
+    assert groups[0].items == [
+        default,
+        standard,
+        custom,
+    ]
+
+
+def test_wallet_groups_multisig_by_shared_signers(
+        specter_state):
+    seed = Seed("Seed", fingerprint="11111111")
+    specter_state.add_seed(seed)
+    first = Wallet(
+        "Treasury", descriptor="wsh(sortedmulti(2,a,b,c))#00000001",
+        isMultiSig=True, required_fingerprints=["11111111", "b", "c"],
+        threshold=2)
+    second = Wallet(
+        "Treasury", descriptor="wsh(sortedmulti(2,a,b,c))#00000002",
+        isMultiSig=True, required_fingerprints=["c", "11111111", "b"],
+        threshold=2, account=1)
+    specter_state.register_wallet(first)
+    specter_state.register_wallet(second)
+    dropup = _WalletDropUp(specter_state)
+
+    seed_group, signer_group = dropup._get_raw_DropUpGroups()
+
+    assert seed_group.heading == "Seed"
+    assert signer_group.heading == "Seed, b, c"
+    assert signer_group.items == [first, second]
+
+
+def test_wallet_groups_keep_multisigs_with_different_thresholds_together(
+        specter_state):
+    seed = Seed("Seed", fingerprint="11111111")
+    specter_state.add_seed(seed)
+    first = Wallet(
+        "Recovery", descriptor="one", isMultiSig=True,
+        required_fingerprints=["11111111", "b", "c"], threshold=1)
+    second = Wallet(
+        "Treasury", descriptor="two", isMultiSig=True,
+        required_fingerprints=["11111111", "b", "c"], threshold=2)
+    specter_state.register_wallet(second)
+    specter_state.register_wallet(first)
+
+    signer_group = _WalletDropUp(specter_state)._get_raw_DropUpGroups()[1]
+
+    assert signer_group.heading == "Seed, b, c"
+    assert signer_group.items == [first, second]
+
+
+def test_wallet_groups_omit_unassociated_singlesig_wallets(specter_state):
+    seed = Seed("Seed", fingerprint="11111111")
+    specter_state.add_seed(seed)
+    imported = Wallet("Imported", descriptor="imported", is_custom=True,
+                      required_fingerprints=["outside"])
+    specter_state.register_wallet(imported)
+
+    groups = _WalletDropUp(specter_state)._get_raw_DropUpGroups()
+
+    assert len(groups) == 1
+    assert groups[0].items == [specter_state.get_default_wallet()]
+    assert imported not in groups[0].items
+
+
 def test_delete_wallet_clears_active_selection_and_expansion_state(
         specter_state, ui_state):
     wallet = Wallet("Wallet", descriptor=_Descriptor("wpkh([wallet]xpub...)"))
