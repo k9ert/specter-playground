@@ -133,7 +133,8 @@ class SpecterGui(RebuildableObj):
         # Periodic refresh (e.g. to update battery level)
         def _tick(timer):
             self.device_state.debug_cycle_battery()
-            self.refresh_ui()
+            if self.app_screen:
+                self.app_screen.refresh_battery()
         lv.timer_create(_tick, GUI_REFRESH_MS, None)
 
         # load SpecterGui as the active screen
