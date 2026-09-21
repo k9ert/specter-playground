@@ -1,7 +1,8 @@
 import pytest
 import lvgl as lv
 
-from MockUI.basic.templates.dropup import DropUp, DropUpState
+import MockUI.basic.templates.dropup as dropup_module
+from MockUI.basic.templates.dropup import DropUp, DropUpGroup, DropUpState
 from MockUI.basic.ui_state import Context
 from MockUI.basic.widgets.btn import Btn
 from MockUI.basic.symbol_lib import BTC_ICONS
@@ -15,16 +16,31 @@ class _Panel:
         self._calls = calls
         self._width = width
         self._height = height
+        self._content_height = height
+        self.max_height = None
+        self.space_top = 0
+        self.space_bottom = 0
         self.position = None
 
     def update_layout(self):
         self._calls.append("layout")
+        if self.max_height is not None:
+            self._height = min(self._content_height, self.max_height[0])
 
     def get_width(self):
         return self._width
 
     def get_height(self):
         return self._height
+
+    def set_style_max_height(self, height, selector):
+        self.max_height = (height, selector)
+
+    def get_style_space_top(self, selector):
+        return self.space_top
+
+    def get_style_space_bottom(self, selector):
+        return self.space_bottom
 
     def set_x(self, x):
         self.position = (x, self.position[1] if self.position else None)
@@ -67,6 +83,31 @@ class _RefreshingItemList:
         self.direction_changes.append(top_down)
 
 
+class _ScrollBody:
+    def __init__(self, scroll_y, scroll_bottom):
+        self.scroll_y = scroll_y
+        self.scroll_bottom = scroll_bottom
+        self.scroll_to_y_calls = []
+
+    def get_scroll_y(self):
+        return self.scroll_y
+
+    def get_scroll_bottom(self):
+        return self.scroll_bottom
+
+    def scroll_to_y(self, y, animated):
+        self.scroll_to_y_calls.append((y, animated))
+
+
+def _set_item_group(dropup, roots=(), items_tree_list=None):
+    group = DropUpGroup()
+    group.roots = list(roots)
+    group.items_tree_list = (
+        _RefreshingItemList() if items_tree_list is None else items_tree_list)
+    dropup._item_groups = [group]
+    return group.items_tree_list
+
+
 class _ControlButton:
     def __init__(self):
         self._ico = object()
@@ -100,6 +141,7 @@ class _TestDropUp(DropUp):
         super().__init__()
         self.items = list(items)
         self._test_gui = gui
+        self._scroll_body = _ScrollBody(scroll_y=0, scroll_bottom=0)
         self.deleted_items = []
         self.close_count = 0
         self.navigation_calls = []
@@ -168,29 +210,138 @@ def test_resize_panel_relayouts_after_name_optimization():
 
     dropup = DropUp()
     dropup._panel = panel
-    dropup._item_list = _ItemList([card])
+    dropup._scroll_body = _Panel([], width=480, height=100)
+    dropup._footer = _Panel([], width=480, height=50)
+    _set_item_group(dropup, items_tree_list=_ItemList([card]))
     dropup._backdrop = backdrop
 
     dropup._resize_panel()
 
-    assert calls == ["layout", "optimize"]
+    assert calls == ["layout", "optimize", "layout"]
+    assert dropup._scroll_body.max_height == (650, 0)
+    assert panel.get_height() == 120
     assert panel.position == (0, 580)
 
 
 def test_resize_panel_clamps_to_the_top_when_content_is_taller():
     calls = []
     panel = _Panel(calls, width=480, height=800)
-    backdrop = _Panel(calls, width=480, height=700)
+    scroll_body = _Panel([], width=480, height=800)
+    footer = _Panel([], width=480, height=50)
+    # Model the real panel: SIZE_CONTENT = capped body + footer.
+    panel.update_layout = lambda: (
+        calls.append("layout"),
+        scroll_body.update_layout(),
+        setattr(panel, "_height", scroll_body.get_height() + footer.get_height()),
+    )
 
     dropup = DropUp()
     dropup._panel = panel
-    dropup._item_list = _ItemList([])
+    dropup._scroll_body = scroll_body
+    dropup._footer = footer
+    _set_item_group(dropup, items_tree_list=_ItemList([]))
+    dropup._backdrop = _Panel(calls, width=480, height=700)
+
+    dropup._resize_panel()
+
+    assert calls == ["layout", "layout"]
+    assert scroll_body.max_height == (650, 0)
+    assert panel.get_height() == 700
+    assert panel.position == (0, 0)
+
+
+def test_resize_panel_reserves_panel_insets_and_footer_for_the_scroll_body():
+    calls = []
+    panel = _Panel(calls, width=480, height=800)
+    panel.space_top = 16
+    panel.space_bottom = 18
+    footer = _Panel([], width=480, height=62)
+    scroll_body = _Panel([], width=480, height=900)
+    backdrop = _Panel(calls, width=480, height=700)
+    dropup = DropUp()
+    dropup._panel = panel
+    dropup._scroll_body = scroll_body
+    dropup._footer = footer
+    _set_item_group(dropup, items_tree_list=_ItemList([]))
     dropup._backdrop = backdrop
 
     dropup._resize_panel()
 
-    assert calls == ["layout"]
-    assert panel.position == (0, 0)
+    assert scroll_body.max_height == (604, 0)
+
+
+@pytest.mark.parametrize(
+    "top_down, expected_scroll",
+    [(True, []), (False, [(90, False)])],
+)
+def test_fill_panel_splits_body_from_footer_and_sets_the_initial_scroll(
+        monkeypatch, top_down, expected_scroll):
+    styles = []
+    scroll_calls = []
+
+    class _Element:
+        def __init__(self, parent):
+            self.parent = parent
+            self.scroll_to_y_calls = []
+
+        def set_height(self, height):
+            self.height = height
+
+        def get_scroll_y(self):
+            return 30
+
+        def get_scroll_bottom(self):
+            return 60
+
+        def scroll_to_y(self, y, animated):
+            self.scroll_to_y_calls.append((y, animated))
+
+    class _Button:
+        def __init__(self, *args, **kwargs):
+            self._ico = object()
+
+        def set_disabled(self, disabled):
+            self.disabled = disabled
+
+        def update_icon(self, icon):
+            self.icon = icon
+
+    monkeypatch.setattr(dropup_module, "SpecterGuiElement", _Element)
+    monkeypatch.setattr(dropup_module, "Btn", _Button)
+    monkeypatch.setattr(dropup_module, "delete_all_children_of", lambda obj: None)
+    monkeypatch.setattr(
+        dropup_module, "apply_style",
+        lambda obj, style, *args: styles.append((obj, style)))
+    monkeypatch.setattr(
+        dropup_module, "set_scroll",
+        lambda obj, horizontal, vertical: scroll_calls.append(
+            (obj, horizontal, vertical)))
+
+    dropup = DropUp()
+    dropup._panel = _Panel([], width=480, height=700)
+    dropup._get_display_groups = lambda: []
+    dropup._add_button_label = lambda: "Add"
+    dropup._refresh_tree_controls = lambda: None
+    dropup._resize_panel = lambda: None
+    dropup._is_tree_top_down = lambda: top_down
+
+    dropup._fill_panel()
+    scroll_body = dropup._scroll_body
+
+    assert scroll_body.parent is dropup._panel
+    assert dropup._footer.parent is dropup._panel
+    assert (
+        scroll_body,
+        [
+            "APPEARANCE.TRANSPARENT",
+            "LAYOUT.BARE",
+            "LAYOUT.PARENT_WIDTH",
+            "LAYOUT.FLEX_COL",
+            "LAYOUT.START",
+        ],
+    ) in styles
+    assert scroll_calls == [(scroll_body, False, True)]
+    assert scroll_body.scroll_to_y_calls == expected_scroll
 
 
 @pytest.mark.parametrize(
@@ -304,20 +455,51 @@ def test_cancel_animation_leaves_the_open_panel_ready_for_refresh():
 def test_toggle_updates_expansion_state_and_refreshes_the_list(ui_state):
     gui = _Gui(ui_state)
     dropup = _TestDropUp(gui=gui)
-    dropup._item_list = _RefreshingItemList()
+    items_tree_list = _set_item_group(dropup)
     node = TreeNode("seed", key="fingerprint")
 
     dropup._on_item_toggle(node)
 
     assert ui_state.is_item_expanded[(Context.SEED, "fingerprint")] is True
-    assert dropup._item_list.refresh_count == 1
+    assert items_tree_list.refresh_count == 1
     assert dropup.resize_count == 1
 
     dropup._on_item_toggle(node)
 
     assert ui_state.is_item_expanded[(Context.SEED, "fingerprint")] is False
-    assert dropup._item_list.refresh_count == 2
+    assert items_tree_list.refresh_count == 2
     assert dropup.resize_count == 2
+
+
+def test_bottom_up_tree_refresh_preserves_the_viewport_bottom(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    scroll_body = _ScrollBody(scroll_y=150, scroll_bottom=50)
+    dropup._scroll_body = scroll_body
+    items_tree_list = _set_item_group(dropup)
+
+    def _relayout():
+        scroll_body.scroll_bottom = 320
+
+    dropup._refresh_item_group_controls = _relayout
+
+    dropup._refresh_item_group_trees()
+
+    assert items_tree_list.refresh_count == 1
+    assert scroll_body.scroll_to_y_calls == [(0, False), (270, False)]
+
+
+def test_top_down_tree_refresh_preserves_the_viewport_top(ui_state):
+    ui_state.is_tree_top_down[Context.SEED] = True
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    scroll_body = _ScrollBody(scroll_y=150, scroll_bottom=50)
+    dropup._scroll_body = scroll_body
+    _set_item_group(dropup)
+
+    dropup._refresh_item_group_controls = lambda: None
+
+    dropup._refresh_item_group_trees()
+
+    assert scroll_body.scroll_to_y_calls == [(0, False), (150, False)]
 
 
 def test_item_expansion_state_defaults_to_false_and_reads_saved_values(ui_state):
@@ -342,8 +524,7 @@ def test_expand_and_collapse_all_updates_every_branch(ui_state):
     leaf = TreeNode("leaf", key="leaf")
     root.add_child(child)
     child.add_child(leaf)
-    dropup._tree_roots = [root]
-    dropup._item_list = _RefreshingItemList()
+    items_tree_list = _set_item_group(dropup, [root])
 
     dropup._set_all_item_expanded(True)
 
@@ -351,7 +532,7 @@ def test_expand_and_collapse_all_updates_every_branch(ui_state):
         (Context.SEED, "root"): True,
         (Context.SEED, "child"): True,
     }
-    assert dropup._item_list.refresh_count == 1
+    assert items_tree_list.refresh_count == 1
     assert dropup.resize_count == 1
 
     dropup._set_all_item_expanded(False)
@@ -360,7 +541,7 @@ def test_expand_and_collapse_all_updates_every_branch(ui_state):
         (Context.SEED, "root"): False,
         (Context.SEED, "child"): False,
     }
-    assert dropup._item_list.refresh_count == 2
+    assert items_tree_list.refresh_count == 2
     assert dropup.resize_count == 2
 
 
@@ -369,12 +550,11 @@ def test_tree_controls_keep_slots_and_reflect_available_actions(ui_state):
     root = TreeNode("root", key="root")
     child = TreeNode("child", key="child")
     root.add_child(child)
-    dropup._tree_roots = [root]
     dropup._expand_all_button = _ControlButton()
     dropup._collapse_all_button = _ControlButton()
     dropup._sort_button = _ControlButton()
-    dropup._item_list = _RefreshingItemList()
-    dropup._item_list.visible_items = [root]
+    items_tree_list = _set_item_group(dropup, [root])
+    items_tree_list.visible_items = [root]
 
     dropup._refresh_tree_controls()
 
@@ -396,7 +576,7 @@ def test_tree_control_refresh_updates_available_controls_independently(ui_state)
     root = TreeNode("root", key="root")
     child = TreeNode("child", key="child")
     root.add_child(child)
-    dropup._tree_roots = [root]
+    _set_item_group(dropup, [root])
     dropup._expand_all_button = _ControlButton()
 
     dropup._refresh_tree_controls()
@@ -410,29 +590,28 @@ def test_sort_control_appears_when_expansion_shows_multiple_rows(ui_state):
     root = TreeNode("root", key="root")
     child = TreeNode("child", key="child")
     root.add_child(child)
-    dropup._tree_roots = [root]
     dropup._expand_all_button = _ControlButton()
     dropup._collapse_all_button = _ControlButton()
     dropup._sort_button = _ControlButton()
-    dropup._item_list = _RefreshingItemList()
+    items_tree_list = _set_item_group(dropup, [root])
 
-    dropup._item_list.visible_items = [root]
+    items_tree_list.visible_items = [root]
     dropup._refresh_tree_controls()
     assert dropup._sort_button.visible is False
 
-    dropup._item_list.visible_items = [root, child]
+    items_tree_list.visible_items = [root, child]
     dropup._refresh_tree_controls()
     assert dropup._sort_button.visible is True
 
 
 def test_tree_controls_hide_tree_actions_for_a_flat_list(ui_state):
     dropup = _TestDropUp(gui=_Gui(ui_state))
-    dropup._tree_roots = [TreeNode("first"), TreeNode("second")]
+    roots = [TreeNode("first"), TreeNode("second")]
     dropup._expand_all_button = _ControlButton()
     dropup._collapse_all_button = _ControlButton()
     dropup._sort_button = _ControlButton()
-    dropup._item_list = _RefreshingItemList()
-    dropup._item_list.visible_items = dropup._tree_roots
+    items_tree_list = _set_item_group(dropup, roots)
+    items_tree_list.visible_items = roots
 
     dropup._refresh_tree_controls()
 
@@ -464,7 +643,7 @@ def test_expand_all_icon_tracks_tree_direction(ui_state):
     dropup = _TestDropUp(gui=_Gui(ui_state))
     root = TreeNode("root", key="root")
     root.add_child(TreeNode("child", key="child"))
-    dropup._tree_roots = [root]
+    _set_item_group(dropup, [root])
     dropup._expand_all_button = _ControlButton()
 
     dropup._refresh_tree_controls()
@@ -488,7 +667,7 @@ def test_tree_structure_flipped_icon_reverses_source_rows():
 def test_tree_direction_defaults_to_bottom_up_and_is_context_specific(ui_state):
     gui = _Gui(ui_state)
     dropup = _TestDropUp(gui=gui)
-    dropup._item_list = _RefreshingItemList()
+    items_tree_list = _set_item_group(dropup)
 
     assert dropup._is_tree_top_down() is False
     assert ui_state.is_tree_top_down.get(Context.WALLET, False) is False
@@ -498,8 +677,21 @@ def test_tree_direction_defaults_to_bottom_up_and_is_context_specific(ui_state):
 
     assert ui_state.is_tree_top_down[Context.SEED] is False
     assert ui_state.is_tree_top_down.get(Context.WALLET, False) is False
-    assert dropup._item_list.direction_changes == [True, False]
-    assert dropup.resize_count == 2
+    assert items_tree_list.direction_changes == []
+    assert dropup.fill_count == 2
+
+
+def test_display_groups_follow_tree_direction(ui_state):
+    dropup = _TestDropUp(gui=_Gui(ui_state))
+    first = DropUpGroup(heading="first")
+    second = DropUpGroup(heading="second")
+    dropup._get_raw_DropUpGroups = lambda: [first, second]
+
+    assert list(dropup._get_display_groups()) == [second, first]
+
+    ui_state.is_tree_top_down[Context.SEED] = True
+
+    assert list(dropup._get_display_groups()) == [first, second]
 
 
 def test_delete_item_closes_and_navigates_only_after_the_last_item():
