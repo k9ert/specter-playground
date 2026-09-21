@@ -176,7 +176,7 @@ class DropUp(SpecterGuiMixin):
 
     def _fill_panel(self):
         """Clear, repopulate, and resize/reposition the panel.
-        The panel is subdivided into to main parts:
+        The panel is subdivided into two main parts:
            -the scroll body contains the actual listed items. It grows as needed as
             long as there is space, otherwise it becomes scrollable.
            -the footer contains action buttons and remains fixed and visible at the
