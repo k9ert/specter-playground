@@ -44,7 +44,7 @@
     "CONTAINER.MODAL_BUTTON_ROW": { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@LAYOUT.FLEX_ROW", "@LAYOUT.PARENT_WIDTH"], "flex_main_place": "SPACE_EVENLY", "flex_cross_place": "CENTER", "height": "SIZE_CONTENT", "pad_top": 15 },
     "CONTAINER.FINGERPRINT_BADGE":{ "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.BARE", "@LAYOUT.FLEX_ROW", "@LAYOUT.START"], "width": 86, "height": "SIZE_CONTENT" },
     "CONTAINER.DELETE_BUTTON":    { "style": ["@APPEARANCE.TRANSPARENT", "@LAYOUT.FLEX_ROW", "@LAYOUT.ALL_CENTERED"], "width": "SIZE_CONTENT", "height": "pct(8)", "align": "RIGHT_MID", "x": -10 },
-    "CONTAINER.TREE_ROW":         { "style": ["@CONTAINER.DROP_UP_ROW", "@LAYOUT.FLEX_ROW"], "width": "pct(100)", "pad_column": 6 },
+    "CONTAINER.TREE_ROW":         { "style": ["@CONTAINER.DROP_UP_ROW", "@LAYOUT.FLEX_ROW"], "width": "pct(100)", "height": 56, "pad_top": 0, "pad_bottom": 0, "pad_column": 6 },
     "WIDGET.SCREEN_TITLE":        { "style": ["@APPEARANCE.TRANSPARENT", "@FG.DEFAULT", "@TEXT.TITLE", "@TEXT.CENTER"] },
     "WIDGET.OVERLAY":             { "style": ["@LAYOUT.BARE", "@BG.DARK", "@APPEARANCE.SEE_THROUGH"] },
     "WIDGET.NAVBAR_BUTTON":       { "style": ["@APPEARANCE.TRANSPARENT"],

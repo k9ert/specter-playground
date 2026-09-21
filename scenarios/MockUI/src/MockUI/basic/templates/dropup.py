@@ -13,7 +13,7 @@ import lvgl as lv
 from micropython import const
 
 from .specter_gui_base import SpecterGuiMixin, SpecterGuiElement
-from ..widgets import Btn, InfoCard, TreeList
+from ..widgets import Btn, InfoCard, TreeList, make_label
 from ..utils import (
     build_forest, flatten_forest,
     slide_y, delete_all_children_of,
@@ -30,6 +30,17 @@ class DropUpState:
     OPENING = const(1)
     OPEN    = const(2)
     CLOSING = const(3)
+
+
+class DropUpGroup:
+    """A titled or untitled group of items rendered in one ``TreeList``."""
+
+    def __init__(self, items=(), heading=None):
+        self.items = items # list of data item in this group
+        self.heading = heading
+        self.roots = []
+        self.items_tree_list = None # the rendered list of items in this group
+        self.heading_row = None # the rendered heading row for this group
 
 
 class DropUp(SpecterGuiMixin):
@@ -70,8 +81,9 @@ class DropUp(SpecterGuiMixin):
         self._animating = False
         self._closing = False    # True while close animation is running
         self._anim = None
-        self._item_list = None
-        self._tree_roots = []
+        self._scroll_body = None
+        self._footer = None
+        self._item_groups = []
         self._expand_all_button = None
         self._collapse_all_button = None
         self._sort_button = None
@@ -95,7 +107,7 @@ class DropUp(SpecterGuiMixin):
         self._backdrop = backdrop_overlay
         self._panel = SpecterGuiElement(backdrop_overlay)
         apply_style(self._panel, "CONTAINER.DROPUP")
-        set_scroll(self._panel, horizontal=False, vertical=True)
+        set_scroll(self._panel, horizontal=False, vertical=False)
         set_propagate_events(self._panel, False)
 
         self._fill_panel()
@@ -163,58 +175,62 @@ class DropUp(SpecterGuiMixin):
     # ── Internal build ────────────────────────────────────────────────────────
 
     def _fill_panel(self):
-        """Clear, repopulate, and resize/reposition the panel."""
+        """Clear, repopulate, and resize/reposition the panel.
+        The panel is subdivided into to main parts:
+           -the scroll body contains the actual listed items. It grows as needed as
+            long as there is space, otherwise it becomes scrollable.
+           -the footer contains action buttons and remains fixed and visible at the
+            bottom of the panel.
+        """
         delete_all_children_of(self._panel)
 
-        self._panel.rows = []
-        self._tree_roots = build_forest(
-            self._get_selectable_items(),
-            get_parent=self._get_item_parent,
-            get_children=self._get_item_children,
-            make_key=self._get_item_key,
-        )
-        self._item_list = TreeList(
-            self._panel,
-            self._tree_roots,
-            self._build_item_card,
-            self._is_item_expanded,
-            on_toggle=self._on_item_toggle,
-            top_down=self._is_tree_top_down(),
-        )
-        self._panel.rows.append(self._item_list)
+        self._scroll_body = SpecterGuiElement(self._panel)
+        apply_style(self._scroll_body, [
+            "APPEARANCE.TRANSPARENT",
+            "LAYOUT.BARE",
+            "LAYOUT.PARENT_WIDTH",
+            "LAYOUT.FLEX_COL",
+            "LAYOUT.START",
+        ])
+        set_size(self._scroll_body, height=lv.SIZE_CONTENT)
+        set_scroll(self._scroll_body, horizontal=False, vertical=True)
 
-        # Add button row
-        row = SpecterGuiElement(self._panel)
-        apply_style(row, "CONTAINER.ADD_BUTTON_ROW")
-        self._panel.rows.append(row)
+        self._item_groups = []
+        for group in self._get_display_groups():
+            item_group = self._build_item_group(group)
+            self._item_groups.append(item_group)
+
+        # The footer stays outside the scroll body so its actions remain reachable.
+        self._footer = SpecterGuiElement(self._panel)
+        apply_style(self._footer, ["CONTAINER.ADD_BUTTON_ROW", "BORDER.TOP"])
 
         self._expand_all_button = Btn(
-            row,
+            self._footer,
             icon=BTC_ICONS.TREE_STRUCTURE,
             callback=lambda: self._set_all_item_expanded(True),
             style="WIDGET.ICON_BUTTON",
         )
         self._collapse_all_button = Btn(
-            row,
+            self._footer,
             icon=BTC_ICONS.MENU,
             callback=lambda: self._set_all_item_expanded(False),
             style="WIDGET.ICON_BUTTON",
         )
         self._add_button = Btn(
-            row,
+            self._footer,
             icon=BTC_ICONS.PLUS,
             text=self._add_button_label(),
             callback=self._add_cb,
             style="WIDGET.DROP_UP_ADDBTN",
         )
         self._sort_spacer = Btn(
-            row,
+            self._footer,
             icon=BTC_ICONS.FLIP_VERTICAL,
             style="WIDGET.ICON_BUTTON",
         )
         apply_style(self._sort_spacer, "APPEARANCE.INVISIBLE")
         self._sort_button = Btn(
-            row,
+            self._footer,
             icon=BTC_ICONS.FLIP_VERTICAL,
             callback=self._toggle_tree_direction,
             style="WIDGET.ICON_BUTTON",
@@ -227,6 +243,45 @@ class DropUp(SpecterGuiMixin):
         self._sort_spacer.set_disabled(True)
         self._refresh_tree_controls()
         self._resize_panel()
+        if not self._is_tree_top_down():
+            # A bottom-up list reads from the footer upward, so start at its end.
+            body = self._scroll_body
+            body.scroll_to_y(body.get_scroll_y() + body.get_scroll_bottom(), False)
+
+    def _get_display_groups(self):
+        """Return selector groups in the current display direction."""
+        groups = self._get_raw_DropUpGroups()
+        return groups if self._is_tree_top_down() else reversed(groups)
+
+    def _build_item_group(self, group):
+        if group.heading is not None:
+            group.heading_row = SpecterGuiElement(self._scroll_body)
+            apply_style(group.heading_row, "CONTAINER.MENU_ROW")
+            group.heading_row.label = make_label(group.heading_row, group.heading)
+            apply_style(group.heading_row.label, "WIDGET.MENU_SECTION_HEADER")
+        group.roots = build_forest(
+            group.items,
+            get_parent=self._get_item_parent,
+            get_children=self._get_item_children,
+            make_key=self._get_item_key,
+        )
+        group.items_tree_list = TreeList(
+            self._scroll_body,
+            group.roots,
+            self._build_item_card,
+            self._is_item_expanded,
+            on_toggle=self._on_item_toggle,
+            top_down=self._is_tree_top_down(),
+        )
+        return group
+
+    @property
+    def _tree_roots(self):
+        """Return all group roots in their display order."""
+        roots = []
+        for group in self._item_groups:
+            roots.extend(group.roots)
+        return roots
 
     def _build_item_card(self, parent, item):
         """Build and size one card for a drop-up item row."""
@@ -238,13 +293,24 @@ class DropUp(SpecterGuiMixin):
         return card
 
     def _resize_panel(self):
-        """Recalculate the panel's content height and keep its bottom edge fixed."""
-        self._panel.update_layout()
-        if self._item_list is not None:
-            for card in self._item_list.visible_items:
-                card.optimize_name_font()
-        _, h = get_size(self._panel)
+        """Cap the scroll body to the space left by the footer, then bottom-align the panel."""
         _, backdrop_h = get_size(self._backdrop)
+
+        self._panel.update_layout()  # resolves the theme-dependent footer height
+        _, footer_h = get_size(self._footer)
+        self._scroll_body.set_style_max_height(max(
+            0,
+            backdrop_h
+            - self._panel.get_style_space_top(0)
+            - self._panel.get_style_space_bottom(0)
+            - footer_h,
+        ), 0)
+        for group in self._item_groups:
+            for card in group.items_tree_list.visible_items:
+                card.optimize_name_font()
+
+        self._panel.update_layout()
+        _, h = get_size(self._panel)
         set_pos(self._panel, 0, max(backdrop_h - h, 0))
 
     def _is_item_expanded(self, node):
@@ -286,16 +352,35 @@ class DropUp(SpecterGuiMixin):
                                           for node in branch_nodes),
             )
         if self._sort_button is not None:
-            visible_count = (0 if self._item_list is None
-                             else len(self._item_list.visible_items))
+            visible_count = sum(
+                len(group.items_tree_list.visible_items)
+                for group in self._item_groups)
             self._set_tree_control_visible(self._sort_button, visible_count > 1)
 
     def _on_item_toggle(self, node):
         """Toggle caller-owned state, then refresh and resize the tree."""
         key = (self.EXPANSION_CONTEXT, node.key)
         self.ui_state.is_item_expanded[key] = not self._is_item_expanded(node)
-        
-        self._item_list.refresh()
+
+        self._refresh_item_group_trees()
+
+    def _refresh_item_group_trees(self):
+        """Rebuild rows, keeping the edge the tree grows away from fixed."""
+        body = self._scroll_body
+        top_down = self._is_tree_top_down()
+        anchor = body.get_scroll_y() if top_down else body.get_scroll_bottom()
+
+        # LVGL measures SIZE_CONTENT from child coords that still carry the old
+        # scroll offset, so a scrolled body would under-measure the rebuilt rows.
+        body.scroll_to_y(0, False)
+        for group in self._item_groups:
+            group.items_tree_list.refresh()
+        self._refresh_item_group_controls()
+
+        body.scroll_to_y(
+            anchor if top_down else body.get_scroll_bottom() - anchor, False)
+
+    def _refresh_item_group_controls(self):
         self._refresh_tree_controls()
         self._resize_panel()
 
@@ -305,19 +390,15 @@ class DropUp(SpecterGuiMixin):
             if node.has_children():
                 self.ui_state.is_item_expanded[
                     (self.EXPANSION_CONTEXT, node.key)] = expanded
-        if self._item_list is not None:
-            self._item_list.refresh()
-            self._refresh_tree_controls()
-            self._resize_panel()
+        if self._item_groups:
+            self._refresh_item_group_trees()
 
     def _toggle_tree_direction(self):
-        """Reverse this selector's tree direction and redraw its connectors."""
+        """Reverse this selector's group and tree direction."""
         top_down = not self._is_tree_top_down()
         self.ui_state.is_tree_top_down[self.EXPANSION_CONTEXT] = top_down
-        if self._item_list is not None:
-            self._item_list.set_top_down(top_down)
-            self._refresh_tree_controls()
-            self._resize_panel()
+        if self._item_groups:
+            self._fill_panel()
 
     def _add_cb(self):
         self.close()
@@ -348,6 +429,10 @@ class DropUp(SpecterGuiMixin):
     def _get_selectable_items(self):
         """Return the flat list of items (seeds, wallets, ...) to display."""
         raise NotImplementedError
+
+    def _get_raw_DropUpGroups(self):
+        """Return the group(s) to render; subclasses override to provide several groups."""
+        return [DropUpGroup(self._get_selectable_items())]
 
     def _delete_from_gui(self, item):
         """Remove *item* using the GUI's domain-specific deletion operation."""
