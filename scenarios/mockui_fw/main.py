@@ -16,6 +16,13 @@ if not _ON_HARDWARE:
     # hardware. make build-i18n places lang_*.bin files in build/flash_image/i18n/.
     # os.getcwd() is the project root when launched via `make simulate`.
     os.mount(os.VfsPosix(os.getcwd() + '/build/flash_image'), '/flash')
+    # Mount a host directory as /sd so the dummy SD import sees the same path as
+    # on hardware.  Files dropped into build/sd_image/ appear on the virtual card.
+    # TODO: DUMMY CODE — replace with the real SD stack.
+    _sd_dir = os.getcwd() + '/build/sd_image'
+    if 'sd_image' not in os.listdir(os.getcwd() + '/build'):
+        os.mkdir(_sd_dir)
+    os.mount(os.VfsPosix(_sd_dir), '/sd')
     # Disable SDL autoupdate so our manual loop drives it.
     display.init(False)
 else:
@@ -36,9 +43,13 @@ specter_state._hasQR = True
 specter_state._enabledQR = True
 
 specter_state._hasSD = True
-specter_state._enabledSD = False
-specter_state._detectedSD = True
-specter_state._SD_hasSeed = True
+specter_state._enabledSD = True
+# SD detection reflects the files actually present in /sd (dummy SD import).
+if not _ON_HARDWARE:
+    specter_state.attach_sd_reader('/sd')
+else:
+    specter_state._detectedSD = True
+    specter_state._SD_hasSeed = True
 
 specter_state._hasSmartCard = True
 specter_state._enabledSmartCard = True

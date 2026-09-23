@@ -13,6 +13,8 @@
     "MAIN_MENU_SCAN_QR": "Scan QR",
     "HELP_SCAN_QR": "Use the camera to scan a QR code. This can be used to receive transactions, import wallet descriptors, or process PSBTs (Partially Signed Bitcoin Transactions) for signing.",
     "MAIN_MENU_LOAD_FROM_SD": "Load from SD-Card",
+    "MAIN_MENU_LOADED_FROM_SD": "Loaded {seeds} seed(s) and {wallets} wallet(s) from SD card.",
+    "MAIN_MENU_SD_SKIPPED": "Skipped: {files}",
     "MAIN_MENU_PROCESS_INPUT": "Process input",
     "MAIN_MENU_SIGN_MESSAGE": "Sign Message",
     "MAIN_MENU_SEED_AND_WALLET": "Seed & Wallet",
