@@ -229,3 +229,17 @@ class TestNavigate:
 
             mock_send.assert_called_once_with({'action': 'navigate', 'target': 'back'})
             assert result['navigated'] == 'back'
+
+
+class TestControl:
+    """Tests for the common simulator/hardware control request."""
+
+    def test_wraps_request_in_simulator_control_envelope(self):
+        request = {'action': 'tree', 'layer': 'top'}
+        with patch.object(sim_cli, 'send') as mock_send:
+            mock_send.return_value = {'ok': True, 'tree': {}}
+
+            result = sim_cli.control(request)
+
+            assert result['ok'] is True
+            mock_send.assert_called_once_with({'action': 'control', 'request': request})

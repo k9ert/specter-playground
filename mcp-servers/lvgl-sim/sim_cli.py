@@ -87,6 +87,11 @@ def navigate(target):
     return send({'action': 'navigate', 'target': target})
 
 
+def control(request):
+    """Send one canonical MockUI control request."""
+    return send({'action': 'control', 'request': request})
+
+
 # --- CLI Commands ---
 
 @click.group()
@@ -159,6 +164,19 @@ def set_cmd(attr, value):
 def tree():
     """Dump full widget tree as JSON."""
     click.echo(json.dumps(send({'action': 'widget_tree'}), indent=2))
+
+
+@cli.command('control')
+@click.argument('request_json')
+def control_cmd(request_json):
+    """Send a canonical JSON request shared with disco ui control."""
+    try:
+        request = json.loads(request_json)
+    except json.JSONDecodeError as error:
+        raise click.ClickException(f"Invalid request JSON: {error.msg}") from error
+    if not isinstance(request, dict):
+        raise click.ClickException("Request JSON must be an object")
+    click.echo(json.dumps(control(request), sort_keys=True))
 
 
 @cli.command('dropup')

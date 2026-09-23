@@ -1,7 +1,11 @@
 [submodule "f469-disco"]
 	path = f469-disco
-	url = https://github.com/miketlk/f469-disco.git
-	branch = micropython-upgrade
+	url = https://github.com/maggo83/f469-disco_disco_tool.git
+	branch = fix/sdl-screenshot-rgba32
 [submodule "bootloader"]
 	path = bootloader
 	url = https://github.com/cryptoadvance/specter-bootloader
+[submodule "devtools"]
+	path = devtools
+	url = https://github.com/maggo83/specter-devtools.git
+	branch = main
