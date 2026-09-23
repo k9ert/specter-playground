@@ -10,7 +10,7 @@ Claude ─── MCP (stdio) ─── MCP Server ─── TCP:9876 ─── S
 ```
 
 - **MCP Server** (`mcp-servers/lvgl-sim/`) - Python 3 process, spawns simulator
-- **Control Server** (`scenarios/sim_control/`) - Runs inside simulator, handles commands
+- **Control Server** (`devtools/simulator/sim_control/`) - Runs inside simulator, handles commands
 
 ## Setup
 
@@ -18,7 +18,7 @@ Claude ─── MCP (stdio) ─── MCP Server ─── TCP:9876 ─── S
 # Create venv (already done if following setup)
 cd mcp-servers/lvgl-sim
 python3 -m venv .venv
-.venv/bin/pip install 'mcp>=1.0.0'
+.venv/bin/pip install -r requirements.txt
 ```
 
 MCP config in `.mcp.json`:
@@ -87,11 +87,12 @@ The raw file can be converted to PNG using PIL (see sim_cli.py for implementatio
 
 ### Technical Details
 
-Screenshots use `SDL_RenderReadPixels` in 32-row chunks to minimize memory:
-- C code reads RGBA from SDL renderer
-- Converts to RGB565 (2 bytes/pixel vs 4)
-- Writes directly to file via stdio
-- Never allocates large buffers in Python heap
+Screenshots use a single `SDL_RenderReadPixels` call in
+`SDL.screenshot` from `f469-disco/usermods/udisplay_f469/lv_sdl_hal/SDL/modSDL.c`
+(color fix in the pinned `f469-disco` branch, pending in [miketlk/f469-disco#3](https://github.com/miketlk/f469-disco/pull/3), a follow-up to [#1](https://github.com/miketlk/f469-disco/pull/1)):
+- SDL converts the render target to RGB565 (2 bytes/pixel, host byte order)
+- C code writes it directly to file via stdio
+- The 768 KB frame buffer comes from the C heap, never the Python heap
 
 This solves the MicroPython memory limitation where `mp_obj_new_bytes` cannot allocate 768KB+ contiguous memory due to heap fragmentation.
 
@@ -124,7 +125,7 @@ cd mcp-servers/lvgl-sim
 
 Run simulator with control mode:
 ```bash
-bin/micropython_unix scenarios/mock_ui.py --control
+bin/micropython_unix scenarios/mockui_fw/main.py --control
 ```
 
 Test via netcat:

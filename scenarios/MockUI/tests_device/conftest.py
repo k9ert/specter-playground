@@ -1,7 +1,7 @@
 """Fixtures for device integration tests using the disco tool.
 
-The disco tool lives outside this repo for now.  Update DISCO_SCRIPT
-when it is merged into the main branch.
+The disco tool comes from the devtools submodule (devtools/f469/disco);
+set DISCO_SCRIPT to use a different launcher.
 
 Requirements:
   - STM32F469 Discovery board connected via USB
@@ -19,21 +19,18 @@ import time
 
 import pytest
 
-# =========================================================================
-# Path to the disco CLI script.
-# TODO: Update this once disco is merged into specter-playground.
-# =========================================================================
+# Repo root (three levels up from tests_device/)
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+
 DISCO_SCRIPT = os.environ.get(
     "DISCO_SCRIPT",
-    "/home/marco/DATA/01_Texte/BitCoin/Specter/f469-disco_disco_tool/scripts/disco",
+    os.path.join(_REPO_ROOT, "devtools", "f469", "disco"),
 )
 
 # Firmware output path produced by ``make mockui``.
 _FIRMWARE = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "bin", "mockui.bin"
 )
-# Repo root (three levels up from tests_device/)
-_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 # Run through sys.executable so the test venv (with mpremote etc.) is used.
 _CMD = [sys.executable, DISCO_SCRIPT]

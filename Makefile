@@ -213,6 +213,10 @@ SCRIPT ?= mockui_fw/main.py
 simulate: unix
 	$(TARGET_DIR)/micropython_unix scenarios/$(SCRIPT)
 
+# Simulator with the TCP control server for external automation.
+simulate-automation: unix
+	$(TARGET_DIR)/micropython_unix scenarios/$(SCRIPT) --control
+
 all: mpy-cross disco unix
 
 clean:

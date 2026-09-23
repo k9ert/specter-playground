@@ -26,3 +26,4 @@ Feel free to contribute! I'll probably merge your PRs without (much) review.
 
 - [RAG Code Scanner](rag-setup.md) - Local semantic search over the codebase with Claude Code MCP integration
 - [LVGL Simulator MCP](lvgl-sim-mcp.md) - Control simulator for automated UI testing via Claude Code
+- [MockUI Control Contract](../devtools/docs/control-contract.md) - Run the same UI operation on the simulator or hardware (devtools submodule)

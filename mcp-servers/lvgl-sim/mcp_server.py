@@ -13,6 +13,10 @@ from mcp.types import Tool, TextContent
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "devtools" / "src"))
+
+from specter_devtools.png import save_rgb565_png
+
 SIMULATOR_BIN = PROJECT_ROOT / "bin" / "micropython_unix"
 SIMULATOR_SCRIPT = PROJECT_ROOT / "scenarios" / "mockui_fw" / "main.py"
 CONTROL_PORT = 9876
@@ -162,6 +166,20 @@ async def list_tools():
                 },
             },
         ),
+        Tool(
+            name="control_request",
+            description="Send a canonical MockUI UI-control request shared with hardware",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "request": {
+                        "type": "object",
+                        "description": "Request such as {action: tree}, {action: click, text: ...}, or {action: write_text, path: [...], text: ...}",
+                    },
+                },
+                "required": ["request"],
+            },
+        ),
     ]
 
 
@@ -219,33 +237,18 @@ async def call_tool(name: str, arguments: dict):
         return [TextContent(type="text", text="Simulator was not running")]
 
     elif name == "get_widget_tree":
-        resp = send_command({"action": "widget_tree"})
+        resp = send_command({"action": "control", "request": {"action": "tree"}})
         return [TextContent(type="text", text=json.dumps(resp, indent=2))]
 
     elif name == "find_widget":
         text = arguments.get("text", "")
         # Get tree and search client-side
-        resp = send_command({"action": "widget_tree"})
-        if not resp.get("ok"):
-            return [TextContent(type="text", text=json.dumps(resp))]
-
-        def search(node, target):
-            if node.get("text") == target:
-                return node
-            for child in node.get("children", []):
-                result = search(child, target)
-                if result:
-                    return result
-            return None
-
-        found = search(resp["tree"], text)
-        if found:
-            return [TextContent(type="text", text=json.dumps({"ok": True, "widget": found}, indent=2))]
-        return [TextContent(type="text", text=json.dumps({"ok": False, "error": f"Widget with text '{text}' not found"}))]
+        resp = send_command({"action": "control", "request": {"action": "find", "text": text}})
+        return [TextContent(type="text", text=json.dumps(resp, indent=2))]
 
     elif name == "click_widget":
         text = arguments.get("text", "")
-        resp = send_command({"action": "click", "text": text})
+        resp = send_command({"action": "control", "request": {"action": "click", "text": text}})
         return [TextContent(type="text", text=json.dumps(resp, indent=2))]
 
     elif name == "get_state":
@@ -259,50 +262,30 @@ async def call_tool(name: str, arguments: dict):
         return [TextContent(type="text", text=json.dumps(resp, indent=2))]
 
     elif name == "screenshot":
-        import time
-
         filename = arguments.get("filename", "/tmp/sim_screenshot.png")
-
-        # Use macOS screencapture to capture the LVGL window
-        # Find window by title "LVGL"
         try:
-            # Get window list and find LVGL window
-            result = subprocess.run(
-                ["osascript", "-e", 'tell application "System Events" to get name of every window of every process'],
-                capture_output=True, text=True, timeout=5
-            )
-
-            # Use screencapture with window selection
-            # -l flag requires window ID, -w for interactive window select
-            # For automation, we'll capture by window title using -l
-            result = subprocess.run(
-                ["osascript", "-e",
-                 '''tell application "System Events"
-                    set lvglWindow to first window of (first process whose name contains "micropython")
-                    set winID to id of lvglWindow
-                    return winID
-                 end tell'''],
-                capture_output=True, text=True, timeout=5
-            )
-
-            if result.returncode == 0 and result.stdout.strip():
-                window_id = result.stdout.strip()
-                subprocess.run(
-                    ["screencapture", "-l", window_id, "-x", filename],
-                    timeout=5
-                )
-                return [TextContent(type="text", text=f"Screenshot saved to {filename}")]
-
-            # Fallback: capture by clicking on LVGL window area
-            # Just capture entire screen region where simulator usually is
-            subprocess.run(
-                ["screencapture", "-R", "0,0,500,850", "-x", filename],
-                timeout=5
-            )
-            return [TextContent(type="text", text=f"Screenshot saved to {filename} (region capture)")]
+            resp = send_command({"action": "screenshot"})
+            if not resp.get("ok"):
+                return [TextContent(type="text", text=json.dumps(resp))]
+            with open(resp["file"], "rb") as raw_file:
+                save_rgb565_png(raw_file.read(), filename, resp["width"], resp["height"])
+            return [TextContent(type="text", text=json.dumps({
+                "ok": True,
+                "file": filename,
+                "width": resp["width"],
+                "height": resp["height"],
+                "format": "PNG",
+            }))]
 
         except Exception as e:
-            return [TextContent(type="text", text=f"Screenshot failed: {e}")]
+            return [TextContent(type="text", text=json.dumps({"ok": False, "error": str(e)}))]
+
+    elif name == "control_request":
+        request = arguments.get("request")
+        if not isinstance(request, dict):
+            return [TextContent(type="text", text=json.dumps({"ok": False, "error": "request must be an object"}))]
+        resp = send_command({"action": "control", "request": request})
+        return [TextContent(type="text", text=json.dumps(resp, indent=2))]
 
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
