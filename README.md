@@ -6,39 +6,37 @@
 
     ...and Cypherpunks do build their own Bitcoin Hardware Wallets.
 
-![](./docs/pictures/kit.jpg)
+![](https://raw.githubusercontent.com/cryptoadvance/specter-diy/master/docs/pictures/kit.jpg)
 
 The idea of the project is to provide a playground for everyone to play with a software which can potentially run on the Specter Hardware, a F469-Discovery board from STMicroelectronics.
 
 ## setup
 ```
-# in an empty dir
-git clone https://github.com/cryptoadvance/specter-diy.git
-cd specter-diy
-git fetch origin pull/304/head:pr-304
-git checkout pr-304
-git submodule sync --recursive
-git submodule update --init --recursive --checkout
-make unix
-./bin/micropython_unix f469-disco/usermods/udisplay_f469/udisplay_demo.py
+git clone --recurse-submodules https://github.com/k9ert/specter-playground.git
+cd specter-playground
+# install nix + direnv, then:
+direnv allow
+make simulate            # build and run the MockUI simulator
 ```
 
+If you cloned without `--recurse-submodules`, run `git submodule update --init --recursive`.
+
+Unit tests (`make test` runs the i18n build first, which generates `translation_keys.py`):
+
 ```
-# install nix
-# install direnv
-direnv allow
-make unix
-make simulate
-# hack on address_navigator.py
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+make test
 ```
+
+Shared simulator and hardware control lives in the [`devtools/`](devtools) submodule ([specter-devtools](https://github.com/maggo83/specter-devtools)); see [CLAUDE.md](CLAUDE.md) for its setup and `make simulate-automation`.
 
 ## Scenarios
 
 Different UI scenarios can be tested using the `SCRIPT` parameter:
 
 ```bash
-# Default - runs mock_structure.py (main navigation menu)
-nix develop -c make simulate SCRIPT=mock_structure.py
+# Default - runs the MockUI (scenarios/mockui_fw/main.py)
+nix develop -c make simulate
 
 # Run address_navigator scenario
 nix develop -c make simulate SCRIPT=address_navigator.py
@@ -47,8 +45,8 @@ nix develop -c make simulate SCRIPT=address_navigator.py
 nix develop -c make simulate SCRIPT=udisplay_demo.py
 ```
 
-### Mock Structure
-![](./docs/mock_structure.png)
+### MockUI
+![](./docs/MockUI/screens/main/screenshot.png)
 
 ### Address Navigator
 ![](./docs/address_simulator.png)
