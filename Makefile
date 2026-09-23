@@ -217,6 +217,12 @@ simulate: unix
 simulate-automation: unix
 	$(TARGET_DIR)/micropython_unix scenarios/$(SCRIPT) --control
 
+# Unit tests; build-i18n generates translation_keys.py, which the tests import.
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+
+test: build-i18n
+	$(PYTHON) -m pytest
+
 all: mpy-cross disco unix
 
 clean:
@@ -243,4 +249,4 @@ rag-index:
 rag-search:
 	cd .rag && .venv/bin/python search.py "$(QUERY)"
 
-.PHONY: all clean sync-i18n build-i18n build-themes rag-setup rag-index rag-search
+.PHONY: all clean test sync-i18n build-i18n build-themes rag-setup rag-index rag-search

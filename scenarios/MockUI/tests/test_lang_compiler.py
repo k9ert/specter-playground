@@ -123,13 +123,13 @@ class TestExtractLanguageName:
 class TestGenerateTranslationKeys:
     """LangCompiler.generate_lookup_keys_from_default_file()"""
 
-    def test_generates_key_to_index(self, en_json_path):
-        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path))
+    def test_generates_key_to_index(self, en_json_path, tmp_path):
+        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path), output_path=str(tmp_path / "keys.py"))
         assert isinstance(kti, dict)
         assert len(kti) > 0
 
-    def test_keys_are_sorted_sequential(self, en_json_path):
-        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path))
+    def test_keys_are_sorted_sequential(self, en_json_path, tmp_path):
+        kti = _c.generate_lookup_keys_from_default_file(str(en_json_path), output_path=str(tmp_path / "keys.py"))
         keys_sorted = sorted(kti.keys())
         for i, key in enumerate(keys_sorted):
             assert kti[key] == i, f"Key '{key}' should have index {i}, got {kti[key]}"
