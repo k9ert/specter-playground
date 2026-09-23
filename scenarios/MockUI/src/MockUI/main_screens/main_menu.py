@@ -1,6 +1,8 @@
 import lvgl as lv
 from ..basic import GenericMenu, MenuItem, BTC_ICONS, t
 from ..seed_screens.add_seed_menu import make_add_seed_items
+# TODO: DUMMY CODE — SD import stub hook; remove with stubs/sd_loader.py
+from ..stubs.sd_loader import make_load_sd_handler
 
 
 class MainMenu(GenericMenu):
@@ -72,7 +74,8 @@ class MainMenu(GenericMenu):
                                            modifier="Highlight" if highlighted == "scan_qr" else None,
                                            help_key="HELP_SCAN_QR"))
             if state.SD_detected():
-                menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("MAIN_MENU_LOAD_FROM_SD"), "load_sd",
+                menu_items.append(MenuItem(BTC_ICONS.SD_CARD, t("MAIN_MENU_LOAD_FROM_SD"),
+                                           target=make_load_sd_handler(self),  # TODO: DUMMY CODE
                                            modifier="Highlight" if highlighted == "load_sd" else None))
 
         # ── Explore section ─────────────────────────────────────────────────
@@ -90,7 +93,7 @@ class MainMenu(GenericMenu):
             ]
 
         return menu_items
-    
+
     def refresh(self):
         super().refresh()
         self.rebuild_body()

@@ -7,6 +7,7 @@ it works cleanly in the MicroPython host/simulator environment.
 
 from .wallet import Wallet
 from .seed import Seed
+from .sd_loader import SDCardReader
 
 
 class DeviceState:
@@ -44,6 +45,10 @@ class DeviceState:
         self._enabledSD = False
         self._detectedSD = False
 
+        # TODO: DUMMY CODE — SD reader stub (stubs/sd_loader.py); when attached,
+        # detection reflects the files actually present in the SD directory.
+        self.sd_reader = None
+
         self._hasUSB = True
         self._enabledUSB = False
 
@@ -70,7 +75,7 @@ class DeviceState:
     def SD_enabled(self):
         return self.hasSD() and self._enabledSD
     def SD_detected(self):
-        return self.SD_enabled() and self._detectedSD
+        return self.SD_enabled() and self.refresh_sd_detection()
     def SD_hasSeed(self):
         return self.SD_detected() and self._SD_hasSeed
     def hasQR(self):
@@ -93,6 +98,37 @@ class DeviceState:
         self._enabledSD = bool(enabled)
     def set_SmartCard_enabled(self, enabled):
         self._enabledSmartCard = bool(enabled)
+
+    # ── SD card stub (TODO: DUMMY CODE — remove with stubs/sd_loader.py) ──
+    def attach_sd_reader(self, path="/sd"):
+        """Point the SD stub at a mounted directory and refresh detection."""
+        self.sd_reader = SDCardReader(path)
+        self.refresh_sd_detection()
+
+    def refresh_sd_detection(self):
+        """Sync ``_detectedSD``/``_SD_hasSeed`` with the files on the card.
+
+        Keeps the manually set flags when no reader is attached (fixtures).
+        """
+        if self.sd_reader is not None:
+            self._detectedSD = self.sd_reader.is_present()
+            self._SD_hasSeed = self._detectedSD and self.sd_reader.has_importable_files()
+        return self._detectedSD
+
+    def import_from_sd(self):
+        """Import every seed/wallet on the card into device state.
+
+        Returns ``{"seeds": n, "wallets": n, "skipped": [...]}`` or ``None``
+        when no reader is attached / no card is present.
+        """
+        if self.sd_reader is None or not self.refresh_sd_detection():
+            return None
+        seeds, wallets, skipped = self.sd_reader.load_all()
+        for seed in seeds:
+            self.add_seed(seed)
+        for wallet in wallets:
+            self.register_wallet(wallet, imported=True)
+        return {"seeds": len(seeds), "wallets": len(wallets), "skipped": skipped}
 
     # ── Seed helpers ─────────────────────────────────────────────────
     def add_seed(self, seed):

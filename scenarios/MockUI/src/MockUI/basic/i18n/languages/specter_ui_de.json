@@ -34,6 +34,14 @@
       "text": "von SD-Karte laden",
       "ref_en": "Load from SD-Card"
     },
+    "MAIN_MENU_LOADED_FROM_SD": {
+      "text": "{seeds} Seed(s) und {wallets} Wallet(s) von SD-Karte geladen.",
+      "ref_en": "Loaded {seeds} seed(s) and {wallets} wallet(s) from SD card."
+    },
+    "MAIN_MENU_SD_SKIPPED": {
+      "text": "Übersprungen: {files}",
+      "ref_en": "Skipped: {files}"
+    },
     "MAIN_MENU_PROCESS_INPUT": {
       "text": "Eingabe verarbeiten",
       "ref_en": "Process input"
