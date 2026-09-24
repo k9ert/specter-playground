@@ -94,7 +94,7 @@ def _write(path, name, text):
 def test_reader_presence_and_scan(tmp_path):
     sd = str(tmp_path)
     reader = SDCardReader(sd)
-    assert reader.is_present() is True
+    assert reader.is_present() is False
     assert reader.has_importable_files() is False
 
     _write(sd, "wallet.json", json.dumps({"label": "W", "descriptor": "wpkh([8c24a510/84'/0'/0']xpubX/0/*)"}))
@@ -102,6 +102,7 @@ def test_reader_presence_and_scan(tmp_path):
     _write(sd, "notes.md", "# ignore me")
 
     scan = reader.scan()
+    assert scan["present"] is True
     assert scan["wallets"] == ["wallet.json"]
     assert scan["seeds"] == ["seed.txt"]
     assert scan["other"] == ["notes.md"]

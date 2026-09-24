@@ -20,16 +20,22 @@ def _attach(tmp_path):
 
 def test_detection_follows_files(tmp_path):
     state = _attach(tmp_path)
-    # Empty card -> present but nothing importable.
+    # Empty card folder -> no card inserted.
+    assert state.SD_detected() is False
+    assert state.SD_hasSeed() is False
+
+    _write(str(tmp_path), "notes.md", "# not importable")
     assert state.SD_detected() is True
     assert state.SD_hasSeed() is False
 
     _write(str(tmp_path), "seed.txt", "zoo " * 11 + "wrong")
     assert state.SD_hasSeed() is True
 
-    # Removing the file flips detection back off (tests insert/remove UX).
+    # Removing the files flips detection back off (tests insert/remove UX).
     os.remove(os.path.join(str(tmp_path), "seed.txt"))
     assert state.SD_hasSeed() is False
+    os.remove(os.path.join(str(tmp_path), "notes.md"))
+    assert state.SD_detected() is False
 
 
 def test_detection_requires_enabled(tmp_path):

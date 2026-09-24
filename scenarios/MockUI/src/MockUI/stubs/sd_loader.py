@@ -233,12 +233,11 @@ class SDCardReader:
 
     # ── Public API ───────────────────────────────────────────────────
     def is_present(self):
-        """True when the SD directory exists (regardless of contents)."""
-        try:
-            os.stat(self.path)
-            return True
-        except OSError:
-            return False
+        """True when the SD directory contains at least one visible entry.
+
+        An empty directory counts as no card, like an empty card slot.
+        """
+        return bool(self._list_files())
 
     def has_importable_files(self):
         """True when at least one wallet/seed file is on the card."""
