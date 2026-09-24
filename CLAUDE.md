@@ -26,7 +26,10 @@ make simulate-automation
 source devtools/.venv/bin/activate
 specter-devtools --target simulator request '{"action":"capabilities"}'  # test connection
 specter-devtools --target simulator state                  # current menu + device state
-specter-devtools --target simulator click "Manage Device"  # click by visible text
+specter-devtools --target simulator click "Manage Device"  # tap widget by visible text
+specter-devtools --target simulator tap 145 760            # tap screen coordinates
+specter-devtools --target simulator drag 209 440 430 440   # press, move, release (e.g. slider)
+specter-devtools --target simulator long-press 240 400     # press and hold 1 s
 specter-devtools --target simulator goto manage_security   # open a menu by id
 specter-devtools --target simulator back                   # go back
 specter-devtools --target simulator labels                 # visible texts
@@ -40,10 +43,11 @@ specter-devtools --target f469 screenshot /tmp/board.png
 specter-devtools --target f469 board flash program bin/mockui.bin
 ```
 
-`click`, `tree`, `labels`, `screenshot`, and `capture` work on both targets;
-`state`, `goto`, `back`, `set`, and `explore` need application state, which only
-the simulator offers. To restart the simulator, stop it and run
-`make simulate-automation` again.
+`click`, `tap`, `drag`, `long-press`, `tree`, `labels`, `screenshot`, and
+`capture` work on both targets; clicks and gestures go through a virtual LVGL
+pointer, like a real finger. `state`, `goto`, `back`, `set`, and `explore` need
+application state, which only the simulator offers. To restart the simulator,
+stop it and run `make simulate-automation` again.
 
 The simulator serves NDJSON on TCP port 9876, e.g.
 `echo '{"action":"control","request":{"action":"tree"}}' | nc 127.0.0.1 9876`.
