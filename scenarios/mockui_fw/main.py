@@ -26,7 +26,7 @@ if not _ON_HARDWARE:
     # Disable SDL autoupdate so our manual loop drives it.
     display.init(False)
 else:
-    # Hardware: display.init() disables the autoupdate timer internally.
+    # Hardware: display.init() drives LVGL from a 30 Hz timer, so main.py must not loop.
     display.init()
 # --- End simulator setup ---
 
@@ -116,6 +116,7 @@ if not _ON_HARDWARE and '--control' in sys.argv:
     from sim_control import ControlServer
     ControlServer(scr)
 
-while True:
-    display.update(30)
-    time.sleep_ms(30)
+if not _ON_HARDWARE:
+    while True:
+        display.update(30)
+        time.sleep_ms(30)
