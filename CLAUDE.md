@@ -46,8 +46,9 @@ specter-devtools --target f469 board flash program bin/mockui.bin
 `click`, `tap`, `drag`, `long-press`, `tree`, `labels`, `screenshot`, and
 `capture` work on both targets; clicks and gestures go through a virtual LVGL
 pointer, like a real finger. `state`, `goto`, `back`, `set`, and `explore` need
-application state, which only the simulator offers. To restart the simulator,
-stop it and run `make simulate-automation` again.
+MockUI's application state; they work on the simulator and on a board running
+MockUI firmware. To restart the simulator, stop it and run
+`make simulate-automation` again.
 
 The simulator serves NDJSON on TCP port 9876, e.g.
 `echo '{"action":"control","request":{"action":"tree"}}' | nc 127.0.0.1 9876`.
