@@ -8,84 +8,52 @@
 | `specter-diy-src/` | **Old specter-diy** (symlink) - working code, ugly UI, reference implementation |
 | `f469-disco/` | MicroPython + LVGL build system, C modules. Temporarily pinned to `maggo83/f469-disco_disco_tool` branch `fix/sdl-screenshot-rgba32` (SDL screenshot + color fix) until [miketlk/f469-disco#1](https://github.com/miketlk/f469-disco/pull/1) and its follow-up [#3](https://github.com/miketlk/f469-disco/pull/3) are merged |
 | `devtools/` | [specter-devtools](https://github.com/maggo83/specter-devtools) submodule: shared simulator/hardware control, F469 `disco` tool, simulator control runtime |
-| `mcp-servers/lvgl-sim/` | MCP server + CLI for simulator control |
 
-## Simulator Control
+## Simulator and Hardware Control
 
-### Quick Start
-```bash
-# Build and start simulator with control server
-make simulate-automation
-
-# Test with CLI (in another terminal)
-cd mcp-servers/lvgl-sim
-.venv/bin/python sim_cli.py ping
-.venv/bin/python sim_cli.py screenshot /tmp/screenshot.png
-```
-
-You can also use the MCP server directly but some common scanrios and
-helpers are in the sim_cli.py.
-
-### sim_cli.py Commands
-```
-Usage: sim_cli.py [OPTIONS] COMMAND [ARGS]...
-
-Commands:
-  back        Navigate back to previous menu.
-  capture     Capture screenshot, labels, and tree to a folder.
-  click       Click a button by its text label.
-  goto        Navigate directly to a menu by ID.
-  labels      List visible text labels.
-  ping        Test connection to simulator.
-  restart     Restart the simulator process.
-  screenshot  Capture screenshot to PNG file.
-  set         Set a state attribute (e.g., seed_loaded, is_locked).
-  state       Show current UI state.
-  tree        Dump full widget tree as JSON.
-```
-
-Examples:
-```bash
-sim_cli.py ping                     # test connection
-sim_cli.py state                    # show current menu + state
-sim_cli.py click "Manage Device"    # click button
-sim_cli.py goto manage_security     # navigate directly to menu
-sim_cli.py back                     # go back
-sim_cli.py capture /tmp/screen      # save screenshot + labels + tree
-sim_cli.py set seed_loaded true     # modify state
-sim_cli.py restart                  # restart simulator
-```
-
-### Protocol (TCP:9876)
-```bash
-echo '{"action":"ping"}' | nc 127.0.0.1 9876
-echo '{"action":"screenshot"}' | nc 127.0.0.1 9876
-echo '{"action":"click","text":"Manage Device"}' | nc 127.0.0.1 9876
-```
-
-See `docs/lvgl-sim-mcp.md` for full documentation.
-
-## Shared Simulator and Hardware Control
-
-Use `specter-devtools` from the `devtools/` submodule for portable UI checks. It
-sends the same JSON request to the simulator or an attached board; only
-`--target` changes. Application state and navigation requests are simulator-only.
+Use `specter-devtools` from the `devtools/` submodule. It sends the same JSON
+request to the simulator or an attached board; only `--target` changes.
 
 ```bash
 # One-time setup
 python3 -m venv devtools/.venv
 devtools/.venv/bin/pip install -r devtools/f469/requirements.txt -e devtools
 
-# Simulator (started with make simulate-automation)
-devtools/.venv/bin/specter-devtools --target simulator request '{"action":"tree"}'
+# Build and start the simulator with its control server
+make simulate-automation
+
+# In another terminal
+source devtools/.venv/bin/activate
+specter-devtools --target simulator request '{"action":"capabilities"}'  # test connection
+specter-devtools --target simulator state                  # current menu + device state
+specter-devtools --target simulator click "Manage Device"  # click by visible text
+specter-devtools --target simulator goto manage_security   # open a menu by id
+specter-devtools --target simulator back                   # go back
+specter-devtools --target simulator labels                 # visible texts
+specter-devtools --target simulator set is_locked false    # modify device state
+specter-devtools --target simulator capture /tmp/screen    # screenshot + labels + tree
+specter-devtools --target simulator explore docs/MockUI/screens  # capture every menu
 
 # Attached F469 board running MockUI firmware
-devtools/.venv/bin/specter-devtools --target f469 request '{"action":"tree"}'
-devtools/.venv/bin/specter-devtools --target f469 board flash program bin/mockui.bin
+specter-devtools --target f469 click "Manage Device"
+specter-devtools --target f469 screenshot /tmp/board.png
+specter-devtools --target f469 board flash program bin/mockui.bin
 ```
 
+`click`, `tree`, `labels`, `screenshot`, and `capture` work on both targets;
+`state`, `goto`, `back`, `set`, and `explore` need application state, which only
+the simulator offers. To restart the simulator, stop it and run
+`make simulate-automation` again.
+
+The simulator serves NDJSON on TCP port 9876, e.g.
+`echo '{"action":"control","request":{"action":"tree"}}' | nc 127.0.0.1 9876`.
 See `devtools/docs/control-contract.md` for actions, response formats, and
 target differences.
+
+Troubleshooting: *connection refused* means the simulator isn't running or
+crashed; *EADDRINUSE* means a stale process still holds port 9876
+(`lsof -ti:9876 | xargs kill`); for *widget not found*, check the exact text
+with `labels` (and `labels --layer top` for overlays).
 
 ## UI Validation
 

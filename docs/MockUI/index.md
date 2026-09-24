@@ -4,7 +4,7 @@
 
 See [screens/](screens/) for captured screenshots, widget trees, and descriptions.
 
-Regenerate with: `sim_cli.py explore`
+Regenerate with `specter-devtools --target simulator explore docs/MockUI/screens` while `make simulate-automation` runs.
 
 ## Navigation Structure
 
