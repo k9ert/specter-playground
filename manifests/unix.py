@@ -4,4 +4,4 @@ include('mockui-shared.py')
 freeze('../src')
 # sim_control: devtools TCP control server for specter-devtools — simulator only.
 # Frozen from parent dir so the package name 'sim_control' is preserved.
-freeze('../devtools/simulator', ('sim_control/__init__.py', 'sim_control/control_server.py', 'sim_control/simulator_control_runtime.py', 'sim_control/touch.py', 'sim_control/widget_tree.py'))
+freeze('../devtools/simulator', ('sim_control/__init__.py', 'sim_control/app_control.py', 'sim_control/control_server.py', 'sim_control/simulator_control_runtime.py', 'sim_control/touch.py', 'sim_control/widget_tree.py'))
