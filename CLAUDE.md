@@ -35,7 +35,8 @@ specter-devtools --target simulator back                   # go back
 specter-devtools --target simulator labels                 # visible texts
 specter-devtools --target simulator set is_locked false    # modify device state
 specter-devtools --target simulator capture /tmp/screen    # screenshot + labels + tree
-specter-devtools --target simulator explore docs/MockUI/screens  # capture every menu
+specter-devtools --target simulator wait                   # until animations have finished
+specter-devtools --target simulator explore docs/MockUI/screens  # capture every menu and dialog
 
 # Attached F469 board running MockUI firmware
 specter-devtools --target f469 click "Manage Device"
@@ -45,9 +46,13 @@ specter-devtools --target f469 board flash program bin/mockui.bin
 
 `click`, `tap`, `drag`, `long-press`, `tree`, `labels`, `screenshot`, and
 `capture` work on both targets; clicks and gestures go through a virtual LVGL
-pointer, like a real finger. `state`, `goto`, `back`, `set`, and `explore` need
+pointer, like a real finger. `click`, `tap`, `drag`, `long-press`, `goto`,
+`back`, and `set` reply once the UI has settled (no animation running);
+`"settled": false` means the 3 s timeout hit. `state`, `goto`, `back`, `set`, and `explore` need
 MockUI's application state; they work on the simulator and on a board running
-MockUI firmware. To restart the simulator, stop it and run
+MockUI firmware. `explore` also taps action buttons (e.g. *Create*), so it
+changes device state; it closes dialogs it opens and stops at one it cannot
+close safely. To restart the simulator, stop it and run
 `make simulate-automation` again.
 
 The simulator serves NDJSON on TCP port 9876, e.g.
