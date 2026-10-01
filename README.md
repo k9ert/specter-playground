@@ -28,7 +28,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 make test
 ```
 
-Shared simulator and hardware control lives in the [`devtools/`](devtools) submodule ([specter-devtools](https://github.com/maggo83/specter-devtools)); see [AGENTS.md](AGENTS.md) for its setup and `make simulate-automation`.
+Simulator and hardware control for development and tests lives in the [`devtools/`](devtools) submodule; see the [specter-devtools README](https://github.com/maggo83/specter-devtools#readme) for its setup and commands. `make simulate-automation` starts the simulator with its control server.
 
 ## Scenarios
 
