@@ -31,6 +31,9 @@ What this repository adds:
   after checking out another devtools commit. To restart it, stop it and run the
   target again; *EADDRINUSE* means a stale process still holds the port
   (`lsof -ti:9876 | xargs kill`).
+- MockUI starts from the preset `/flash/presets/mockui.json` if there is one:
+  `make simulate*` uses `dev`, other targets only with `MOCKUI_PRESET=<name>`
+  (see [README](README.md#mockui)).
 - `specter-devtools --target simulator explore docs/MockUI/screens` refreshes
   the screenshots in [docs/MockUI](docs/MockUI/index.md).
 - The hardware tests in `scenarios/MockUI/tests_device/` use

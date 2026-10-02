@@ -28,6 +28,13 @@ $(error ADD_THEME contains invalid characters. Use only lowercase letters, digit
 endif
 endif
 
+# Validate MOCKUI_PRESET to prevent shell injection (lowercase letters, digits and underscores)
+ifneq ($(MOCKUI_PRESET),)
+ifneq ($(shell echo "$(MOCKUI_PRESET)" | grep -E '^[a-z0-9_]+$$'),$(MOCKUI_PRESET))
+$(error MOCKUI_PRESET contains invalid characters. Use only lowercase letters, digits and underscores, e.g. MOCKUI_PRESET=dev)
+endif
+endif
+
 $(TARGET_DIR):
 	mkdir -p $(TARGET_DIR)
 
@@ -88,11 +95,23 @@ build-themes:
 		done; \
 	fi
 
+# MockUI preset: scenarios/mockui_fw/main.py loads its initial device and UI
+# state (seeds, wallets, PIN, ...) from /flash/presets/mockui.json.
+# MOCKUI_PRESET=<name> copies scenarios/mockui_fw/presets/<name>.json there.
+# Without it there is no preset, as in a release build; simulate defaults to dev.
+build-preset:
+	@rm -rf build/flash_image/presets
+	@if [ -n "$(MOCKUI_PRESET)" ]; then \
+		echo "Using MockUI preset $(MOCKUI_PRESET)"; \
+		mkdir -p build/flash_image/presets && \
+		cp scenarios/mockui_fw/presets/$(MOCKUI_PRESET).json build/flash_image/presets/mockui.json; \
+	fi
+
 # Create FAT12 filesystem image with language files
 # Uses tools/make_fat_image.py (pure Python, no extra dependencies).
 # Matches MicroPython oofatfs f_mkfs(FM_FAT) output for STM32F469:
 #   512-byte sectors, 192 sectors (96KB), 1 FAT, 512 root entries, label "pybflash"
-build-flash-image: build-i18n build-themes
+build-flash-image: build-i18n build-themes build-preset
 	@echo Creating FAT12 filesystem image...
 	@echo "  Files to include:"
 	@ls -lh build/flash_image/i18n/
@@ -200,7 +219,7 @@ mockui: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-flash-image $(MPY_DI
 	@ls -lh $(TARGET_DIR)/mockui.bin
 
 # unixport (simulator)
-unix: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-themes $(MPY_DIR)/ports/unix
+unix: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-themes build-preset $(MPY_DIR)/ports/unix
 	@echo Building binary with frozen files
 	make -C $(MPY_DIR)/ports/unix \
 		USER_C_MODULES=$(USER_C_MODULES) \
@@ -209,6 +228,9 @@ unix: $(TARGET_DIR) mpy-cross trim-icons build-i18n build-themes $(MPY_DIR)/port
 	cp $(MPY_DIR)/ports/unix/build-standard/micropython $(TARGET_DIR)/micropython_unix
 
 SCRIPT ?= mockui_fw/main.py
+
+# The simulator starts with the dev preset; MOCKUI_PRESET= starts without one.
+simulate simulate-automation: MOCKUI_PRESET ?= dev
 
 simulate: unix
 	$(TARGET_DIR)/micropython_unix scenarios/$(SCRIPT)
@@ -249,4 +271,4 @@ rag-index:
 rag-search:
 	cd .rag && .venv/bin/python search.py "$(QUERY)"
 
-.PHONY: all clean test sync-i18n build-i18n build-themes rag-setup rag-index rag-search
+.PHONY: all clean test sync-i18n build-i18n build-themes build-preset rag-setup rag-index rag-search
