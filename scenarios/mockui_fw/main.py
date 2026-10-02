@@ -49,9 +49,6 @@ def _load_preset():
             return json.load(f)
     except OSError:
         return {}
-    except ValueError as e:
-        print("Preset", PRESET_FILE, "is invalid, using defaults:", e)
-        return {}
 
 
 def _apply_attrs(obj, attrs):
@@ -62,22 +59,27 @@ def _apply_attrs(obj, attrs):
             print("Preset: skipping unknown attribute", name)
 
 
-preset = _load_preset()
+def _build_state(preset):
+    device_state = DeviceState()
+    _apply_attrs(device_state, preset.get("device_state", {}))
+    for fields in preset.get("seeds", []):
+        device_state.add_seed(Seed(**fields))
+    for fields in preset.get("wallets", []):
+        device_state.register_wallet(Wallet(**fields))
+    ui_state = UIState()
+    _apply_attrs(ui_state, preset.get("ui_state", {}))
+    return device_state, ui_state
 
-specter_state = DeviceState()
-_apply_attrs(specter_state, preset.get("device_state", {}))
-for fields in preset.get("seeds", []):
-    specter_state.add_seed(Seed(**fields))
-for fields in preset.get("wallets", []):
-    specter_state.register_wallet(Wallet(**fields))
+
+try:
+    specter_state, ui_state = _build_state(_load_preset())
+except Exception as e:
+    print("Preset", PRESET_FILE, "is invalid, using defaults:", repr(e))
+    specter_state, ui_state = DeviceState(), UIState()
 # SD detection reflects the files actually present in /sd (dummy SD import).
 if not _ON_HARDWARE:
     specter_state.attach_sd_reader('/sd')
 
-ui_state = UIState()
-_apply_attrs(ui_state, preset.get("ui_state", {}))
-
-del preset
 gc.collect()
 
 scr = SpecterGui(specter_state, ui_state)
