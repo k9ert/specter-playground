@@ -15,13 +15,11 @@ Widget structure inside a GenericMenu button row (from source):
     [1] label        (the button text)
     [2] help_btn     (last child — transparent image button, no text label)
 """
-import json
-import time
-
 import pytest
 
 from conftest import (
     _load_label,
+    click_by_index,
     click_by_label,
     click_overlay_by_label,
     disco_run,
@@ -29,6 +27,8 @@ from conftest import (
     find_labels,
     find_labels_overlay,
     navigate_to_settings_menu,
+    screen_tree,
+    walk_with_path,
 )
 
 # =========================================================================
@@ -52,37 +52,18 @@ _help_text:    str = ""   # full body text of the help popup
 # Helper: click the help icon for a row identified by its text label.
 # =========================================================================
 
-def _click_help_icon_for(label: str, delay: float = 1.0) -> None:
-    """Click the help (?) icon on the row whose text matches *label*.
+def _click_help_icon_for(label: str) -> None:
+    """Tap the help (?) icon on the row whose text matches *label*.
 
-    Walks the screen JSON tree on the host to locate the button that has a
-    direct child with the given text, then clicks that button's last child
-    (GenericMenu always places the help_btn as the last child).
+    Finds the button that has a direct child with the given text, then taps
+    that button's last child (GenericMenu always places the help_btn last).
     """
-    tree = json.loads(disco_run("ui", "screen", "--json"))
-    roots = tree if isinstance(tree, list) else [tree]
-
-    def _find(node, path):
-        for i, child in enumerate(node.get("children", [])):
-            if child.get("text") == label:
-                return path, node   # node = the button row, path = its index
-            result = _find(child, f"{path}.{i}")
-            if result is not None:
-                return result
-        return None
-
-    found = None
-    for i, root in enumerate(roots):
-        found = _find(root, str(i))
-        if found:
-            break
-
-    assert found, f"No button containing label {label!r} found in screen tree"
-    btn_path, btn_node = found
-    children = btn_node.get("children", [])
-    assert children, f"Button {label!r} has no children (no help icon?)"
-    disco_run("ui", "click", "--index", f"{btn_path}.{len(children) - 1}")
-    time.sleep(delay)
+    for path, node in walk_with_path(screen_tree()):
+        children = node.get("children", [])
+        if any(child.get("text") == label for child in children):
+            click_by_index(f"{path}.{len(children) - 1}")
+            return
+    raise AssertionError(f"No button containing label {label!r} found in screen tree")
 
 
 # =========================================================================
@@ -107,7 +88,7 @@ def _setup_scan_qr():
         # to force the main menu to rebuild.
         disco_run(
             "repl", "exec",
-            "specter_state.hasQR = True; specter_state.enabledQR = True",
+            "specter_state._hasQR = True; specter_state._enabledQR = True",
         )
         navigate_to_settings_menu()
         ensure_main_menu()

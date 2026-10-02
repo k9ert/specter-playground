@@ -3,7 +3,7 @@
 Single scenario test covering all 8 checkpoints in one sequential run
 to minimise board interactions and expensive setup/teardown.
 
-LockedMenu tree layout (for REPL navigation):
+LockedMenu tree layout (screen tree paths 2.0.*):
   scr                          # SpecterGui (lv.screen)
   └─ .content (child 2)
      └─ .current_screen        # LockedMenu (child 0 of content)
@@ -32,18 +32,18 @@ Checkpoints (in order):
   CP6   – correct PIN unlocks the device
   CP7/8 – re-locking gives a different key order      [retry once on collision]
 """
-import time
-
 import pytest
 
 from conftest import (
     _load_label,
     _supported_lang_codes,
     click_by_index,
-    disco_run,
     ensure_main_menu,
     find_labels,
+    node_at,
     screen_tree,
+    ui,
+    unlock,
     walk_with_path,
 )
 
@@ -67,30 +67,17 @@ def _get_digit_order() -> list[str]:
 
 
 def _get_mask_text() -> str:
-    """Read the current PIN mask label text directly from the device.
-
-    Navigates the LVGL widget tree via get_child() indices to avoid relying on
-    the ``scr.current_screen`` Python attribute, which MicroPython's GC can
-    collect while the underlying LVGL C object survives.
-
-    Path: scr.get_child(2)  = content
-          .get_child(0)     = current_screen (LockedMenu)
-          .get_child(1)     = body
-          .get_child(1)     = mask_lbl
-    """
-    return disco_run(
-        "repl", "exec",
-        "print(scr.get_child(2).get_child(0).get_child(1).get_child(1).get_text())",
-    )
+    """Read the PIN mask label: content (2) → LockedMenu (0) → body (1) → mask_lbl (1)."""
+    return node_at("2.0.1.1").get("text") or ""
 
 
 def _get_device_pin() -> str:
     """Read the configured PIN from live device state — never hardcoded."""
-    return disco_run("repl", "exec", "print(specter_state.pin)")
+    return ui({"action": "get_state"})["specter"]["pin"]
 
 def _set_device_pin(pin: str) -> None:
     """Set the configured PIN on the live device."""
-    disco_run("repl", "exec", f"specter_state.pin = '{pin}'")
+    ui({"action": "set_state", "attr": "pin", "value": pin})
 
 
 def _find_lock_btn_index() -> str:
@@ -117,47 +104,22 @@ def _find_lock_btn_index() -> str:
     raise AssertionError("Could not locate lock button in screen tree")
 
 
-def _click_digit(d: str, delay: float = 0.8) -> None:
-    """Click a PIN pad digit by its text label.
+def _click_digit(d: str) -> None:
+    """Tap a PIN pad digit by its text label.
 
     Bypasses ``click_by_label``'s len > 1 filter — digits are single chars.
     """
-    disco_run("ui", "click", d)
-    time.sleep(delay)
+    ui({"action": "click", "text": d})
 
 
-def _click_del(delay: float = 0.8) -> None:
-    """Trigger the Del button via REPL send_event (icon-only, no text label).
-
-    Del is child 0 of the last row (body.child(5).child(0)).
-    """
-    out = disco_run(
-        "repl", "exec",
-        "import lvgl as lv; "
-        "body=scr.get_child(2).get_child(0).get_child(1); "
-        "row=body.get_child(5); "
-        "row.get_child(0).send_event(lv.EVENT.CLICKED, None); "
-        "print('OK')",
-    )
-    assert out.strip().splitlines()[-1] == "OK", f"_click_del failed: {out!r}"
-    time.sleep(delay)
+def _click_del() -> None:
+    """Tap Del (icon-only): child 0 of the last keypad row (body.child(5))."""
+    click_by_index("2.0.1.5.0")
 
 
-def _click_ok(delay: float = 1.2) -> None:
-    """Trigger the OK button via REPL send_event (icon-only, no text label).
-
-    OK is child 2 of the last row (body.child(5).child(2)).
-    """
-    out = disco_run(
-        "repl", "exec",
-        "import lvgl as lv; "
-        "body=scr.get_child(2).get_child(0).get_child(1); "
-        "row=body.get_child(5); "
-        "row.get_child(2).send_event(lv.EVENT.CLICKED, None); "
-        "print('OK')",
-    )
-    assert out.strip().splitlines()[-1] == "OK", f"_click_ok failed: {out!r}"
-    time.sleep(delay)
+def _click_ok() -> None:
+    """Tap OK (icon-only): child 2 of the last keypad row (body.child(5))."""
+    click_by_index("2.0.1.5.2")
 
 
 def _lock_device() -> bool:
@@ -195,14 +157,9 @@ def _main_menu_visible() -> bool:
 @pytest.fixture(scope="module", autouse=True)
 def _setup_locked_menu_test():
     """Ensure device is on the main menu and unlocked before the scenario."""
-    ensure_main_menu()
     # Guarantee unlocked state in case a previous run left the device locked.
-    disco_run(
-        "repl", "exec",
-        "specter_state.is_locked = False; scr.navigate_to(None); print('OK')",
-    )
+    unlock()
     _set_device_pin("42")  # set a known PIN for the tests
-    time.sleep(1.0)
     ensure_main_menu()
     yield
 

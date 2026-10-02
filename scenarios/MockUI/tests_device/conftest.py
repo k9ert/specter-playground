@@ -1,47 +1,39 @@
-"""Fixtures for device integration tests using the disco tool.
+"""Fixtures for on-device tests on an STM32F469 Discovery board.
 
-The disco tool comes from the devtools submodule (devtools/f469/disco);
-set DISCO_SCRIPT to use a different launcher.
+The tests drive the board through specter-devtools (the devtools/ submodule).
+Widget trees and taps go through its control contract: a tap works like a
+finger, refuses covered widgets, and replies once the UI has settled. Resets,
+flashing, and REPL checks use its f469/disco tool. Set devtools up once as
+described in devtools/README.md.
 
-Requirements:
-  - STM32F469 Discovery board connected via USB
-  - disco tool dependencies installed in the active venv (mpremote, click, pyserial)
-
-By default these tests build the MockUI firmware with German included
-(ADD_LANG=de) and flash it before running.  Pass --no-build-flash to skip
-this step if you have already flashed a suitable binary yourself.
+By default the session builds MockUI firmware with German (ADD_LANG=de) and
+flashes it. Pass --no-build-flash to keep the firmware already on the board.
 """
 import json
 import os
 import subprocess
 import sys
-import time
 
 import pytest
 
-# Repo root (three levels up from tests_device/)
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_DEVTOOLS = os.path.join(_REPO_ROOT, "devtools")
+sys.path.insert(0, os.path.join(_DEVTOOLS, "src"))
 
-DISCO_SCRIPT = os.environ.get(
-    "DISCO_SCRIPT",
-    os.path.join(_REPO_ROOT, "devtools", "f469", "disco"),
+from specter_devtools.artifacts import visible_labels  # noqa: E402
+from specter_devtools.targets import F469Target  # noqa: E402
+
+DISCO = os.environ.get("DISCO_SCRIPT", os.path.join(_DEVTOOLS, "f469", "disco"))
+_board = F469Target(DISCO)
+
+_FIRMWARE = os.path.join(_REPO_ROOT, "bin", "mockui.bin")
+_LANG_DIR = os.path.join(
+    _REPO_ROOT, "scenarios", "MockUI", "src", "MockUI", "basic", "i18n", "languages",
 )
-
-# Firmware output path produced by ``make mockui``.
-_FIRMWARE = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "bin", "mockui.bin"
-)
-
-# Run through sys.executable so the test venv (with mpremote etc.) is used.
-_CMD = [sys.executable, DISCO_SCRIPT]
 
 # =========================================================================
 # Language label loading — single source of truth from the JSON files.
 # =========================================================================
-_LANG_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "..", "..",
-    "scenarios", "MockUI", "src", "MockUI", "i18n", "languages",
-))
 
 def _supported_lang_codes() -> list[str]:
     """Return all language codes found in the language JSON directory."""
@@ -90,7 +82,6 @@ def _load_label(key: str, *lang_codes: str) -> tuple[str, ...]:
     return tuple(results)
 
 
-
 def pytest_addoption(parser):
     parser.addoption(
         "--no-build-flash",
@@ -103,175 +94,72 @@ def pytest_addoption(parser):
     )
 
 
-def disco_run(*args: str, timeout: int = 15, retries: int = 2) -> str:
-    """Run ``disco <args>``, assert exit-code 0, return stripped stdout.
+# =========================================================================
+# Board access through devtools
+# =========================================================================
 
-    Retries on transient serial errors (OSError, I/O error).
-    """
-    last_result = None
-    for attempt in range(1 + retries):
-        result = subprocess.run(
-            [*_CMD, *args],
-            capture_output=True, text=True, timeout=timeout,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-        # Retry on transient serial errors (various messages from pyserial/mpremote)
-        err = result.stderr
-        if any(s in err for s in ("OSError", "Input/output error", "Serial error",
-                                   "readiness to read", "device disconnected")):
-            last_result = result
-            time.sleep(3)
-            continue
-        last_result = result
-        break
-    assert last_result.returncode == 0, (
-        f"disco {' '.join(args)} failed (rc={last_result.returncode}):\n"
-        f"stdout: {last_result.stdout}\nstderr: {last_result.stderr}"
+def disco_run(*args: str, timeout: int = 120) -> str:
+    """Run devtools' ``disco <args>``, assert exit code 0, return stripped stdout."""
+    result = subprocess.run([DISCO, *args], capture_output=True, text=True, timeout=timeout)
+    assert result.returncode == 0, (
+        f"disco {' '.join(args)} failed (rc={result.returncode}):\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
     )
-    return last_result.stdout.strip()
+    return result.stdout.strip()
 
 
-def find_labels() -> list[str]:
-    """Return all visible text labels (len > 1) from the LVGL widget tree."""
-    tree = json.loads(disco_run("ui", "screen", "--json"))
-    labels = []
-
-    def _walk(node):
-        text = node.get("text")
-        if text and len(text) > 1:
-            labels.append(text)
-        for child in node.get("children", []):
-            _walk(child)
-
-    for node in (tree if isinstance(tree, list) else [tree]):
-        _walk(node)
-    return labels
+def ui(request: dict) -> dict:
+    """Send one devtools control request; the test fails if the board refuses it."""
+    result = _board.request(request)
+    assert result.get("ok"), f"{request} failed: {result.get('error')}"
+    return result
 
 
-def go_back(delay: float = 1.0):
-    """Click the back button (top-left, index 1.0.0) and wait.
-
-    Returns True on success, False if the click failed (no back button).
-    """
-    result = subprocess.run(
-        [*_CMD, "ui", "click", "--index", "1.0.0"],
-        capture_output=True, text=True, timeout=15,
-    )
-    time.sleep(delay)
-    return result.returncode == 0
-
-
-def _wait_for_device_responsive(
-    wait: float = 30.0,
-    settle: float = 5.0,
-    poll_interval: float = 3.0,
-) -> None:
-    """Poll until the device is responsive to REPL commands, or timeout."""
-    deadline = time.monotonic() + wait
-    time.sleep(settle)  # initial wait for device to finish booting
-    while time.monotonic() < deadline:
-        result = subprocess.run(
-            [*_CMD, "repl", "exec", "print('pytest-alive')"],
-            capture_output=True, text=True, timeout=10,
-        )
-        if result.returncode == 0 and "pytest-alive" in result.stdout:
-            return
-        time.sleep(poll_interval)
-    raise RuntimeError(f"Device did not become responsive within {settle + wait}s")
-
-
-def soft_reset(wait: float = 12.0):
-    """Soft-reset the device and wait for it to be responsive again.
-
-    ``disco repl reset`` sends Ctrl-C + Ctrl-D over pyserial.  The device
-    reboots (USB disconnects/reconnects), so the command *always* exits
-    with rc=1 and a "Serial error" — that is expected and ignored.
-    """
-    # Fire-and-forget: the serial error is expected because USB disconnects.
-    subprocess.run(
-        [*_CMD, "repl", "reset"],
-        capture_output=True, text=True, timeout=10,
-    )
-    _wait_for_device_responsive(wait=wait)
-
-
-def flash_firmware(wait: float = 55.0, settle: float = 45.0) -> None:
-    """Flash bin/mockui.bin onto the device and wait until it is responsive.
-
-    The board resets automatically at the end of flashing, so this function
-    just blocks until MicroPython is reachable again (up to *wait* seconds,
-    with an initial *settle* delay for the USB re-enumeration).
-    """
+def flash_firmware() -> None:
+    """Flash bin/mockui.bin and wait until the board's REPL answers again."""
     print("[device-tests] Flashing firmware ...")
-    subprocess.run(
-        [*_CMD, "flash", "program", os.path.abspath(_FIRMWARE)],
-        check=True,
-    )
-    print("[device-tests] Flash done — polling until board is responsive ...")
-    _wait_for_device_responsive(wait=wait, settle=settle)
+    disco_run("flash", "program", _FIRMWARE, timeout=300)
+    disco_run("repl", "wait")
 
 
-def ensure_main_menu(max_depth: int = 5):
-    """Navigate back until we're on the main menu.
+def reset_board() -> None:
+    """Hard-reset the board (never a soft reset) and wait for its REPL."""
+    disco_run("repl", "reset")
 
-    Tries go_back() repeatedly.  If the UI is unreachable or go_back()
-    fails, falls back to a soft reset (Ctrl-D, USB reconnect).
+
+def unlock() -> None:
+    """Unlock MockUI, which boots locked, and open the main menu."""
+    ui({"action": "set_state", "attr": "is_locked", "value": False})
+    ui({"action": "navigate", "target": "main"})
+
+
+def restart_board() -> None:
+    """Hard-reset the board and get back to an unlocked main menu.
+
+    main.py locks the device and marks the tour as pending on every boot.
     """
-    main_menu_markers = _load_label("MAIN_MENU_TITLE", *_supported_lang_codes())
-    for _ in range(max_depth):
-        try:
-            labels = find_labels()
-        except (AssertionError, json.JSONDecodeError):
-            # UI command failed — device may still be booting after a reset.
-            time.sleep(3)
-            continue
-        if any(t in labels for t in main_menu_markers):
-            return
-        if not go_back():
-            # No back button — soft reset to get to a clean main menu.
-            soft_reset()
-            continue
-
-    # Final check after exhausting retries.
-    labels = find_labels()
-    assert any(t in labels for t in main_menu_markers), (
-        f"Could not navigate to main menu. Labels: {labels}"
-    )
+    reset_board()
+    unlock()
+    dismiss_tour_if_present()
+    ensure_main_menu()
 
 
-def click_by_label(label: str, delay: float = 1.0) -> None:
-    """Assert *label* is visible on the main screen and click it."""
-    labels = find_labels()
-    assert label in labels, f"Cannot find button {label!r}. Visible labels: {labels}"
-    disco_run("ui", "click", label)
-    time.sleep(delay)
+def _read_flash_json(path: str) -> dict:
+    """Read a JSON file from the board's flash."""
+    return json.loads(disco_run("repl", "cat", path))
 
 
-def click_by_index(index_str: str, delay: float = 1.0) -> None:
-    """Click a widget on the main screen by dot-separated tree index (e.g. '1.0.2')."""
-    disco_run("ui", "click", "--index", index_str)
-    time.sleep(delay)
+# =========================================================================
+# Widget trees and taps
+# =========================================================================
 
-
-def click_by_partial_label(partial: str, delay: float = 1.0) -> None:
-    """Find the first visible label that contains *partial* and click it."""
-    labels = find_labels()
-    matches = [lbl for lbl in labels if partial in lbl]
-    assert matches, f"No label containing {partial!r}. Visible labels: {labels}"
-    disco_run("ui", "click", matches[0])
-    time.sleep(delay)
-
-
-def screen_tree() -> list[dict]:
-    """Return the current LVGL widget tree as a list of root nodes."""
-    raw = disco_run("ui", "screen", "--json")
-    tree = json.loads(raw)
-    return tree if isinstance(tree, list) else [tree]
+def screen_tree(layer: str = "screen") -> list[dict]:
+    """Return the children of the active screen (or the top layer) as devtools reports them."""
+    return ui({"action": "tree", "layer": layer})["tree"]["root"]["children"]
 
 
 def walk_with_path(nodes):
-    """Yield (path, node) pairs in breadth-first order for a screen tree."""
+    """Yield (path, node) pairs in breadth-first order; paths look like '1.0.2'."""
     queue = [(str(i), n) for i, n in enumerate(nodes)]
     while queue:
         path, node = queue.pop(0)
@@ -280,8 +168,60 @@ def walk_with_path(nodes):
             queue.append((path + "." + str(i), child))
 
 
+def node_at(index_str: str, layer: str = "screen") -> dict:
+    """Return the tree node at a dot-separated index such as '2.0.1'."""
+    for path, node in walk_with_path(screen_tree(layer)):
+        if path == index_str:
+            return node
+    raise AssertionError(f"No widget at {index_str!r} on the {layer} layer")
+
+
+def _labels(layer: str) -> list[str]:
+    root = ui({"action": "tree", "layer": layer})["tree"]["root"]
+    return [text for text in visible_labels(root) if len(text) > 1]
+
+
+def find_labels() -> list[str]:
+    """Return all text labels (len > 1) on the active screen."""
+    return _labels("screen")
+
+
+def find_labels_overlay() -> list[str]:
+    """Return all text labels (len > 1) on the top layer (overlays)."""
+    return _labels("top")
+
+
+def click_by_label(label: str, layer: str = "screen") -> None:
+    """Assert *label* is shown, then tap it and wait until the UI has settled."""
+    labels = _labels(layer)
+    assert label in labels, f"Cannot find {label!r} on the {layer} layer. Labels: {labels}"
+    ui({"action": "click", "text": label, "layer": layer})
+
+
+def click_by_index(index_str: str, layer: str = "screen") -> None:
+    """Tap the widget at a dot-separated tree index (e.g. '1.0.2')."""
+    ui({"action": "click", "path": [int(p) for p in index_str.split(".")], "layer": layer})
+
+
+def click_by_partial_label(partial: str) -> None:
+    """Tap the first label on the screen that contains *partial*."""
+    labels = find_labels()
+    matches = [lbl for lbl in labels if partial in lbl]
+    assert matches, f"No label containing {partial!r}. Visible labels: {labels}"
+    ui({"action": "click", "text": matches[0]})
+
+
+def click_overlay_by_label(label: str) -> None:
+    click_by_label(label, layer="top")
+
+
+def click_overlay_by_index(index_str: str) -> None:
+    """Tap an overlay widget by tree index, e.g. an icon-only button."""
+    click_by_index(index_str, layer="top")
+
+
 def first_index_by_type(widget_type: str):
-    """Return first widget index for the given type, or None if absent."""
+    """Return the first widget index of the given type, or None."""
     for path, node in walk_with_path(screen_tree()):
         if node.get("type") == widget_type:
             return path
@@ -289,11 +229,16 @@ def first_index_by_type(widget_type: str):
 
 
 def first_textarea_index_and_text() -> tuple[str, str]:
-    """Return (index, text) for the first textarea in the current screen."""
+    """Return (index, text) of the first textarea on the screen."""
     for path, node in walk_with_path(screen_tree()):
         if node.get("type") == "textarea":
             return path, node.get("text", "")
     raise AssertionError("No textarea found on current screen")
+
+
+def set_textarea_text(index_str: str, text: str) -> None:
+    """Replace a textarea's text through devtools' write_text."""
+    ui({"action": "write_text", "path": [int(p) for p in index_str.split(".")], "text": text})
 
 
 def obj_expr(index_str: str) -> str:
@@ -304,75 +249,46 @@ def obj_expr(index_str: str) -> str:
     return expr
 
 
-def set_textarea_text(index_str: str, text: str) -> None:
-    """Set textarea text by index using REPL and assert success."""
-    code = "import lvgl as lv; ta={}; ta.set_text({!r}); print('OK')".format(obj_expr(index_str), text)
-    out = disco_run("repl", "exec", code)
-    assert out.strip().splitlines()[-1] == "OK", out
-
-
 def send_keyboard_event(index_str: str, event_name: str) -> None:
-    """Send a lv.EVENT.* to keyboard by index and assert success."""
+    """Send a lv.EVENT.* to the keyboard, then wait until the UI has settled.
+
+    LVGL draws the keyboard's keys inside one widget, so devtools cannot tap
+    READY or CANCEL individually; the event stands in for that key.
+    """
     code = "import lvgl as lv; kb={}; kb.send_event(lv.EVENT.{},None); print('OK')".format(
         obj_expr(index_str), event_name
     )
     out = disco_run("repl", "exec", code)
     assert out.strip().splitlines()[-1] == "OK", out
+    ui({"action": "wait"})
 
 
 def keyboard_is_hidden(index_str: str) -> bool:
-    """Return True if the keyboard at index has HIDDEN flag set."""
+    """Return True if the keyboard at index has the HIDDEN flag set."""
     code = "import lvgl as lv; kb={}; print(kb.has_flag(lv.obj.FLAG.HIDDEN))".format(obj_expr(index_str))
     out = disco_run("repl", "exec", code)
     return out.strip().splitlines()[-1] == "True"
 
 
-def find_labels_overlay() -> list[str]:
-    """Return all visible text labels (len > 1) from the LVGL layer_top (overlays)."""
-    raw = disco_run("ui", "screen", "--layer", "top", "--json")
-    if not raw:
-        return []
-    tree = json.loads(raw)
-    labels = []
+# =========================================================================
+# MockUI navigation
+# =========================================================================
 
-    def _walk(node):
-        text = node.get("text")
-        if text and len(text) > 1:
-            labels.append(text)
-        for child in node.get("children", []):
-            _walk(child)
-
-    for node in (tree if isinstance(tree, list) else [tree]):
-        _walk(node)
-    return labels
+def _on_main_menu() -> bool:
+    return ui({"action": "get_state"})["ui"]["current_menu_id"] == "main"
 
 
-def click_overlay_by_label(label: str, delay: float = 1.0) -> None:
-    """Assert *label* is visible in the overlay and click it."""
-    labels = find_labels_overlay()
-    assert label in labels, (
-        f"Cannot find overlay button {label!r}. Visible overlay labels: {labels}"
-    )
-    disco_run("ui", "click", "--layer", "top", label)
-    time.sleep(delay)
-
-
-def click_overlay_by_index(index_str: str, delay: float = 1.0) -> None:
-    """Click an overlay widget by dot-separated tree index (e.g. '0.1.2').
-
-    Useful for icon-only buttons (prev/next/checkmark) that have no text label.
-    """
-    disco_run("ui", "click", "--layer", "top", "--index", index_str)
-    time.sleep(delay)
-
-
-def _read_flash_json(path: str) -> dict:
-    """Read a JSON file from the device flash via REPL and return parsed dict."""
-    output = disco_run(
-        "repl", "exec",
-        f"import json; f=open({path!r}); print(json.dumps(json.load(f))); f.close()",
-    )
-    return json.loads(output)
+def ensure_main_menu(max_depth: int = 10) -> None:
+    """Go back through MockUI's menu history to the main menu, like the back button."""
+    for _ in range(max_depth):
+        if _on_main_menu():
+            return
+        if not ui({"action": "get_state"})["ui"]["history"]:
+            break
+        ui({"action": "navigate", "target": "back"})
+    if not _on_main_menu():
+        ui({"action": "navigate", "target": "main"})
+    assert _on_main_menu(), f"Could not reach the main menu. Labels: {find_labels()}"
 
 
 def _find_settings_btn_index() -> str:
@@ -389,8 +305,7 @@ def _find_settings_btn_index() -> str:
         screen root [1]   content area (main menu etc.)
     Returns a dot-separated index string, e.g. ``'0.2.1'``.
     """
-    tree = json.loads(disco_run("ui", "screen", "--json"))
-    nodes = tree if isinstance(tree, list) else [tree]
+    nodes = screen_tree()
 
     # device_bar → right_container → settings_btn
     steps = [0, 2, 1]
@@ -409,10 +324,10 @@ def _find_settings_btn_index() -> str:
 
 
 def navigate_to_settings_menu() -> None:
-    """Navigate to the Settings menu by clicking the gear button in the device bar.
+    """Navigate to the Settings menu by tapping the gear button in the device bar.
 
     The gear button is icon-only (no text label), so its widget-tree index is
-    discovered dynamically and clicked by index.
+    discovered dynamically and tapped by index.
     """
     ensure_main_menu()
     click_by_index(_find_settings_btn_index())
@@ -422,7 +337,6 @@ def navigate_to_language_menu(lang: str) -> None:
     """Navigate from the main menu to the language selection menu.
 
     *lang* is the language code currently active on the device (e.g. "en", "de").
-    The Settings gear button is icon-only, so we click it by index.
     The Language button shows a dynamic label (e.g. "Select Language (EN)"),
     so we match on the base translation string only.
     """
@@ -431,36 +345,24 @@ def navigate_to_language_menu(lang: str) -> None:
 
 
 def navigate_to_device_menu(lang: str = "en") -> None:
-    """Navigate from the main menu to the Security settings menu.
-
-    *lang* is the language code currently active on the device (e.g. "en", "de").
-    The Settings gear button is icon-only, so we navigate via REPL.
-    """
+    """Navigate from the main menu to the Security settings menu."""
     navigate_to_settings_menu()
     click_by_label(_load_label("MENU_SETTINGS_SECURITY", lang)[0])
 
 
 def navigate_to_preferences_menu(lang: str = "en") -> None:
-    """Navigate from the main menu to the Preferences menu.
-
-    *lang* is the language code currently active on the device (e.g. "en", "de").
-    The Settings gear button is icon-only, so we navigate via REPL.
-    """
+    """Navigate from the main menu to the Preferences menu."""
     navigate_to_settings_menu()
     click_by_label(_load_label("MENU_MANAGE_PREFERENCES", lang)[0])
 
 
 def dismiss_tour_if_present() -> None:
-    """Skip the tour overlay if it is currently visible in layer_top.
-
-    Safe to call at any time — does nothing if the tour is not showing.
-    Does NOT call ensure_main_menu() so it can be used inside fixtures
-    without risking recursion.
-    """
-    skip_label = _load_label("TOUR_SKIP_BTN", "en")[0]
-    if skip_label in find_labels_overlay():
-        disco_run("ui", "click", "--layer", "top", skip_label)
-        time.sleep(1.0)
+    """Skip the tour overlay if it is currently shown on the top layer, in any language."""
+    shown = find_labels_overlay()
+    for skip_label in _load_label("TOUR_SKIP_BTN", *_supported_lang_codes()):
+        if skip_label in shown:
+            click_overlay_by_label(skip_label)
+            return
 
 
 def ensure_english() -> None:
@@ -473,14 +375,12 @@ def ensure_english() -> None:
     en_title = _load_label("MAIN_MENU_TITLE", "en")[0]
     if en_title in find_labels():
         return
-    # Identify the current language and navigate accordingly.
     for lang in _supported_lang_codes():
         if lang == "en":
             continue
         if _load_label("MAIN_MENU_TITLE", lang)[0] in find_labels():
             navigate_to_language_menu(lang)
             click_by_label(_load_metadata("language_name", "en")[0])
-            time.sleep(2)
             ensure_main_menu()
             return
     raise RuntimeError(f"Cannot determine current UI language. Labels: {find_labels()}")
@@ -492,7 +392,7 @@ def ensure_english() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def _require_device(request):
-    """Build firmware with German, flash it, then verify the board is reachable.
+    """Build firmware with German and flash it, then open an unlocked main menu.
 
     The build+flash step is skipped only when --no-build-flash is passed.
     """
@@ -505,13 +405,13 @@ def _require_device(request):
         )
         flash_firmware()
     else:
-        # Always wait for the device to be responsive (covers --no-build-flash
-        # with a freshly-flashed or already-running board).
-        _wait_for_device_responsive(wait=60, settle=45, poll_interval=5)
+        disco_run("repl", "wait")
 
-    # Navigate to main menu and ensure English — device may be in any state
-    # from a previous (possibly failed) run.
-    ensure_main_menu()
+    assert ui({"action": "capabilities"})["application"], (
+        "MockUI is not running on the board: its REPL has no `scr` object"
+    )
+    unlock()
     dismiss_tour_if_present()
+    ensure_main_menu()
     ensure_english()
     yield

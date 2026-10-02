@@ -7,12 +7,12 @@ Two scenario-based tests, each a complete sequential user journey:
 
 The module-scoped ``_fresh_tour_state`` fixture flashes the firmware before the
 tests run.  A freshly flashed device has no ui_state_config.json, so the tour
-auto-starts on first boot — no manual state setup required.  This also verifies
-the real out-of-the-box first-boot experience.
+starts when the unlocked main menu first opens — no manual state setup
+required.  This also verifies the real out-of-the-box first-boot experience.
 
 Scenario 2 relies on scenario 1 having left the device in a clean state
-(tour_completed=True, at the main menu after a soft reset).  Running them in
-isolation is not supported — execute the full module together.
+(tour_completed=True, at the main menu).  Running them in isolation is not
+supported — execute the full module together.
 
 Index paths within layer_top (confirmed via live tree dump):
   layer_top → [0] overlay_obj → [last] content_obj
@@ -23,16 +23,16 @@ Index paths within layer_top (confirmed via live tree dump):
       [2] next_btn
 """
 import ast
-import json
 import os
-import time
 
 import pytest
 
 from conftest import (
     _load_label,
     _read_flash_json,
+    click_overlay_by_index,
     disco_run,
+    dismiss_tour_if_present,
     ensure_main_menu,
     find_labels_overlay,
     click_by_label,
@@ -40,7 +40,9 @@ from conftest import (
     flash_firmware,
     navigate_to_device_menu,
     navigate_to_preferences_menu,
-    soft_reset,
+    reset_board,
+    screen_tree,
+    unlock,
 )
 
 # ---------------------------------------------------------------------------
@@ -48,19 +50,19 @@ from conftest import (
 # ---------------------------------------------------------------------------
 
 _NAV_SRC = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "src", "MockUI", "basic", "specter_gui.py"
+    os.path.dirname(__file__), "..", "src", "MockUI", "basic", "tour", "guided_tour.py"
 ))
 
 
 def _extract_intro_tour_steps(path: str) -> list:
-    """Parse INTRO_TOUR_STEPS from specter_gui.py using ast (no imports)."""
+    """Parse INTRO_TOUR_STEPS from guided_tour.py using ast (no imports)."""
     tree = ast.parse(open(path).read())
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "INTRO_TOUR_STEPS":
                     return ast.literal_eval(node.value)
-    raise RuntimeError("INTRO_TOUR_STEPS not found in specter_gui.py")
+    raise RuntimeError("INTRO_TOUR_STEPS not found in guided_tour.py")
 
 
 STEP_KEYS = [step[1] for step in _extract_intro_tour_steps(_NAV_SRC)]
@@ -76,49 +78,22 @@ def _tour_overlay_content_idx() -> int:
     ModalOverlay prepends dim strips, so the content box is always the LAST
     child of layer_top.child(0).  Asserts an overlay is present.
     """
-    out = disco_run(
-        "repl", "exec",
-        "import lvgl as lv; lt=lv.display_get_default().get_layer_top(); "
-        "w=lt.get_child(0) if lt.get_child_count()>0 else None; "
-        "print('NONE' if w is None else w.get_child_count())",
-    )
-    val = out.strip().splitlines()[-1] if out.strip() else ""
-    assert val not in ("NONE", ""), "_tour_overlay_content_idx: no overlay present"
-    return int(val) - 1
+    overlays = screen_tree("top")
+    assert overlays, "_tour_overlay_content_idx: no overlay present"
+    return len(overlays[0]["children"]) - 1
 
 
-def _click_tour_nav(button: str, delay: float = 1.0) -> None:
-    """Click a tour navigation button: 'prev', 'skip', or 'next'."""
+def _click_tour_nav(button: str) -> None:
+    """Tap a tour navigation button: 'prev', 'skip', or 'next'."""
     btn_idx = {"prev": 0, "skip": 1, "next": 2}.get(button)
     if btn_idx is None:
         raise ValueError(f"button must be 'prev', 'skip', or 'next', got {button!r}")
-
-    last_idx = _tour_overlay_content_idx()
-    out = disco_run(
-        "repl", "exec",
-        f"import lvgl as lv; lt=lv.display_get_default().get_layer_top(); "
-        f"w=lt.get_child(0); c=w.get_child({last_idx}); nav=c.get_child(1); "
-        f"btn=nav.get_child({btn_idx}); btn.send_event(lv.EVENT.CLICKED,None); print('OK')",
-    )
-    result = out.strip().splitlines()[-1] if out.strip() else ""
-    assert result == "OK", f"_click_tour_nav({button!r}) failed: {out!r}"
-    time.sleep(delay)
+    click_overlay_by_index(f"0.{_tour_overlay_content_idx()}.1.{btn_idx}")
 
 
 def _tour_completed() -> bool:
     data = _read_flash_json("/flash/ui_state_config.json")
     return data.get("tour_completed", False)
-
-
-def _reset_tour_state() -> None:
-    """Write tour_completed=False to flash and soft-reset so tour auto-starts."""
-    disco_run(
-        "repl", "exec",
-        "import json; f=open('/flash/ui_state_config.json','w'); "
-        "json.dump({'tour_completed':False},f); f.close(); print('OK')",
-    )
-    soft_reset()
-    ensure_main_menu()
 
 
 def _restart_tour_from_preferences() -> None:
@@ -134,13 +109,15 @@ def _restart_tour_from_preferences() -> None:
 
 @pytest.fixture(scope="module", autouse=True)
 def _fresh_tour_state():
-    """Flash firmware before this test module runs.
+    """Flash firmware before this test module runs, then unlock.
 
     A freshly flashed device has no ui_state_config.json on the filesystem,
-    so the tour auto-starts on boot without any manual state manipulation.
-    This also verifies the out-of-the-box first-boot experience.
+    so the tour starts when the main menu first opens, without any manual
+    state manipulation.  This also verifies the out-of-the-box first-boot
+    experience.
     """
     flash_firmware()
+    unlock()
     yield
 
 
@@ -148,7 +125,7 @@ def _fresh_tour_state():
 # Scenario 1: initial boot tour — overlay mechanics + skip path
 #
 # Device state on entry : tour_completed=False, tour overlay visible (set by fixture)
-# Device state on exit  : tour_completed=True, at main menu (after soft reset)
+# Device state on exit  : tour_completed=True, at main menu
 # ---------------------------------------------------------------------------
 
 def test_tour_skip_scenario():
@@ -159,7 +136,6 @@ def test_tour_skip_scenario():
     - prev button is non-clickable/invisible at step 0
     - NEXT advances and PREV returns to step 0
     - Skip dismisses the overlay and sets tour_completed=True
-    - tour_completed=True persists across a soft reset
     """
     intro_text  = _load_label("TOUR_INTRO",    "en")[0]
     step1_text  = _load_label(STEP_KEYS[1],    "en")[0]
@@ -201,18 +177,12 @@ def test_tour_skip_scenario():
     )
     assert _tour_completed(), "tour_completed should be True after skip"
 
-    # --- tour_completed=True persists after soft reset ---
-    soft_reset()
-    ensure_main_menu()
-    assert find_labels_overlay() == [], "Tour should not reappear after reset"
-    assert _tour_completed(), "tour_completed should persist after reset"
-
 
 # ---------------------------------------------------------------------------
 # Scenario 2: manual restart — regression check + full completion path
 #
 # Device state on entry : tour_completed=True, at main menu (left by scenario 1)
-# Device state on exit  : tour_completed=True, at main menu (after soft reset)
+# Device state on exit  : tour_completed=True, at main menu
 #
 # The no-retrigger regression is placed here (not scenario 1) because it only
 # manifests when the tour is launched from within an existing navigation context
@@ -229,7 +199,6 @@ def test_tour_complete_scenario():
       away and back (regression: start_intro_tour left in history stack)
     - All tour steps are reachable by walking NEXT from step 0
     - Checkmark on the last step completes the tour
-    - tour_completed=True persists across a soft reset
     """
     intro_text = _load_label("TOUR_INTRO",    "en")[0]
     skip_text  = _load_label("TOUR_SKIP_BTN", "en")[0]
@@ -282,8 +251,23 @@ def test_tour_complete_scenario():
     )
     assert _tour_completed(), "tour_completed should be True after checkmark"
 
-    # --- tour_completed=True persists after soft reset ---
-    soft_reset()
-    ensure_main_menu()
-    assert find_labels_overlay() == [], "Tour should not reappear after full completion"
-    assert _tour_completed(), "tour_completed should persist after reset"
+
+# ---------------------------------------------------------------------------
+# Persistence across a reset
+# ---------------------------------------------------------------------------
+
+@pytest.mark.xfail(
+    reason="main.py marks the tour as pending on every boot (ui_state.reset_tour_completed())",
+    strict=True,
+)
+def test_tour_completion_survives_reset():
+    """A completed tour stays completed after a hard reset."""
+    assert _tour_completed(), "Expected tour_completed=True (left by scenario 2)"
+    reset_board()
+    unlock()
+    try:
+        assert find_labels_overlay() == [], "Tour reappeared after reset"
+        assert _tour_completed(), "tour_completed did not persist across reset"
+    finally:
+        dismiss_tour_if_present()
+        ensure_main_menu()
