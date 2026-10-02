@@ -1,6 +1,4 @@
 """On-device integration tests for shared on-screen keyboard flows."""
-import time
-
 from conftest import (
     _load_label,
     first_index_by_type,
@@ -24,7 +22,7 @@ def _ensure_wallet_exists_for_manage_menu():
 
     click_by_label(_load_label("MENU_ADD_WALLET", "en")[0])
     click_by_label(_load_label("MENU_GENERATE_SEEDPHRASE", "en")[0])
-    click_by_label(_load_label("GENERATE_SEED_CREATE", "en")[0], delay=1.2)
+    click_by_label(_load_label("COMMON_CREATE", "en")[0])
     ensure_main_menu()
 
 
@@ -45,13 +43,12 @@ def test_generate_seed_keyboard_open_commit_cancel():
 
     textarea_idx, original_text = first_textarea_index_and_text()
 
-    click_by_index(textarea_idx, delay=0.8)
+    click_by_index(textarea_idx)
     kb_idx = first_index_by_type("keyboard")
     assert kb_idx is not None, "Keyboard should be visible after clicking textarea"
 
     set_textarea_text(textarea_idx, "  New Wallet_1  ")
     send_keyboard_event(kb_idx, "READY")
-    time.sleep(0.8)
 
     kb_after_ready = first_index_by_type("keyboard")
     assert kb_after_ready is not None, "Keyboard widget should persist between edits (single manager instance)"
@@ -60,13 +57,12 @@ def test_generate_seed_keyboard_open_commit_cancel():
     _, committed_text = first_textarea_index_and_text()
     assert committed_text == "  New Wallet_1  ", committed_text
 
-    click_by_index(textarea_idx, delay=0.8)
+    click_by_index(textarea_idx)
     kb_idx = first_index_by_type("keyboard")
     assert kb_idx is not None, "Keyboard should reopen"
 
     set_textarea_text(textarea_idx, "TemporaryName")
     send_keyboard_event(kb_idx, "CANCEL")
-    time.sleep(0.8)
 
     assert keyboard_is_hidden(kb_idx), "Keyboard should be hidden after CANCEL"
 
@@ -77,7 +73,7 @@ def test_generate_seed_keyboard_open_commit_cancel():
     )
 
     if original_text != "  New Wallet_1  ":
-        click_by_label(_load_label("GENERATE_SEED_CREATE", "en")[0], delay=1.0)
+        click_by_label(_load_label("COMMON_CREATE", "en")[0])
 
 
 def test_passphrase_keyboard_commit_and_abort_no_freeze():
@@ -86,13 +82,12 @@ def test_passphrase_keyboard_commit_and_abort_no_freeze():
 
     textarea_idx, _ = first_textarea_index_and_text()
 
-    click_by_index(textarea_idx, delay=0.8)
+    click_by_index(textarea_idx)
     kb_idx = first_index_by_type("keyboard")
     assert kb_idx is not None, "Keyboard should open on passphrase textarea"
 
     set_textarea_text(textarea_idx, "  abc  ")
     send_keyboard_event(kb_idx, "READY")
-    time.sleep(0.8)
 
     alive = disco_run("repl", "exec", "print('alive')")
     assert "alive" in alive, "Device became unresponsive after READY"
@@ -100,15 +95,14 @@ def test_passphrase_keyboard_commit_and_abort_no_freeze():
     value = disco_run("repl", "exec", "print(repr(specter_state.active_wallet.active_passphrase))")
     assert value.strip().splitlines()[-1] == "'abc'", value
 
-    click_by_label(_load_label("MENU_SET_PASSPHRASE", "en")[0], delay=0.8)
+    click_by_label(_load_label("MENU_SET_PASSPHRASE", "en")[0])
     textarea_idx, _ = first_textarea_index_and_text()
-    click_by_index(textarea_idx, delay=0.8)
+    click_by_index(textarea_idx)
     kb_idx = first_index_by_type("keyboard")
     assert kb_idx is not None, "Keyboard should reopen for abort check"
 
     set_textarea_text(textarea_idx, "will_abort")
     send_keyboard_event(kb_idx, "CANCEL")
-    time.sleep(0.8)
 
     assert keyboard_is_hidden(kb_idx), "Keyboard should be hidden after abort"
 
@@ -129,14 +123,13 @@ def test_passphrase_keyboard_repeated_commits_no_reset():
     for i in range(4):
         textarea_idx, _ = first_textarea_index_and_text()
 
-        click_by_index(textarea_idx, delay=0.8)
+        click_by_index(textarea_idx)
         kb_idx = first_index_by_type("keyboard")
         assert kb_idx is not None, "Keyboard should open (iteration {})".format(i)
 
         value = "loop_{}".format(i)
         set_textarea_text(textarea_idx, value)
         send_keyboard_event(kb_idx, "READY")
-        time.sleep(0.8)
 
         alive = disco_run("repl", "exec", "print('alive')")
         assert "alive" in alive, "Device became unresponsive at iteration {}".format(i)

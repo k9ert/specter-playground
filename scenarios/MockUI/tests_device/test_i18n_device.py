@@ -13,15 +13,10 @@ Test order (infrastructure first, then functional):
   1. test_i18n_repl_interface — REPL access, I18nManager, translations, errors
   2. test_i18n_files_on_flash — config file + binary language packs
   3. test_language_navigation_switch_persistence — UI labels, navigation,
-     switch to non-default language, soft-reset persistence, restore English
+     switch to non-default language, persistence across a reset, restore English
 """
-import json
-import time
-
-import pytest
-
 from conftest import (
-    disco_run, find_labels, go_back, ensure_main_menu, soft_reset,
+    _read_flash_json, disco_run, find_labels, ensure_main_menu, restart_board,
     navigate_to_language_menu, click_by_label, _load_label, _load_metadata,
 )
 
@@ -146,12 +141,7 @@ class TestI18nInfrastructure:
           2. At least LANG_EN.BIN is present (FAT stores names uppercase)
         """
         # --- 1. Config file ---
-        output = disco_run(
-            "repl", "exec",
-            "import json; f=open('/flash/i18n/language_config.json','r'); "
-            "print(f.read()); f.close()",
-        )
-        data = json.loads(output)
+        data = _read_flash_json("/flash/i18n/language_config.json")
         assert "selected_language" in data, (
             f"[1] Config missing 'selected_language': {data}"
         )
@@ -172,12 +162,12 @@ class TestI18nFunctional:
 
     This is a single scenario that walks through the full workflow:
     main menu → settings → device menu → language menu → switch to German →
-    verify → soft-reset → verify persistence → switch back to English.
+    verify → reset → verify persistence → switch back to English.
     """
 
     def test_language_navigation_switch_persistence(self):
         """Full round-trip: navigate, switch to non-default language,
-        verify persistence across soft reset, restore English.
+        verify persistence across a reset, restore English.
 
         Navigation path: Main → Settings (gear icon) → Select Language (EN)
         (handled by navigate_to_language_menu() in conftest.py)
@@ -185,7 +175,7 @@ class TestI18nFunctional:
         Sub-checks:
           1. Language menu shows 'English' and 'Deutsch'
           2. Switching to German updates the main menu title
-          3. German language survives a soft reset (Ctrl-D reboot)
+          3. German language survives a hard reset
           4. Switching back to English restores the UI
         """
         # --- 1. Language menu ---
@@ -200,27 +190,20 @@ class TestI18nFunctional:
 
         # --- 2. Switch to German (non-default!) ---
         click_by_label(_DEUTSCH)
-        time.sleep(2)
         ensure_main_menu()
         labels = find_labels()
         assert _MAIN_MENU_TITLE_DE in labels, (
             f"[2] German title missing after switch. Labels: {labels}"
         )
 
-        # --- 3. Persistence: German survives soft reset ---
-        soft_reset(wait=15)
-        ensure_main_menu()
+        # --- 3. Persistence: German survives a reset ---
+        restart_board()
         labels = find_labels()
         assert _MAIN_MENU_TITLE_DE in labels, (
-            f"[3] German title not restored after soft reset. Labels: {labels}"
+            f"[3] German title not restored after reset. Labels: {labels}"
         )
         # Also verify via config file on flash
-        output = disco_run(
-            "repl", "exec",
-            "import json; f=open('/flash/i18n/language_config.json','r'); "
-            "d=json.load(f); f.close(); print(d['selected_language'])",
-        )
-        lang = output.strip().split("\n")[-1].strip()
+        lang = _read_flash_json("/flash/i18n/language_config.json")["selected_language"]
         assert lang == LANG_DE, (
             f"[3] Config should be {LANG_DE} after reset, got: {lang!r}"
         )
@@ -228,12 +211,11 @@ class TestI18nFunctional:
         # --- 4. Switch back to English ---
         # Force a GC cycle to reclaim heap accumulated from repeated find_labels()
         # JSON parsing. The navigation path is now 3 levels deep (vs 1 before),
-        # so significantly more garbage builds up. A soft reset would also work
+        # so significantly more garbage builds up. A reset would also work
         # but gc.collect() is much faster.
         disco_run("repl", "exec", "import gc; gc.collect()")
         navigate_to_language_menu(LANG_DE)
         click_by_label(_ENGLISH)
-        time.sleep(2)
         ensure_main_menu()
 
         labels = find_labels()
