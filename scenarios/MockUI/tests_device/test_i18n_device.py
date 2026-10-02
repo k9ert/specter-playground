@@ -119,15 +119,12 @@ class TestI18nInfrastructure:
         assert STR_MISSING in output, f"[7] Expected [MISSING]: {output}"
 
         # --- 8. t(None) doesn't crash ---
+        # The REPL runs one line at a time, so the try block goes through exec().
         output = disco_run(
             "repl", "exec",
-            "from MockUI.basic.i18n import I18nManager; "
-            "mgr = I18nManager(); "
-            "try:\n"
-            "    result = mgr.t(None)\n"
-            "    print('OK:' + str(result))\n"
-            "except Exception as e:\n"
-            "    print('EXCEPTION:' + str(e))",
+            "from MockUI.basic.i18n import I18nManager; mgr = I18nManager(); "
+            "exec(\"try:\\n print('OK:' + str(mgr.t(None)))\\n"
+            "except Exception as e:\\n print('EXCEPTION:' + str(e))\")",
         )
         assert "OK:" in output or "EXCEPTION:" in output, (
             f"[8] Unexpected output (possible crash): {output}"
@@ -137,15 +134,15 @@ class TestI18nInfrastructure:
         """Config file and binary language packs exist on /flash/i18n/.
 
         Sub-checks:
-          1. language_config.json exists and contains a valid 2-letter code
+          1. config.json exists and selects a valid 2-letter language code
           2. At least LANG_EN.BIN is present (FAT stores names uppercase)
         """
         # --- 1. Config file ---
-        data = _read_flash_json("/flash/i18n/language_config.json")
-        assert "selected_language" in data, (
-            f"[1] Config missing 'selected_language': {data}"
+        data = _read_flash_json("/flash/i18n/config.json")
+        assert "selected_file" in data, (
+            f"[1] Config missing 'selected_file': {data}"
         )
-        lang = data["selected_language"]
+        lang = data["selected_file"]
         assert len(lang) == 2 and lang.isalpha(), (
             f"[1] Invalid language code in config: {lang!r}"
         )
@@ -203,7 +200,7 @@ class TestI18nFunctional:
             f"[3] German title not restored after reset. Labels: {labels}"
         )
         # Also verify via config file on flash
-        lang = _read_flash_json("/flash/i18n/language_config.json")["selected_language"]
+        lang = _read_flash_json("/flash/i18n/config.json")["selected_file"]
         assert lang == LANG_DE, (
             f"[3] Config should be {LANG_DE} after reset, got: {lang!r}"
         )

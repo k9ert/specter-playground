@@ -3,28 +3,13 @@
 Single scenario test covering all 8 checkpoints in one sequential run
 to minimise board interactions and expensive setup/teardown.
 
-LockedMenu tree layout (screen tree paths 2.0.*):
-  scr                          # SpecterGui (lv.screen)
-  └─ .content (child 2)
-     └─ .current_screen        # LockedMenu (child 0 of content)
-        ├─ title_bar (child 0)
-        └─ body     (child 1)
-           ├─ instr label  (child 0)
-           ├─ mask_lbl     (child 1)
-           ├─ row 0        (child 2)   [digit, digit, digit]
-           ├─ row 1        (child 3)   [digit, digit, digit]
-           ├─ row 2        (child 4)   [digit, digit, digit]
-           └─ last row     (child 5)   [Del (icon), digit, OK (icon)]
-
-DeviceBar tree layout (for lock-button discovery):
-  screen[0]     DeviceBar
-  ├─ [0] left_container
-  │   └─ [0] lock_btn  ← target
-  ├─ [1] center_container
-  └─ [2] right_container
+LockedMenu layout (live tree): the menu body holds the title, the
+instruction, the PIN mask label, and four keypad rows of three buttons;
+the last row is [Del (icon), digit, OK (icon)].  The device is locked from
+Settings → Security → "Lock Device".
 
 Checkpoints (in order):
-  CP1   – lock button activates the PIN screen
+  CP1   – "Lock Device" activates the PIN screen
   CP2   – key order is shuffled (not "0123456789")    [retry once on collision]
   CP3   – entering a digit shows * in the mask (not the digit in clear)
   CP4   – wrong PIN (empty buffer → OK) keeps device locked
@@ -36,11 +21,10 @@ import pytest
 
 from conftest import (
     _load_label,
-    _supported_lang_codes,
     click_by_index,
+    click_by_label,
     ensure_main_menu,
-    find_labels,
-    node_at,
+    navigate_to_device_menu,
     screen_tree,
     ui,
     unlock,
@@ -66,9 +50,26 @@ def _get_digit_order() -> list[str]:
     return digits
 
 
+def _keypad() -> tuple[str, dict]:
+    """Return (path, node) of the LockedMenu body: the node with four 3-key rows."""
+    for path, node in walk_with_path(screen_tree()):
+        rows = [c for c in node.get("children", []) if len(c.get("children", [])) == 3]
+        if len(rows) == 4:
+            return path, node
+    raise AssertionError("PIN keypad not found on screen")
+
+
 def _get_mask_text() -> str:
-    """Read the PIN mask label: content (2) → LockedMenu (0) → body (1) → mask_lbl (1)."""
-    return node_at("2.0.1.1").get("text") or ""
+    """Read the PIN mask label: the label right before the first keypad row."""
+    _, body = _keypad()
+    children = body["children"]
+    first_row = next(i for i, c in enumerate(children) if len(c.get("children", [])) == 3)
+    return children[first_row - 1].get("text") or ""
+
+
+def _last_row_button(column: int) -> str:
+    path, body = _keypad()
+    return f"{path}.{len(body['children']) - 1}.{column}.0"
 
 
 def _get_device_pin() -> str:
@@ -80,30 +81,6 @@ def _set_device_pin(pin: str) -> None:
     ui({"action": "set_state", "attr": "pin", "value": pin})
 
 
-def _find_lock_btn_index() -> str:
-    """Return the tree index of the lock button (DeviceBar → left → lock_btn).
-
-    Navigates children[0][0][0] of the screen tree dynamically so the test
-    is resilient to future layout refactors.
-    """
-    tree = screen_tree()
-    try:
-        lock_btn = tree[0]["children"][0]["children"][0]
-        assert lock_btn.get("type", "") == "button", (
-            f"Expected button at 0.0.0, got: {lock_btn.get('type')}"
-        )
-        return "0.0.0"
-    except (IndexError, KeyError):
-        pass
-
-    # Fallback: BFS search for first button in subtree 0.0
-    for path, node in walk_with_path(screen_tree()):
-        if path.startswith("0.0") and node.get("type", "") == "button":
-            return path
-
-    raise AssertionError("Could not locate lock button in screen tree")
-
-
 def _click_digit(d: str) -> None:
     """Tap a PIN pad digit by its text label.
 
@@ -113,18 +90,22 @@ def _click_digit(d: str) -> None:
 
 
 def _click_del() -> None:
-    """Tap Del (icon-only): child 0 of the last keypad row (body.child(5))."""
-    click_by_index("2.0.1.5.0")
+    """Tap Del (icon-only), the first button of the last keypad row."""
+    click_by_index(_last_row_button(0))
 
 
 def _click_ok() -> None:
-    """Tap OK (icon-only): child 2 of the last keypad row (body.child(5))."""
-    click_by_index("2.0.1.5.2")
+    """Tap OK (icon-only), the last button of the last keypad row."""
+    click_by_index(_last_row_button(2))
+
+
+def _menu() -> str:
+    return ui({"action": "get_state"})["ui"]["current_menu_id"]
 
 
 def _lock_device() -> bool:
-    lock_idx = _find_lock_btn_index()
-    click_by_index(lock_idx)
+    navigate_to_device_menu()
+    click_by_label(_load_label("SECURITY_MENU_LOCK_DEVICE", "en")[0])
     return _locked_screen_visible()
 
 def _unlock_device() -> bool:
@@ -136,19 +117,11 @@ def _unlock_device() -> bool:
 
 
 def _locked_screen_visible() -> bool:
-    labels = find_labels()
-    return any(
-        t in labels
-        for t in _load_label("LOCKED_MENU_TITLE", *_supported_lang_codes())
-    )
+    return _menu() == "locked"
 
 
 def _main_menu_visible() -> bool:
-    labels = find_labels()
-    return any(
-        t in labels
-        for t in _load_label("MAIN_MENU_TITLE", *_supported_lang_codes())
-    )
+    return _menu() == "main"
 
 # ---------------------------------------------------------------------------
 # Module fixture — runs once before the tests in this module
@@ -177,7 +150,7 @@ def test_locked_menu_scenario():
 
     # ── CP1: lock button activates the PIN screen ────────────────────────────
     assert _lock_device(), (
-        "CP1: PIN screen not shown after clicking lock button"
+        "CP1: PIN screen not shown after tapping Lock Device"
     )
 
     order1 = _get_digit_order()

@@ -31,7 +31,6 @@ from conftest import (
     _load_label,
     _read_flash_json,
     click_overlay_by_index,
-    disco_run,
     dismiss_tour_if_present,
     ensure_main_menu,
     find_labels_overlay,
@@ -133,7 +132,7 @@ def test_tour_skip_scenario():
 
     Covers:
     - tour auto-starts on boot when tour_completed=False
-    - prev button is non-clickable/invisible at step 0
+    - prev does nothing at step 0 (its button is invisible there)
     - NEXT advances and PREV returns to step 0
     - Skip dismisses the overlay and sets tour_completed=True
     """
@@ -147,17 +146,10 @@ def test_tour_skip_scenario():
         f"Expected tour intro text in overlay on boot. Got: {labels}"
     )
 
-    # --- prev placeholder is non-clickable at step 0 ---
-    last_idx = _tour_overlay_content_idx()
-    out = disco_run(
-        "repl", "exec",
-        f"import lvgl as lv; lt=lv.display_get_default().get_layer_top(); "
-        f"w=lt.get_child(0); c=w.get_child({last_idx}); nav=c.get_child(1); "
-        f"print(nav.get_child(0).has_flag(lv.obj.FLAG.CLICKABLE))",
-    )
-    result = out.strip().splitlines()[-1] if out.strip() else ""
-    assert result == "False", (
-        f"Expected prev placeholder to be non-clickable at step 0, got: {result!r}"
+    # --- prev does nothing at step 0 ---
+    _click_tour_nav("prev")
+    assert intro_text in find_labels_overlay(), (
+        f"Expected to stay at step 0 after PREV. Got: {find_labels_overlay()}"
     )
 
     # --- NEXT advances to step 1; PREV returns to step 0 ---
