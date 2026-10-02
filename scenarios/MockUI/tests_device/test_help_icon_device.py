@@ -1,26 +1,22 @@
 """On-device integration tests for the help icon popup.
 
-Each help icon (?) on a menu row opens a ModalOverlay in layer_top with:
-  - a title label  (the menu button's own text)
-  - a body label   (the translated HELP_* key)
+Each help icon (?) on a menu row opens a button_modal in layer_top with:
+  - a body label: the row's text, a blank line, and the translated HELP_* key
   - a close button (MODAL_CLOSE_BTN)
 
 Test target: the 'Scan QR' row on the main menu (no navigation needed).
 If QR is not currently visible the module fixture enables it via REPL and
 re-renders the main menu before the first test runs.
 
-Widget structure inside a GenericMenu button row (from source):
-  btn
-    [0] icon_image
-    [1] label        (the button text)
-    [2] help_btn     (last child — transparent image button, no text label)
+Widget structure of a GenericMenu row (from source): the row is a button
+holding [icon, label, right container, caret]; the right container holds
+the help button, the only button nested inside the row.
 """
 import pytest
 
 from conftest import (
     _load_label,
     click_by_index,
-    click_by_label,
     click_overlay_by_label,
     disco_run,
     ensure_main_menu,
@@ -53,17 +49,16 @@ _help_text:    str = ""   # full body text of the help popup
 # =========================================================================
 
 def _click_help_icon_for(label: str) -> None:
-    """Tap the help (?) icon on the row whose text matches *label*.
-
-    Finds the button that has a direct child with the given text, then taps
-    that button's last child (GenericMenu always places the help_btn last).
-    """
+    """Tap the help (?) icon on the menu row whose text matches *label*."""
     for path, node in walk_with_path(screen_tree()):
         children = node.get("children", [])
-        if any(child.get("text") == label for child in children):
-            click_by_index(f"{path}.{len(children) - 1}")
-            return
-    raise AssertionError(f"No button containing label {label!r} found in screen tree")
+        if node.get("type") == "button" and any(c.get("text") == label for c in children):
+            for help_path, inner in walk_with_path(children):
+                if inner.get("type") == "button":
+                    click_by_index(f"{path}.{help_path}")
+                    return
+            raise AssertionError(f"Row {label!r} has no help button")
+    raise AssertionError(f"No menu row {label!r} found in screen tree")
 
 
 # =========================================================================
@@ -110,8 +105,8 @@ def test_help_popup():
     _click_help_icon_for(_button_label)
 
     labels = find_labels_overlay()
-    assert _button_label in labels, (
-        f"Expected title {_button_label!r} in overlay. Got: {labels}"
+    assert any(lbl.startswith(_button_label) for lbl in labels), (
+        f"Expected the row text {_button_label!r} in the overlay. Got: {labels}"
     )
     assert _close_label in labels, (
         f"Expected close button {_close_label!r} in overlay. Got: {labels}"
@@ -131,5 +126,5 @@ def test_help_popup():
     # --- reopen ---
     _click_help_icon_for(_button_label)
     labels = find_labels_overlay()
-    assert _button_label in labels, f"Expected overlay to reopen. Got: {labels}"
+    assert any(lbl.startswith(_button_label) for lbl in labels), f"Expected overlay to reopen. Got: {labels}"
     click_overlay_by_label(_close_label)

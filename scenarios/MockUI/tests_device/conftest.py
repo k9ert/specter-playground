@@ -109,9 +109,16 @@ def disco_run(*args: str, timeout: int = 120) -> str:
 
 
 def ui(request: dict) -> dict:
-    """Send one devtools control request; the test fails if the board refuses it."""
+    """Send one devtools control request; the test fails if the board refuses it.
+
+    A busy board (garbage collection) can outlast the default 3 s settle wait;
+    then wait once more before the next request taps a widget mid-animation.
+    """
     result = _board.request(request)
     assert result.get("ok"), f"{request} failed: {result.get('error')}"
+    if result.get("settled") is False:
+        settled = _board.request({"action": "wait", "timeout_ms": 10000}).get("settled")
+        assert settled, f"UI still animating 10 s after {request}"
     return result
 
 
@@ -203,6 +210,17 @@ def click_by_index(index_str: str, layer: str = "screen") -> None:
     ui({"action": "click", "path": [int(p) for p in index_str.split(".")], "layer": layer})
 
 
+def focus_text_field(index_str: str) -> None:
+    """Tap a text field to open the keyboard.
+
+    Its blinking cursor is an endless LVGL animation, so the UI never counts as
+    settled while the field has focus; allow 1 s for the keyboard to appear.
+    """
+    request = {"action": "click", "path": [int(p) for p in index_str.split(".")], "timeout_ms": 1000}
+    result = _board.request(request)
+    assert result.get("ok"), f"{request} failed: {result.get('error')}"
+
+
 def click_by_partial_label(partial: str) -> None:
     """Tap the first label on the screen that contains *partial*."""
     labels = find_labels()
@@ -291,46 +309,16 @@ def ensure_main_menu(max_depth: int = 10) -> None:
     assert _on_main_menu(), f"Could not reach the main menu. Labels: {find_labels()}"
 
 
-def _find_settings_btn_index() -> str:
-    """Walk the live screen tree to find the gear/settings button index.
-
-    Layout (from live tree dump):
-        screen root [0]   device_bar (obj)
-          [0] left_container
-          [1] center_container
-          [2] right_container
-            [0] battery (obj)
-            [1] settings_btn  ← target
-            [2] power_btn
-        screen root [1]   content area (main menu etc.)
-    Returns a dot-separated index string, e.g. ``'0.2.1'``.
-    """
-    nodes = screen_tree()
-
-    # device_bar → right_container → settings_btn
-    steps = [0, 2, 1]
-    parts: list[str] = []
-    current: dict = {"children": nodes}
-    for step in steps:
-        children = current.get("children", [])
-        assert len(children) > step, (
-            f"Tree shorter than expected at child [{step}] "
-            f"(path so far: {'.'.join(parts) or 'root'}): "
-            f"node has {len(children)} children"
-        )
-        current = children[step]
-        parts.append(str(step))
-    return ".".join(parts)
+# MockUI's navigation bar (screen child 1) wraps each button in a container:
+# Back 1.0.0, Seed 1.1.0, Home 1.2.0, Wallet 1.3.0, Device (gear) 1.4.0.
+_DEVICE_BUTTON = "1.4.0"
 
 
 def navigate_to_settings_menu() -> None:
-    """Navigate to the Settings menu by tapping the gear button in the device bar.
-
-    The gear button is icon-only (no text label), so its widget-tree index is
-    discovered dynamically and tapped by index.
-    """
+    """Tap the navigation bar's Device (gear) button, which opens the settings menu."""
     ensure_main_menu()
-    click_by_index(_find_settings_btn_index())
+    click_by_index(_DEVICE_BUTTON)
+    assert ui({"action": "get_state"})["ui"]["current_menu_id"] == "manage_settings"
 
 
 def navigate_to_language_menu(lang: str) -> None:
@@ -357,12 +345,21 @@ def navigate_to_preferences_menu(lang: str = "en") -> None:
 
 
 def dismiss_tour_if_present() -> None:
-    """Skip the tour overlay if it is currently shown on the top layer, in any language."""
-    shown = find_labels_overlay()
-    for skip_label in _load_label("TOUR_SKIP_BTN", *_supported_lang_codes()):
-        if skip_label in shown:
-            click_overlay_by_label(skip_label)
+    """Skip every tour overlay on the top layer, topmost first, in any language.
+
+    MockUI starts another tour each time the main menu opens while the tour
+    is pending, so overlays can stack.
+    """
+    skip_labels = set(_load_label("TOUR_SKIP_BTN", *_supported_lang_codes()))
+    for _ in range(20):
+        overlays = screen_tree("top")
+        topmost = str(len(overlays) - 1)
+        skip = [path for path, node in walk_with_path(overlays)
+                if node.get("text") in skip_labels and path.split(".")[0] == topmost]
+        if not skip:
             return
+        click_by_index(skip[0], layer="top")
+    assert not find_labels_overlay(), f"Tour overlays did not close: {find_labels_overlay()}"
 
 
 def ensure_english() -> None:
@@ -415,3 +412,9 @@ def _require_device(request):
     ensure_main_menu()
     ensure_english()
     yield
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _fresh_board(_require_device):
+    """Start each test module from a reset board: a clean heap and MockUI's own test data."""
+    restart_board()
