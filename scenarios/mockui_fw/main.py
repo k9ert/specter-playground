@@ -34,79 +34,51 @@ from MockUI import SpecterGui, DeviceState, UIState, Wallet, Seed
 
 gc.collect()
 
+# ── Preset: initial device and UI state ──────────────────────────────────────
+# Optional; production firmware has none and starts from the defaults.
+# `make` copies scenarios/mockui_fw/presets/<MOCKUI_PRESET>.json here.
+# Format (see presets/dev.json): "device_state"/"ui_state" set attributes,
+# "seeds"/"wallets" list the keyword arguments for Seed/Wallet.
+PRESET_FILE = "/flash/presets/mockui.json"
+
+
+def _load_preset():
+    import json
+    try:
+        with open(PRESET_FILE) as f:
+            return json.load(f)
+    except OSError:
+        return {}
+    except ValueError as e:
+        print("Preset", PRESET_FILE, "is invalid, using defaults:", e)
+        return {}
+
+
+def _apply_attrs(obj, attrs):
+    for name, value in attrs.items():
+        if hasattr(obj, name):
+            setattr(obj, name, value)
+        else:
+            print("Preset: skipping unknown attribute", name)
+
+
+preset = _load_preset()
+
 specter_state = DeviceState()
-specter_state.has_battery = True
-specter_state.battery_pct = 100
-specter_state.charging = False
-
-specter_state._hasQR = True
-specter_state._enabledQR = True
-
-specter_state._hasSD = True
-specter_state._enabledSD = True
+_apply_attrs(specter_state, preset.get("device_state", {}))
+for fields in preset.get("seeds", []):
+    specter_state.add_seed(Seed(**fields))
+for fields in preset.get("wallets", []):
+    specter_state.register_wallet(Wallet(**fields))
 # SD detection reflects the files actually present in /sd (dummy SD import).
 if not _ON_HARDWARE:
     specter_state.attach_sd_reader('/sd')
-else:
-    specter_state._detectedSD = True
-    specter_state._SD_hasSeed = True
-
-specter_state._hasSmartCard = True
-specter_state._enabledSmartCard = True
-specter_state._detectedSmartCard = True
-specter_state._SmartCard_hasSeed = True
-
-specter_state._Flash_hasSeed = True
-
-specter_state.pin = "21"
-specter_state.lock()
 
 ui_state = UIState()
-ui_state.reset_tour_completed()
+_apply_attrs(ui_state, preset.get("ui_state", {}))
 
-# ── Test data: a small interconnected seed/wallet fixture ────────────────────
-TEST_DATA = True
-if TEST_DATA:
-    # Seeds: mock BIP85 discovery links active fingerprints sharing a 3-char
-    # prefix when the child sorts after the parent (see Seed.known_bip85_derivations).
-    _seed_cold = Seed(label="Cold A", fingerprint="c01da001", is_backed_up=True)
-    specter_state.add_seed(_seed_cold)
-    specter_state.add_seed(Seed(label="Cold A2", fingerprint="c01da002", is_backed_up=True))
-    specter_state.add_seed(Seed(label="Cold A2b", fingerprint="c01da02b", is_backed_up=True))
-
-    _seed_hot = Seed(label="Hot B", fingerprint="b07b0001",
-                    passphrase="correct horse")
-    _seed_hot.passphrase_active = False
-    specter_state.add_seed(_seed_hot)
-    specter_state.add_seed(Seed(label="Hot B2", fingerprint="b07b0002", is_backed_up=True))
-    specter_state.add_seed(Seed(label="Hot B2b", fingerprint="b07b000b", is_backed_up=True))
-
-    # Wallets: mock parent discovery links derivation sub-paths
-    # (see Wallet.derivation_parent).
-    specter_state.register_wallet(Wallet(
-        label="Savings", descriptor="savings", derivation_path="m/84'/0'/0'",
-        required_fingerprints=["c01da001"], threshold=1, has_been_synched=True))
-    specter_state.register_wallet(Wallet(
-        label="Savings Change", descriptor="savings-change",
-        derivation_path="m/84'/0'/0'/1'",
-        required_fingerprints=["c01da001"], threshold=1))
-    specter_state.register_wallet(Wallet(
-        label="Savings Receive", descriptor="savings-receive",
-        derivation_path="m/84'/0'/0'/0'",
-        required_fingerprints=["c01da001"], threshold=1))
-    specter_state.register_wallet(Wallet(
-        label="Savings Change 2", descriptor="savings-change-2",
-        derivation_path="m/84'/0'/0'/1'/2'",
-        required_fingerprints=["c01da001"], threshold=1))
-    specter_state.register_wallet(Wallet(
-        label="Trading", descriptor="trading", derivation_path="m/49'/0'/0'",
-        required_fingerprints=["b07b0001"], threshold=1))
-    specter_state.register_wallet(Wallet(
-        label="Trading Change", descriptor="trading-change",
-        derivation_path="m/49'/0'/0'/1'",
-        required_fingerprints=["b07b0001"], threshold=1))
-
-    gc.collect()
+del preset
+gc.collect()
 
 scr = SpecterGui(specter_state, ui_state)
 

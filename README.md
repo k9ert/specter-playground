@@ -48,6 +48,16 @@ nix develop -c make simulate SCRIPT=udisplay_demo.py
 ### MockUI
 ![](./docs/MockUI/screens/main/screenshot.png)
 
+MockUI's start state can come from a preset: with `MOCKUI_PRESET=<name>`, `make` copies `scenarios/mockui_fw/presets/<name>.json` to `/flash/presets/mockui.json`. The preset sets `DeviceState` and `UIState` attributes and lists seeds and wallets. Without `MOCKUI_PRESET` there is no preset and MockUI starts from the defaults, as in a release build. `make simulate` and `make simulate-automation` use `dev` (locked with PIN 21, test seeds and wallets, every peripheral present). Add your own preset rather than editing `main.py`.
+
+```bash
+# Simulator without a preset
+nix develop -c make simulate MOCKUI_PRESET=
+
+# Board firmware with the dev preset
+nix develop -c make mockui MOCKUI_PRESET=dev
+```
+
 ### Address Navigator
 ![](./docs/address_simulator.png)
 

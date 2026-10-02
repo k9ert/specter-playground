@@ -1,0 +1,44 @@
+{
+  "device_state": {
+    "has_battery": true,
+    "battery_pct": 100,
+    "_hasQR": true,
+    "_enabledQR": true,
+    "_hasSD": true,
+    "_enabledSD": true,
+    "_detectedSD": true,
+    "_SD_hasSeed": true,
+    "_hasSmartCard": true,
+    "_enabledSmartCard": true,
+    "_detectedSmartCard": true,
+    "_SmartCard_hasSeed": true,
+    "_Flash_hasSeed": true,
+    "pin": "21",
+    "is_locked": true
+  },
+  "ui_state": {
+    "_run_tour_on_startup": true
+  },
+  "seeds": [
+    {"label": "Cold A", "fingerprint": "c01da001", "is_backed_up": true},
+    {"label": "Cold A2", "fingerprint": "c01da002", "is_backed_up": true},
+    {"label": "Cold A2b", "fingerprint": "c01da02b", "is_backed_up": true},
+    {"label": "Hot B", "fingerprint": "b07b0001", "passphrase": "correct horse"},
+    {"label": "Hot B2", "fingerprint": "b07b0002", "is_backed_up": true},
+    {"label": "Hot B2b", "fingerprint": "b07b000b", "is_backed_up": true}
+  ],
+  "wallets": [
+    {"label": "Savings", "descriptor": "savings", "derivation_path": "m/84'/0'/0'",
+     "required_fingerprints": ["c01da001"], "threshold": 1, "has_been_synched": true},
+    {"label": "Savings Change", "descriptor": "savings-change", "derivation_path": "m/84'/0'/0'/1'",
+     "required_fingerprints": ["c01da001"], "threshold": 1},
+    {"label": "Savings Receive", "descriptor": "savings-receive", "derivation_path": "m/84'/0'/0'/0'",
+     "required_fingerprints": ["c01da001"], "threshold": 1},
+    {"label": "Savings Change 2", "descriptor": "savings-change-2", "derivation_path": "m/84'/0'/0'/1'/2'",
+     "required_fingerprints": ["c01da001"], "threshold": 1},
+    {"label": "Trading", "descriptor": "trading", "derivation_path": "m/49'/0'/0'",
+     "required_fingerprints": ["b07b0001"], "threshold": 1},
+    {"label": "Trading Change", "descriptor": "trading-change", "derivation_path": "m/49'/0'/0'/1'",
+     "required_fingerprints": ["b07b0001"], "threshold": 1}
+  ]
+}
