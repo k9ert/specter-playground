@@ -9,6 +9,8 @@ The module-scoped ``_fresh_tour_state`` fixture flashes the firmware before the
 tests run.  A freshly flashed device has no ui_state_config.json, so the tour
 starts when the unlocked main menu first opens — no manual state setup
 required.  This also verifies the real out-of-the-box first-boot experience.
+The fixture boots the dev preset without its forced tour, so a completed tour
+stays completed across resets, and restores the dev preset afterwards.
 
 Scenario 2 relies on scenario 1 having left the device in a clean state
 (tour_completed=True, at the main menu).  Running them in isolation is not
@@ -23,7 +25,9 @@ Index paths within layer_top (confirmed via live tree dump):
       [2] next_btn
 """
 import ast
+import json
 import os
+import tempfile
 
 import pytest
 
@@ -31,6 +35,7 @@ from conftest import (
     _load_label,
     _read_flash_json,
     click_overlay_by_index,
+    disco_run,
     dismiss_tour_if_present,
     ensure_main_menu,
     find_labels_overlay,
@@ -50,6 +55,9 @@ from conftest import (
 
 _NAV_SRC = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "src", "MockUI", "basic", "tour", "guided_tour.py"
+))
+_DEV_PRESET = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "..", "mockui_fw", "presets", "dev.json"
 ))
 
 
@@ -102,13 +110,28 @@ def _restart_tour_from_preferences() -> None:
     click_by_label(restart_label)
 
 
+def _dev_preset() -> dict:
+    with open(_DEV_PRESET) as f:
+        return json.load(f)
+
+
+def _install_preset(preset: dict) -> None:
+    """Make *preset* the board's MockUI preset; it applies at the next reset."""
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(preset, f)
+    try:
+        disco_run("repl", "cp", f.name, ":/flash/presets/mockui.json")
+    finally:
+        os.unlink(f.name)
+
+
 # ---------------------------------------------------------------------------
 # Module fixture
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="module", autouse=True)
 def _fresh_tour_state():
-    """Flash firmware before this test module runs, then unlock.
+    """Flash firmware, boot the dev preset without its forced tour, then unlock.
 
     A freshly flashed device has no ui_state_config.json on the filesystem,
     so the tour starts when the main menu first opens, without any manual
@@ -116,8 +139,13 @@ def _fresh_tour_state():
     experience.
     """
     flash_firmware()
+    preset = _dev_preset()
+    del preset["ui_state"]["_run_tour_on_startup"]
+    _install_preset(preset)
+    reset_board()
     unlock()
     yield
+    _install_preset(_dev_preset())
 
 
 # ---------------------------------------------------------------------------
@@ -248,10 +276,6 @@ def test_tour_complete_scenario():
 # Persistence across a reset
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(
-    reason="main.py marks the tour as pending on every boot (ui_state.reset_tour_completed())",
-    strict=True,
-)
 def test_tour_completion_survives_reset():
     """A completed tour stays completed after a hard reset."""
     assert _tour_completed(), "Expected tour_completed=True (left by scenario 2)"
