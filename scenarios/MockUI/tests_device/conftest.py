@@ -6,8 +6,9 @@ finger, refuses covered widgets, and replies once the UI has settled. Resets,
 flashing, and REPL checks use its f469/disco tool. Set devtools up once as
 described in devtools/README.md.
 
-By default the session builds MockUI firmware with German (ADD_LANG=de) and
-flashes it. Pass --no-build-flash to keep the firmware already on the board.
+By default the session builds MockUI firmware with German and the dev preset
+(ADD_LANG=de MOCKUI_PRESET=dev) and flashes it. Pass --no-build-flash to keep
+the firmware already on the board.
 """
 import json
 import os
@@ -89,7 +90,7 @@ def pytest_addoption(parser):
         default=False,
         help=(
             "Skip the build + flash step. Use only if you have already flashed "
-            "a MockUI binary that includes the German language pack (ADD_LANG=de)."
+            "a MockUI binary built with ADD_LANG=de MOCKUI_PRESET=dev."
         ),
     )
 
@@ -143,7 +144,7 @@ def unlock() -> None:
 def restart_board() -> None:
     """Hard-reset the board and get back to an unlocked main menu.
 
-    main.py locks the device and marks the tour as pending on every boot.
+    The dev preset locks the device and marks the tour as pending on every boot.
     """
     reset_board()
     unlock()
@@ -389,14 +390,14 @@ def ensure_english() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def _require_device(request):
-    """Build firmware with German and flash it, then open an unlocked main menu.
+    """Build firmware with German and the dev preset and flash it, then open an unlocked main menu.
 
     The build+flash step is skipped only when --no-build-flash is passed.
     """
     if not request.config.getoption("--no-build-flash"):
-        print("\n[device-tests] Building MockUI firmware with ADD_LANG=de ...")
+        print("\n[device-tests] Building MockUI firmware with ADD_LANG=de MOCKUI_PRESET=dev ...")
         subprocess.run(
-            ["nix", "develop", "-c", "make", "mockui", "ADD_LANG=de"],
+            ["nix", "develop", "-c", "make", "mockui", "ADD_LANG=de", "MOCKUI_PRESET=dev"],
             cwd=_REPO_ROOT,
             check=True,
         )
@@ -416,5 +417,5 @@ def _require_device(request):
 
 @pytest.fixture(scope="module", autouse=True)
 def _fresh_board(_require_device):
-    """Start each test module from a reset board: a clean heap and MockUI's own test data."""
+    """Start each test module from a reset board: a clean heap and the dev preset's test data."""
     restart_board()
