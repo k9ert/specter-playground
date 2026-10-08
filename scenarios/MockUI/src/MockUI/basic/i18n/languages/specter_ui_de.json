@@ -222,6 +222,10 @@
       "text": "Erkunden",
       "ref_en": "Explore"
     },
+    "SEEDPHRASE_MENU_RELATED_WALLET": {
+      "text": "Zugeh\u00f6rige Wallet",
+      "ref_en": "Related Wallet"
+    },
     "SEEDPHRASE_MENU_RELATED_WALLETS": {
       "text": "Zugeh\u00f6rige Wallets",
       "ref_en": "Related Wallets"

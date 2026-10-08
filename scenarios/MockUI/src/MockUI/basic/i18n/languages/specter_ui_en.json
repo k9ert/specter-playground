@@ -71,6 +71,7 @@
     "SEEDPHRASE_MENU_ADVANCED": "Advanced Features",
     "SEEDPHRASE_MENU_BIP85": "Derive new via BIP-85",
     "SEEDPHRASE_MENU_EXPLORE": "Explore",
+    "SEEDPHRASE_MENU_RELATED_WALLET": "Related Wallet",
     "SEEDPHRASE_MENU_RELATED_WALLETS": "Related Wallets",
     
     "CONNECT_WALLETS_SPARROW": "Sparrow",

@@ -27,6 +27,8 @@ class MenuItem:
         icon:       Icon instance or lv.SYMBOL string, or None (section header).
         text:       Display text.
         target:     None (for section header), a menu_id string to navigate to, or a callable.
+        target_seed: Optional seed to activate when navigating to a menu_id.
+        target_wallet: Optional wallet to activate when navigating to a menu_id.
         modifier:   semantic modifier: "Danger"/"Warning"/"Highlight".
         height_scaling: Height multiplier float (default 1); minimum 1.
         help_key:   i18n key for a help popup, or None.
@@ -43,13 +45,16 @@ class MenuItem:
 
     def __init__(self, icon=None, text=None, target=None,
                  modifier=None, height_scaling=None, help_key=None, suffix=None, is_submenu=False,
-                 get_value=None, set_value=None, visible=True):
+                 get_value=None, set_value=None, visible=True,
+                 target_seed="unset", target_wallet="unset"):
         if not (modifier in (None, "Danger", "Warning", "Highlight")):
             print(f"MenuItem warning: invalid modifier '{modifier}' for item '{text}', falling back to no modifier")
             modifier = None
         self.icon = icon
         self.text = text
         self.target = target
+        self.target_seed = target_seed
+        self.target_wallet = target_wallet
         self.modifier = modifier
         self.height_scaling = height_scaling
         self.help_key = help_key

@@ -149,7 +149,8 @@ class GenericMenu(TitledScreen):
             btn_click_cb = item.target
         else:
             # Otherwise, it's a string menu_id - create navigation callback
-            btn_click_cb = lambda target=item.target: self.on_navigate(target)
+            btn_click_cb = lambda target=item.target, target_seed=item.target_seed, target_wallet=item.target_wallet: self.on_navigate(
+                target, target_seed=target_seed, target_wallet=target_wallet)
 
         btn = Btn(self.body,
                   callback=btn_click_cb,

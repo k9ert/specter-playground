@@ -40,10 +40,25 @@ class SeedPhraseMenu(GenericMenu):
         ]
 
         # Explore section
-        menu_items += [
-            MenuItem(text=t("SEEDPHRASE_MENU_EXPLORE")),
-            MenuItem(BTC_ICONS.WALLET, t("SEEDPHRASE_MENU_RELATED_WALLETS"), "related_wallets_for_seed", is_submenu=True),
-        ]
+        # Currently only "Show related Wallets", which should only be shown when more than the default wallet or
+        # more than one seed is loaded, to keep the menu clean and relevant.
+        if len(state.registered_wallets) > 1 or len(state.loaded_seeds) > 1:
+            related_wallets = state.wallets_for_seed(self.ui_state.active_seed) or []
+            if len(related_wallets) == 1:
+                related_wallet_target = "manage_wallet"
+                target_wallet = related_wallets[0]
+                related_wallet_label = t("SEEDPHRASE_MENU_RELATED_WALLET")
+            else:
+                related_wallet_target = "related_wallets_for_seed"
+                target_wallet = "unset"
+                related_wallet_label = t("SEEDPHRASE_MENU_RELATED_WALLETS")
+            menu_items += [
+                MenuItem(text=t("SEEDPHRASE_MENU_EXPLORE")),
+                MenuItem(BTC_ICONS.WALLET, related_wallet_label,
+                         related_wallet_target, is_submenu=True,
+                         target_seed=self.ui_state.active_seed,
+                         target_wallet=target_wallet),
+            ]
 
         menu_items.append(MenuItem(text=t("SEEDPHRASE_MENU_ADVANCED")))
         if can_sign_msg:
