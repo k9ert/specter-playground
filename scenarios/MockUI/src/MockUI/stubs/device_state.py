@@ -38,11 +38,11 @@ class DeviceState:
         self._Flash_hasSeed = False
 
         # peripherals        
-        self._hasQR = False
-        self._enabledQR = False
+        self._hasQR = True
+        self._enabledQR = True
 
-        self._hasSD = False
-        self._enabledSD = False
+        self._hasSD = True
+        self._enabledSD = True
         self._detectedSD = False
 
         # TODO: DUMMY CODE — SD reader stub (stubs/sd_loader.py); when attached,
@@ -52,8 +52,8 @@ class DeviceState:
         self._hasUSB = True
         self._enabledUSB = False
 
-        self._hasSmartCard = False
-        self._enabledSmartCard = False
+        self._hasSmartCard = True
+        self._enabledSmartCard = True
         self._detectedSmartCard = False
 
         # misc
